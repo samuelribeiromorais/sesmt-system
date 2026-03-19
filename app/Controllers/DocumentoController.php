@@ -63,9 +63,11 @@ class DocumentoController extends Controller
             $params['categoria'] = $categoria;
         }
         if ($search) {
-            $sql .= " AND c.nome_completo LIKE :q";
-            $countSql .= " AND c.nome_completo LIKE :q";
+            $sql .= " AND (c.nome_completo LIKE :q OR td.nome LIKE :q2 OR d.arquivo_nome LIKE :q3)";
+            $countSql .= " AND (c.nome_completo LIKE :q OR td.nome LIKE :q2 OR d.arquivo_nome LIKE :q3)";
             $params['q'] = "%{$search}%";
+            $params['q2'] = "%{$search}%";
+            $params['q3'] = "%{$search}%";
         }
 
         $totalResult = $model->query($countSql, $params);

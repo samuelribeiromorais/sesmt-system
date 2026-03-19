@@ -9,10 +9,10 @@
 <body>
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
+        <a href="/dashboard" class="sidebar-header" style="text-decoration:none; color:inherit;">
             <img src="/assets/img/logo-tse.png" alt="TSE" class="sidebar-logo">
             <span class="sidebar-title">SESMT</span>
-        </div>
+        </a>
 
         <nav class="sidebar-nav">
             <?php if ($user['perfil'] !== 'rh'): ?>
