@@ -123,46 +123,45 @@ class DocumentoController extends Controller
             $this->redirect("/documentos/upload/{$colaboradorId}");
         }
 
-        // Validate file
-        if (empty($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== UPLOAD_ERR_OK) {
-            $this->flash('error', 'Selecione um arquivo PDF para enviar.');
+        // Validate files
+        if (empty($_FILES['arquivos']) || !is_array($_FILES['arquivos']['name'])) {
+            $this->flash('error', 'Selecione ao menos um arquivo PDF para enviar.');
             $this->redirect("/documentos/upload/{$colaboradorId}");
         }
 
-        $file = $_FILES['arquivo'];
+        $files = $_FILES['arquivos'];
+        $fileCount = count($files['name']);
+
+        // Check that at least one valid file was submitted
+        $hasValidFile = false;
+        for ($i = 0; $i < $fileCount; $i++) {
+            if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                $hasValidFile = true;
+                break;
+            }
+        }
+        if (!$hasValidFile) {
+            $this->flash('error', 'Selecione ao menos um arquivo PDF para enviar.');
+            $this->redirect("/documentos/upload/{$colaboradorId}");
+        }
+
         $config = require dirname(__DIR__) . '/config/app.php';
-
-        // Check MIME type
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
-        $mime = $finfo->file($file['tmp_name']);
-        if (!in_array($mime, $config['upload']['allowed_types'])) {
-            $this->flash('error', 'Apenas arquivos PDF sao permitidos.');
-            $this->redirect("/documentos/upload/{$colaboradorId}");
-        }
 
-        // Check size
-        if ($file['size'] > $config['upload']['max_size']) {
-            $this->flash('error', 'Arquivo excede o tamanho maximo de 10MB.');
-            $this->redirect("/documentos/upload/{$colaboradorId}");
-        }
+        // Validate all files first before processing
+        for ($i = 0; $i < $fileCount; $i++) {
+            if ($files['error'][$i] !== UPLOAD_ERR_OK) continue;
 
-        // Calculate hash
-        $fileHash = hash_file('sha256', $file['tmp_name']);
+            $mime = $finfo->file($files['tmp_name'][$i]);
+            if (!in_array($mime, $config['upload']['allowed_types'])) {
+                $this->flash('error', 'Apenas arquivos PDF sao permitidos. Arquivo invalido: ' . $files['name'][$i]);
+                $this->redirect("/documentos/upload/{$colaboradorId}");
+            }
 
-        // Create upload directory
-        $uploadDir = $config['upload']['path'] . '/' . $colaboradorId;
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0750, true);
-        }
-
-        // Generate safe filename
-        $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $safeName = $fileHash . '.' . strtolower($ext);
-        $destPath = $uploadDir . '/' . $safeName;
-
-        if (!move_uploaded_file($file['tmp_name'], $destPath)) {
-            $this->flash('error', 'Erro ao salvar o arquivo. Tente novamente.');
-            $this->redirect("/documentos/upload/{$colaboradorId}");
+            if ($files['size'][$i] > $config['upload']['max_size']) {
+                $this->flash('error', 'Arquivo excede o tamanho maximo de 10MB: ' . $files['name'][$i]);
+                $this->redirect("/documentos/upload/{$colaboradorId}");
+            }
         }
 
         // Calculate validity
@@ -173,7 +172,7 @@ class DocumentoController extends Controller
             $dataValidade = date('Y-m-d', strtotime("{$dataEmissao} + {$tipo['validade_meses']} months"));
         }
 
-        // Mark previous documents of same type as obsolete
+        // Mark previous documents of same type as obsolete (once for the batch)
         $docModel = new Documento();
         $docModel->markAsObsolete($colaboradorId, $tipoDocumentoId);
 
@@ -185,26 +184,54 @@ class DocumentoController extends Controller
             elseif ($daysLeft <= 30) $status = 'proximo_vencimento';
         }
 
-        // Save to database
-        $id = $docModel->create([
-            'colaborador_id'    => $colaboradorId,
-            'tipo_documento_id' => $tipoDocumentoId,
-            'arquivo_nome'      => $file['name'],
-            'arquivo_path'      => $colaboradorId . '/' . $safeName,
-            'arquivo_hash'      => $fileHash,
-            'arquivo_tamanho'   => $file['size'],
-            'data_emissao'      => $dataEmissao,
-            'data_validade'     => $dataValidade,
-            'status'            => $status,
-            'observacoes'       => $observacoes,
-            'enviado_por'       => Session::get('user_id'),
-        ]);
+        // Create upload directory
+        $uploadDir = $config['upload']['path'] . '/' . $colaboradorId;
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0750, true);
+        }
 
         $colabModel = new Colaborador();
         $colab = $colabModel->find($colaboradorId);
-        LoggerMiddleware::log('upload', "Documento enviado: {$tipo['nome']} para {$colab['nome_completo']} (Doc ID: {$id})");
+        $uploadedCount = 0;
 
-        $this->flash('success', 'Documento enviado com sucesso.');
+        // Process each file
+        for ($i = 0; $i < $fileCount; $i++) {
+            if ($files['error'][$i] !== UPLOAD_ERR_OK) continue;
+
+            $fileHash = hash_file('sha256', $files['tmp_name'][$i]);
+            $ext = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
+            $safeName = $fileHash . '.' . strtolower($ext);
+            $destPath = $uploadDir . '/' . $safeName;
+
+            if (!move_uploaded_file($files['tmp_name'][$i], $destPath)) {
+                continue;
+            }
+
+            $id = $docModel->create([
+                'colaborador_id'    => $colaboradorId,
+                'tipo_documento_id' => $tipoDocumentoId,
+                'arquivo_nome'      => $files['name'][$i],
+                'arquivo_path'      => $colaboradorId . '/' . $safeName,
+                'arquivo_hash'      => $fileHash,
+                'arquivo_tamanho'   => $files['size'][$i],
+                'data_emissao'      => $dataEmissao,
+                'data_validade'     => $dataValidade,
+                'status'            => $status,
+                'observacoes'       => $observacoes,
+                'enviado_por'       => Session::get('user_id'),
+            ]);
+
+            LoggerMiddleware::log('upload', "Documento enviado: {$tipo['nome']} para {$colab['nome_completo']} (Doc ID: {$id})");
+            $uploadedCount++;
+        }
+
+        if ($uploadedCount === 0) {
+            $this->flash('error', 'Erro ao salvar os arquivos. Tente novamente.');
+        } elseif ($uploadedCount === 1) {
+            $this->flash('success', 'Documento enviado com sucesso.');
+        } else {
+            $this->flash('success', "{$uploadedCount} documentos enviados com sucesso.");
+        }
         $this->redirect("/colaboradores/{$colaboradorId}");
     }
 

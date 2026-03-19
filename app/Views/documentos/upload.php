@@ -35,9 +35,9 @@
                 </div>
 
                 <div class="form-group" style="grid-column: 1 / -1;">
-                    <label for="arquivo">Arquivo PDF *</label>
-                    <input type="file" id="arquivo" name="arquivo" class="form-control" accept=".pdf" required>
-                    <small style="color:var(--c-gray);">Tamanho maximo: 10MB. Apenas PDF.</small>
+                    <label for="arquivos">Arquivo(s) PDF *</label>
+                    <input type="file" id="arquivos" name="arquivos[]" class="form-control" accept=".pdf" multiple required>
+                    <small style="color:var(--c-gray);">Tamanho maximo: 10MB por arquivo. Apenas PDF. Voce pode selecionar multiplos arquivos PDF.</small>
                 </div>
 
                 <div class="form-group" style="grid-column: 1 / -1;">

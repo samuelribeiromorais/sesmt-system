@@ -7,6 +7,10 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     libfreetype6-dev \
     unzip \
+    cron \
+    tesseract-ocr \
+    tesseract-ocr-por \
+    mariadb-client \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo pdo_mysql zip gd fileinfo \
     && a2enmod rewrite \
@@ -29,6 +33,10 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
 RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
 WORKDIR /var/www/html
+
+# Configurar crontab
+COPY docker/crontab /etc/cron.d/sesmt-cron
+RUN chmod 0644 /etc/cron.d/sesmt-cron && crontab /etc/cron.d/sesmt-cron
 
 # Copiar entrypoint
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh

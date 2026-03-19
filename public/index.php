@@ -59,6 +59,7 @@ $router->get('/colaboradores', ['ColaboradorController', 'index'], ['AuthMiddlew
 $router->get('/colaboradores/novo', ['ColaboradorController', 'create'], ['AuthMiddleware']);
 $router->post('/colaboradores/salvar', ['ColaboradorController', 'store'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->get('/colaboradores/{id}', ['ColaboradorController', 'show'], ['AuthMiddleware']);
+$router->get('/colaboradores/{id}/download-zip', ['ColaboradorController', 'downloadZip'], ['AuthMiddleware']);
 $router->get('/colaboradores/{id}/editar', ['ColaboradorController', 'edit'], ['AuthMiddleware']);
 $router->post('/colaboradores/{id}/atualizar', ['ColaboradorController', 'update'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/colaboradores/{id}/excluir', ['ColaboradorController', 'destroy'], ['AuthMiddleware', 'CsrfMiddleware']);
@@ -79,6 +80,11 @@ $router->get('/documentos/visualizar/{id}', ['DocumentoController', 'visualizar'
 $router->get('/documentos/{id}', ['DocumentoController', 'show'], ['AuthMiddleware']);
 $router->post('/documentos/{id}/excluir', ['DocumentoController', 'destroy'], ['AuthMiddleware', 'CsrfMiddleware']);
 
+// --- Exportar ---
+$router->get('/exportar/colaboradores', ['ExportController', 'colaboradores'], ['AuthMiddleware']);
+$router->get('/exportar/documentos', ['ExportController', 'documentos'], ['AuthMiddleware']);
+$router->get('/exportar/certificados', ['ExportController', 'certificados'], ['AuthMiddleware']);
+
 // --- Clientes ---
 $router->get('/clientes', ['ClienteController', 'index'], ['AuthMiddleware']);
 $router->get('/clientes/novo', ['ClienteController', 'create'], ['AuthMiddleware']);
@@ -86,6 +92,8 @@ $router->post('/clientes/salvar', ['ClienteController', 'store'], ['AuthMiddlewa
 $router->get('/clientes/{id}', ['ClienteController', 'show'], ['AuthMiddleware']);
 $router->get('/clientes/{id}/editar', ['ClienteController', 'edit'], ['AuthMiddleware']);
 $router->post('/clientes/{id}/atualizar', ['ClienteController', 'update'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/clientes/{id}/requisitos', ['ClienteController', 'addRequisito'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/clientes/{id}/requisitos/{reqId}/excluir', ['ClienteController', 'removeRequisito'], ['AuthMiddleware', 'CsrfMiddleware']);
 
 // --- Obras ---
 $router->get('/obras/novo/{clienteId}', ['ObraController', 'create'], ['AuthMiddleware']);

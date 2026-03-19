@@ -3,10 +3,13 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\Database;
 use App\Middleware\RoleMiddleware;
 use App\Middleware\LoggerMiddleware;
 use App\Models\Cliente;
 use App\Models\Obra;
+use App\Models\TipoDocumento;
+use App\Models\TipoCertificado;
 
 class ClienteController extends Controller
 {
@@ -52,10 +55,43 @@ class ClienteController extends Controller
         $cliente = $model->find((int)$id);
         if (!$cliente) $this->redirect('/clientes');
 
+        $db = Database::getInstance();
+
+        // Load client requirements
+        $reqStmt = $db->prepare(
+            "SELECT ccd.*, td.nome as doc_nome, td.categoria as doc_categoria,
+                    tc.codigo as cert_codigo
+             FROM config_cliente_docs ccd
+             LEFT JOIN tipos_documento td ON ccd.tipo_documento_id = td.id
+             LEFT JOIN tipos_certificado tc ON ccd.tipo_certificado_id = tc.id
+             WHERE ccd.cliente_id = :cid
+             ORDER BY td.categoria, td.nome, tc.codigo"
+        );
+        $reqStmt->execute(['cid' => (int)$id]);
+        $requisitos = $reqStmt->fetchAll();
+
+        // Load available types for the form
+        $tipoDocModel = new TipoDocumento();
+        $tiposDocs = $tipoDocModel->all(['ativo' => 1], 'categoria, nome ASC');
+
+        $tipoCertModel = new TipoCertificado();
+        $tiposCerts = $tipoCertModel->all(['ativo' => 1], 'codigo ASC');
+
+        // Compliance summary
+        $colabStmt = $db->prepare(
+            "SELECT COUNT(*) FROM colaboradores WHERE cliente_id = :cid AND status = 'ativo'"
+        );
+        $colabStmt->execute(['cid' => (int)$id]);
+        $totalColabs = (int)$colabStmt->fetchColumn();
+
         $this->view('clientes/show', [
-            'cliente'   => $cliente,
-            'obras'     => $obraModel->all(['cliente_id' => (int)$id], 'nome ASC'),
-            'pageTitle' => 'Clientes',
+            'cliente'    => $cliente,
+            'obras'      => $obraModel->all(['cliente_id' => (int)$id], 'nome ASC'),
+            'requisitos' => $requisitos,
+            'tiposDocs'  => $tiposDocs,
+            'tiposCerts' => $tiposCerts,
+            'totalColabs' => $totalColabs,
+            'pageTitle'  => 'Clientes',
         ]);
     }
 
@@ -82,6 +118,71 @@ class ClienteController extends Controller
         $model->update((int)$id, $data);
         LoggerMiddleware::log('editar', "Cliente atualizado: {$data['nome_fantasia']} (ID: {$id})");
         $this->flash('success', 'Cliente atualizado.');
+        $this->redirect("/clientes/{$id}");
+    }
+
+    public function addRequisito(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $tipoDocId = $this->input('tipo_documento_id') ?: null;
+        $tipoCertId = $this->input('tipo_certificado_id') ?: null;
+        $obrigatorio = (int)$this->input('obrigatorio', 1);
+        $observacoes = trim($this->input('observacoes', ''));
+
+        if (!$tipoDocId && !$tipoCertId) {
+            $this->flash('error', 'Selecione um tipo de documento ou certificado.');
+            $this->redirect("/clientes/{$id}");
+            return;
+        }
+
+        $db = Database::getInstance();
+
+        // Check duplicate
+        $checkSql = "SELECT COUNT(*) FROM config_cliente_docs WHERE cliente_id = :cid";
+        $params = ['cid' => (int)$id];
+        if ($tipoDocId) {
+            $checkSql .= " AND tipo_documento_id = :tdid";
+            $params['tdid'] = (int)$tipoDocId;
+        } else {
+            $checkSql .= " AND tipo_certificado_id = :tcid";
+            $params['tcid'] = (int)$tipoCertId;
+        }
+        $checkStmt = $db->prepare($checkSql);
+        $checkStmt->execute($params);
+        if ((int)$checkStmt->fetchColumn() > 0) {
+            $this->flash('warning', 'Este requisito ja esta cadastrado para este cliente.');
+            $this->redirect("/clientes/{$id}");
+            return;
+        }
+
+        $stmt = $db->prepare(
+            "INSERT INTO config_cliente_docs (cliente_id, tipo_documento_id, tipo_certificado_id, obrigatorio, observacoes)
+             VALUES (:cid, :tdid, :tcid, :obr, :obs)"
+        );
+        $stmt->execute([
+            'cid'  => (int)$id,
+            'tdid' => $tipoDocId ? (int)$tipoDocId : null,
+            'tcid' => $tipoCertId ? (int)$tipoCertId : null,
+            'obr'  => $obrigatorio,
+            'obs'  => $observacoes,
+        ]);
+
+        LoggerMiddleware::log('criar', "Requisito adicionado ao cliente ID: {$id}");
+        $this->flash('success', 'Requisito adicionado.');
+        $this->redirect("/clientes/{$id}");
+    }
+
+    public function removeRequisito(string $id, string $reqId): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare("DELETE FROM config_cliente_docs WHERE id = :rid AND cliente_id = :cid");
+        $stmt->execute(['rid' => (int)$reqId, 'cid' => (int)$id]);
+
+        LoggerMiddleware::log('excluir', "Requisito removido do cliente ID: {$id}");
+        $this->flash('success', 'Requisito removido.');
         $this->redirect("/clientes/{$id}");
     }
 }

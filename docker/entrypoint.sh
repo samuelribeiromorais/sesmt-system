@@ -36,5 +36,12 @@ PHPSCRIPT
 echo "[SESMT] Sistema pronto! Acesse http://localhost:8080"
 echo "[SESMT] Login: samuel.morais@tsea.com.br / TseAdmin@2026"
 
+# Exportar variaveis de ambiente para o cron
+printenv | grep -E '^(DB_|APP_|AES_|SMTP_|UPLOAD_)' >> /etc/environment
+
+# Iniciar cron
+echo "[SESMT] Iniciando servico cron..."
+service cron start
+
 # Iniciar Apache
 exec apache2-foreground

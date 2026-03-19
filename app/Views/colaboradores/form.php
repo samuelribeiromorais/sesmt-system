@@ -84,6 +84,24 @@
                 <?php endif; ?>
 
                 <div class="form-group">
+                    <label for="data_nascimento">Data Nascimento</label>
+                    <input type="date" id="data_nascimento" name="data_nascimento" class="form-control"
+                           value="<?= $colab['data_nascimento'] ?? '' ?>">
+                </div>
+
+                <div class="form-group">
+                    <label for="telefone">Telefone</label>
+                    <input type="text" id="telefone" name="telefone" class="form-control"
+                           value="<?= htmlspecialchars($colab['telefone'] ?? '') ?>" placeholder="(00) 00000-0000">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" class="form-control"
+                           value="<?= htmlspecialchars($colab['email'] ?? '') ?>">
+                </div>
+
+                <div class="form-group">
                     <label for="status">Status</label>
                     <select id="status" name="status" class="form-control">
                         <option value="ativo" <?= ($colab['status'] ?? 'ativo') === 'ativo' ? 'selected' : '' ?>>Ativo</option>

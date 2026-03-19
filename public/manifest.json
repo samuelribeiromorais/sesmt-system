@@ -1,0 +1,16 @@
+{
+    "name": "SESMT - TSE Engenharia",
+    "short_name": "SESMT",
+    "description": "Sistema de Gestao de Seguranca do Trabalho",
+    "start_url": "/dashboard",
+    "display": "standalone",
+    "background_color": "#f2f2ed",
+    "theme_color": "#005e4e",
+    "icons": [
+        {
+            "src": "/assets/img/logo-tse.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        }
+    ]
+}

@@ -86,11 +86,20 @@ class ColaboradorController extends Controller
         $certModel = new Certificado();
         $docModel = new Documento();
 
+        $historico = $docModel->query(
+            "SELECT l.*, u.nome as usuario_nome FROM logs_acesso l
+             LEFT JOIN usuarios u ON l.usuario_id = u.id
+             WHERE l.descricao LIKE :term
+             ORDER BY l.criado_em DESC LIMIT 20",
+            ['term' => "%{$colab['nome_completo']}%"]
+        );
+
         $this->view('colaboradores/show', [
             'colab'         => $colab,
             'cpfDisplay'    => $cpfDisplay,
             'certificados'  => $certModel->getLatestByColaborador((int)$id),
             'documentos'    => $docModel->findByColaborador((int)$id),
+            'historico'     => $historico,
             'pageTitle'     => 'Colaboradores',
             'isReadOnly'    => Session::get('user_perfil') === 'rh',
         ]);
@@ -130,6 +139,9 @@ class ColaboradorController extends Controller
             'data_admissao'  => $this->input('data_admissao') ?: null,
             'status'         => $this->input('status', 'ativo'),
             'unidade'        => trim($this->input('unidade', '')),
+            'data_nascimento'=> $this->input('data_nascimento') ?: null,
+            'telefone'       => trim($this->input('telefone', '')),
+            'email'          => trim($this->input('email', '')),
         ];
 
         $model = new Colaborador();
@@ -188,6 +200,9 @@ class ColaboradorController extends Controller
             'data_demissao'  => $this->input('data_demissao') ?: null,
             'status'         => $this->input('status', 'ativo'),
             'unidade'        => trim($this->input('unidade', '')),
+            'data_nascimento'=> $this->input('data_nascimento') ?: null,
+            'telefone'       => trim($this->input('telefone', '')),
+            'email'          => trim($this->input('email', '')),
         ];
 
         if ($cpf) {
@@ -201,6 +216,83 @@ class ColaboradorController extends Controller
         LoggerMiddleware::log('editar', "Colaborador atualizado: {$data['nome_completo']} (ID: {$id})");
         $this->flash('success', 'Colaborador atualizado com sucesso.');
         $this->redirect("/colaboradores/{$id}");
+    }
+
+    public function downloadZip(string $id): void
+    {
+        RoleMiddleware::requireAny();
+
+        $model = new Colaborador();
+        $colab = $model->find((int)$id);
+        if (!$colab) {
+            $this->flash('error', 'Colaborador nao encontrado.');
+            $this->redirect('/colaboradores');
+            return;
+        }
+
+        $docModel = new Documento();
+        $documentos = $docModel->findByColaborador((int)$id);
+
+        if (empty($documentos)) {
+            $this->flash('warning', 'Este colaborador nao possui documentos.');
+            $this->redirect("/colaboradores/{$id}");
+            return;
+        }
+
+        $config = require dirname(__DIR__) . '/config/app.php';
+        $uploadPath = $config['upload']['path'];
+
+        $zipName = preg_replace('/[^a-zA-Z0-9_\- ]/', '', $colab['nome_completo']);
+        $zipName = str_replace(' ', '_', $zipName);
+        $tmpFile = tempnam(sys_get_temp_dir(), 'sesmt_zip_');
+
+        $zip = new \ZipArchive();
+        if ($zip->open($tmpFile, \ZipArchive::OVERWRITE) !== true) {
+            $this->flash('error', 'Erro ao criar arquivo ZIP.');
+            $this->redirect("/colaboradores/{$id}");
+            return;
+        }
+
+        $added = 0;
+        foreach ($documentos as $doc) {
+            $filePath = $uploadPath . '/' . $doc['arquivo_path'];
+            if (!file_exists($filePath)) continue;
+
+            $categoria = strtoupper($doc['categoria'] ?? 'OUTROS');
+            $fileName = $doc['arquivo_nome'];
+            $entryName = "{$categoria}/{$fileName}";
+
+            // Avoid duplicate names inside the same category
+            $counter = 1;
+            while ($zip->locateName($entryName) !== false) {
+                $ext = pathinfo($fileName, PATHINFO_EXTENSION);
+                $base = pathinfo($fileName, PATHINFO_FILENAME);
+                $entryName = "{$categoria}/{$base}_{$counter}.{$ext}";
+                $counter++;
+            }
+
+            $zip->addFile($filePath, $entryName);
+            $added++;
+        }
+
+        $zip->close();
+
+        if ($added === 0) {
+            unlink($tmpFile);
+            $this->flash('warning', 'Nenhum arquivo encontrado no servidor.');
+            $this->redirect("/colaboradores/{$id}");
+            return;
+        }
+
+        LoggerMiddleware::log('download', "Download ZIP: {$added} documentos de {$colab['nome_completo']}");
+
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="Documentos_' . $zipName . '.zip"');
+        header('Content-Length: ' . filesize($tmpFile));
+        header('Cache-Control: no-cache, must-revalidate');
+        readfile($tmpFile);
+        unlink($tmpFile);
+        exit;
     }
 
     public function destroy(string $id): void

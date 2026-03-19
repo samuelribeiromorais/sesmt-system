@@ -25,6 +25,12 @@ function statusSemaforo($status) {
     </div>
     <div style="display:flex; gap:8px; align-items:center;">
         <span class="badge badge-<?= $colab['status'] ?>"><?= ucfirst($colab['status']) ?></span>
+        <?php if (!empty($documentos)): ?>
+        <a href="/colaboradores/<?= $colab['id'] ?>/download-zip" class="btn btn-outline btn-sm" title="Baixar todos os documentos em ZIP">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            ZIP
+        </a>
+        <?php endif; ?>
         <?php if (!$isReadOnly): ?>
         <a href="/colaboradores/<?= $colab['id'] ?>/editar" class="btn btn-outline btn-sm">Editar</a>
         <?php endif; ?>
@@ -131,8 +137,34 @@ function statusSemaforo($status) {
         <?php if ($colab['data_demissao']): ?>
         <div><strong>Demissao:</strong> <?= date('d/m/Y', strtotime($colab['data_demissao'])) ?></div>
         <?php endif; ?>
+        <div><strong>Data Nascimento:</strong> <?= !empty($colab['data_nascimento']) ? date('d/m/Y', strtotime($colab['data_nascimento'])) : '-' ?></div>
+        <div><strong>Telefone:</strong> <?= htmlspecialchars($colab['telefone'] ?? '-') ?></div>
+        <div><strong>Email:</strong> <?= htmlspecialchars($colab['email'] ?? '-') ?></div>
     </div>
 </div>
+
+<!-- Timeline de Atividades -->
+<?php if (!empty($historico)): ?>
+<div class="table-container" style="margin-top:24px;">
+    <div class="table-header">
+        <span class="table-title">Historico de Atividades</span>
+    </div>
+    <div style="padding:20px;">
+        <?php foreach ($historico as $h): ?>
+        <div style="display:flex; gap:12px; padding:10px 0; border-bottom:1px solid #f0f0f0;">
+            <div style="min-width:80px; font-size:12px; color:#6b7280;">
+                <?= date('d/m/Y', strtotime($h['criado_em'])) ?><br>
+                <span style="font-size:11px;"><?= date('H:i', strtotime($h['criado_em'])) ?></span>
+            </div>
+            <div style="flex:1;">
+                <span style="font-size:13px; color:#001e21;"><?= htmlspecialchars($h['descricao']) ?></span>
+                <span style="font-size:12px; color:#6b7280; margin-left:8px;">por <?= htmlspecialchars($h['usuario_nome'] ?? 'Sistema') ?></span>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <script>
 function viewPdf(docId, filename) {
