@@ -1,0 +1,25 @@
+RewriteEngine On
+
+# Redirecionar HTTP para HTTPS
+# RewriteCond %{HTTPS} off
+# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Se o arquivo ou diretorio existe, servir diretamente
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Redirecionar tudo para index.php
+RewriteRule ^ index.php [L]
+
+# Bloquear acesso a .env e arquivos sensiveis
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Headers de seguranca
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

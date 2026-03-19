@@ -1,0 +1,16 @@
+{
+    "name": "tse/sesmt-system",
+    "description": "Sistema Integrado SESMT - TSE Engenharia e Automacao",
+    "type": "project",
+    "require": {
+        "php": ">=8.2",
+        "phpmailer/phpmailer": "^6.9",
+        "phpoffice/phpspreadsheet": "^2.0",
+        "tecnickcom/tcpdf": "^6.7"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    }
+}

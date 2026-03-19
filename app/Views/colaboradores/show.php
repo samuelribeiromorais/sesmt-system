@@ -1,0 +1,159 @@
+<?php
+function statusSemaforo($status) {
+    return match($status) {
+        'vigente' => 'verde',
+        'proximo_vencimento' => 'amarelo',
+        'vencido' => 'vermelho',
+        default => 'cinza',
+    };
+}
+?>
+
+<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px;">
+    <div>
+        <h2 style="font-size:24px; margin-bottom:4px;"><?= htmlspecialchars($colab['nome_completo']) ?></h2>
+        <div style="display:flex; gap:16px; color:var(--c-gray); font-size:14px;">
+            <span>CPF: <?= htmlspecialchars($cpfDisplay) ?></span>
+            <span>Cargo: <?= htmlspecialchars($colab['cargo'] ?? $colab['funcao'] ?? '-') ?></span>
+            <?php if ($colab['cliente_nome']): ?>
+            <span>Cliente: <?= htmlspecialchars($colab['cliente_nome']) ?></span>
+            <?php endif; ?>
+            <?php if ($colab['obra_nome']): ?>
+            <span>Obra: <?= htmlspecialchars($colab['obra_nome']) ?></span>
+            <?php endif; ?>
+        </div>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+        <span class="badge badge-<?= $colab['status'] ?>"><?= ucfirst($colab['status']) ?></span>
+        <?php if (!$isReadOnly): ?>
+        <a href="/colaboradores/<?= $colab['id'] ?>/editar" class="btn btn-outline btn-sm">Editar</a>
+        <?php endif; ?>
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+    <!-- Certificados -->
+    <div class="table-container">
+        <div class="table-header">
+            <span class="table-title">Certificados</span>
+            <?php if (!$isReadOnly): ?>
+            <a href="/certificados/emitir/<?= $colab['id'] ?>" class="btn btn-secondary btn-sm">Emitir</a>
+            <?php endif; ?>
+        </div>
+        <table>
+            <thead><tr><th>Tipo</th><th>Validade</th><th>Status</th></tr></thead>
+            <tbody>
+                <?php if (empty($certificados)): ?>
+                <tr><td colspan="3" style="text-align:center;color:#6b7280;">Nenhum certificado</td></tr>
+                <?php else: ?>
+                <?php foreach ($certificados as $cert): ?>
+                <tr>
+                    <td>
+                        <span class="semaforo semaforo-<?= statusSemaforo($cert['status']) ?>"></span>
+                        <?= htmlspecialchars($cert['codigo']) ?>
+                    </td>
+                    <td><?= $cert['data_validade'] ? date('d/m/Y', strtotime($cert['data_validade'])) : '-' ?></td>
+                    <td><span class="badge badge-<?= $cert['status'] ?>"><?= ucfirst(str_replace('_', ' ', $cert['status'])) ?></span></td>
+                </tr>
+                <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Documentos -->
+    <div class="table-container">
+        <div class="table-header">
+            <span class="table-title">Documentos (<?= count($documentos) ?>)</span>
+            <?php if (!$isReadOnly): ?>
+            <a href="/documentos/upload/<?= $colab['id'] ?>" class="btn btn-primary btn-sm">Upload</a>
+            <?php endif; ?>
+        </div>
+        <table>
+            <thead><tr><th>Tipo</th><th>Emissao</th><th>Validade</th><th>Acoes</th></tr></thead>
+            <tbody>
+                <?php if (empty($documentos)): ?>
+                <tr><td colspan="4" style="text-align:center;color:#6b7280;">Nenhum documento</td></tr>
+                <?php else: ?>
+                <?php foreach ($documentos as $doc): ?>
+                <tr>
+                    <td>
+                        <span class="semaforo semaforo-<?= statusSemaforo($doc['status']) ?>"></span>
+                        <?= htmlspecialchars($doc['tipo_nome']) ?>
+                    </td>
+                    <td style="font-size:13px;"><?= $doc['data_emissao'] ? date('d/m/Y', strtotime($doc['data_emissao'])) : '-' ?></td>
+                    <td style="font-size:13px;"><?= $doc['data_validade'] ? date('d/m/Y', strtotime($doc['data_validade'])) : 'N/A' ?></td>
+                    <td style="white-space:nowrap;">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="viewPdf(<?= $doc['id'] ?>, '<?= htmlspecialchars($doc['arquivo_nome'], ENT_QUOTES) ?>')" title="Visualizar">Ver</button>
+                        <a href="/documentos/download/<?= $doc['id'] ?>" class="btn btn-outline btn-sm" title="Baixar">PDF</a>
+                        <?php if (!$isReadOnly): ?>
+                        <form method="POST" action="/documentos/<?= $doc['id'] ?>/excluir" style="display:inline;">
+                            <?= \App\Core\View::csrfField() ?>
+                            <button type="submit" class="btn btn-danger btn-sm" data-confirm="Excluir este documento?">X</button>
+                        </form>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- PDF Viewer Modal -->
+<div id="pdf-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; border-radius:8px; width:90%; max-width:900px; height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-bottom:1px solid #e5e7eb;">
+            <span id="pdf-title" style="font-weight:600; font-size:14px; color:#001e21;"></span>
+            <div style="display:flex; gap:8px;">
+                <a id="pdf-download" href="#" class="btn btn-outline btn-sm">Baixar</a>
+                <button type="button" class="btn btn-outline btn-sm" onclick="closePdfModal()" style="font-size:18px; line-height:1; padding:4px 10px;">&times;</button>
+            </div>
+        </div>
+        <div style="flex:1; overflow:hidden;">
+            <iframe id="pdf-iframe" style="width:100%; height:100%; border:none;"></iframe>
+        </div>
+    </div>
+</div>
+
+<!-- Info adicional -->
+<div class="table-container" style="margin-top:24px;">
+    <div class="table-header">
+        <span class="table-title">Dados do Colaborador</span>
+    </div>
+    <div style="padding:20px; display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
+        <div><strong>Matricula:</strong> <?= htmlspecialchars($colab['matricula'] ?? '-') ?></div>
+        <div><strong>Funcao:</strong> <?= htmlspecialchars($colab['funcao'] ?? '-') ?></div>
+        <div><strong>Setor:</strong> <?= htmlspecialchars($colab['setor'] ?? '-') ?></div>
+        <div><strong>Unidade:</strong> <?= htmlspecialchars($colab['unidade'] ?? '-') ?></div>
+        <div><strong>Admissao:</strong> <?= $colab['data_admissao'] ? date('d/m/Y', strtotime($colab['data_admissao'])) : '-' ?></div>
+        <?php if ($colab['data_demissao']): ?>
+        <div><strong>Demissao:</strong> <?= date('d/m/Y', strtotime($colab['data_demissao'])) ?></div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<script>
+function viewPdf(docId, filename) {
+    document.getElementById('pdf-title').textContent = filename;
+    document.getElementById('pdf-download').href = '/documentos/download/' + docId;
+    document.getElementById('pdf-iframe').src = '/documentos/visualizar/' + docId;
+    var modal = document.getElementById('pdf-modal');
+    modal.style.display = 'flex';
+}
+
+function closePdfModal() {
+    var modal = document.getElementById('pdf-modal');
+    modal.style.display = 'none';
+    document.getElementById('pdf-iframe').src = '';
+}
+
+document.getElementById('pdf-modal').addEventListener('click', function(e) {
+    if (e.target === this) closePdfModal();
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closePdfModal();
+});
+</script>

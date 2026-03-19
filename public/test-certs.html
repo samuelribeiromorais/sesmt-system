@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Teste de Certificados</title>
+    <link rel="stylesheet" href="/assets/css/certificados.css">
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="/assets/js/images-data.js"></script>
+    <script src="/assets/js/certificados.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f2f2ed; padding: 20px; }
+        .controls { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .controls button { background: #005e4e; color: white; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; margin: 4px; }
+        .controls button:hover { background: #00b279; }
+        #log { background: #001e21; color: #afd85a; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 13px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
+        .preview-container { background: #fff; padding: 20px; border-radius: 8px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h2>Gerador de Teste - Todos os Certificados</h2>
+        <p>Gera PDFs de todos os 26 tipos de certificado para análise.</p>
+        <button onclick="gerarTodos()">Gerar Todos os PDFs (26)</button>
+        <button onclick="gerarUm()">Gerar Certificado Selecionado</button>
+        <select id="cert-select" style="padding:8px; font-size:14px; min-width:300px;"></select>
+    </div>
+    <div id="log"></div>
+    <div class="preview-container">
+        <h3>Preview</h3>
+        <div id="preview-area"></div>
+    </div>
+
+    <script>
+    const COLAB_TESTE = {
+        nome: 'João Carlos Silva Santos',
+        cpf: '123.456.789-00',
+        funcao: 'Montador Industrial',
+        cargo: 'Montador Industrial',
+        data_admissao: '2024-03-15',
+        data_realizacao: '2026-03-19',
+        data_emissao: '2026-03-19',
+    };
+
+    let TIPOS = [];
+
+    async function carregarTipos() {
+        try {
+            log('Carregando tipos de certificado...');
+            const resp = await fetch('/api/tipos-certificado');
+            log('API status: ' + resp.status);
+            const text = await resp.text();
+            log('API response length: ' + text.length);
+            TIPOS = JSON.parse(text);
+            const sel = document.getElementById('cert-select');
+            TIPOS.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = t.codigo + ' (' + t.duracao + ')';
+                sel.appendChild(opt);
+            });
+            log('Carregados ' + TIPOS.length + ' tipos de certificado.');
+        } catch (e) {
+            log('ERRO ao carregar tipos: ' + e.message);
+            log('Stack: ' + e.stack);
+        }
+    }
+
+    function log(msg) {
+        const el = document.getElementById('log');
+        el.textContent += msg + '\n';
+        el.scrollTop = el.scrollHeight;
+    }
+
+    async function gerarPdfParaTipo(tipo) {
+        const container = document.createElement('div');
+        container.style.cssText = 'position: fixed; left: -9999px; top: 0;';
+        document.body.appendChild(container);
+
+        const tipoCert = {
+            titulo: tipo.titulo,
+            codigo: tipo.codigo,
+            duracao: tipo.duracao,
+            tem_anuencia: parseInt(tipo.tem_anuencia),
+            tem_diego: parseInt(tipo.tem_diego),
+            conteudo_no_verso: parseInt(tipo.conteudo_no_verso),
+            conteudo_programatico: tipo.conteudo_programatico,
+        };
+
+        container.innerHTML = gerarCertificadoHtml(COLAB_TESTE, tipoCert);
+        container.querySelectorAll('.cert-page').forEach(p => p.classList.add('for-pdf'));
+
+        const imgs = container.querySelectorAll('img');
+        await Promise.all([...imgs].map(img => {
+            if (img.complete) return Promise.resolve();
+            return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+        }));
+
+        const paginas = container.querySelectorAll('.cert-page');
+        const pdf = new jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+        for (let p = 0; p < paginas.length; p++) {
+            if (p > 0) pdf.addPage('a4', 'portrait');
+            const canvas = await html2canvas(paginas[p], {
+                scale: 2, useCORS: true, logging: false, width: 794, height: 1122
+            });
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+        }
+
+        const nomeArquivo = tipo.id.toString().padStart(2, '0') + ' - ' + tipo.codigo + '.pdf';
+        pdf.save(nomeArquivo);
+        document.body.removeChild(container);
+        return paginas.length;
+    }
+
+    async function gerarTodos() {
+        log('=== INICIANDO GERAÇÃO DE TODOS OS 26 CERTIFICADOS ===');
+        const zip = new JSZip();
+
+        for (let i = 0; i < TIPOS.length; i++) {
+            const t = TIPOS[i];
+            log('Gerando [' + (i+1) + '/' + TIPOS.length + '] ' + t.codigo + '...');
+            try {
+                const {pages, pdfBlob} = await gerarPdfBlobParaTipo(t);
+                const nomeArquivo = t.id.toString().padStart(2, '0') + ' - ' + t.codigo + '.pdf';
+                zip.file(nomeArquivo, pdfBlob);
+                log('  OK - ' + pages + ' página(s) | anuência=' + t.tem_anuencia + ' diego=' + t.tem_diego + ' verso=' + t.conteudo_no_verso);
+            } catch (e) {
+                log('  ERRO: ' + e.message);
+            }
+            await new Promise(r => setTimeout(r, 300));
+        }
+
+        log('Compactando ZIP...');
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(zipBlob);
+        link.download = 'Certificados-Teste-Todos.zip';
+        link.click();
+        URL.revokeObjectURL(link.href);
+        log('=== CONCLUÍDO - Arquivo: Certificados-Teste-Todos.zip ===');
+        log('Salvo na pasta de Downloads do navegador.');
+    }
+
+    async function gerarPdfBlobParaTipo(tipo) {
+        const container = document.createElement('div');
+        container.style.cssText = 'position: fixed; left: -9999px; top: 0;';
+        document.body.appendChild(container);
+
+        const tipoCert = {
+            titulo: tipo.titulo, codigo: tipo.codigo, duracao: tipo.duracao,
+            tem_anuencia: parseInt(tipo.tem_anuencia), tem_diego: parseInt(tipo.tem_diego),
+            conteudo_no_verso: parseInt(tipo.conteudo_no_verso),
+            conteudo_programatico: tipo.conteudo_programatico,
+        };
+
+        container.innerHTML = gerarCertificadoHtml(COLAB_TESTE, tipoCert);
+        container.querySelectorAll('.cert-page').forEach(p => p.classList.add('for-pdf'));
+
+        const imgs = container.querySelectorAll('img');
+        await Promise.all([...imgs].map(img => {
+            if (img.complete) return Promise.resolve();
+            return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+        }));
+
+        const paginas = container.querySelectorAll('.cert-page');
+        const pdf = new jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+        for (let p = 0; p < paginas.length; p++) {
+            if (p > 0) pdf.addPage('a4', 'portrait');
+            const canvas = await html2canvas(paginas[p], {
+                scale: 2, useCORS: true, logging: false, width: 794, height: 1122
+            });
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+        }
+
+        const pdfBlob = pdf.output('blob');
+        document.body.removeChild(container);
+        return { pages: paginas.length, pdfBlob };
+    }
+
+    async function gerarUm() {
+        const id = document.getElementById('cert-select').value;
+        const tipo = TIPOS.find(t => t.id == id);
+        if (!tipo) { alert('Selecione um tipo'); return; }
+
+        // Show preview
+        const tipoCert = {
+            titulo: tipo.titulo, codigo: tipo.codigo, duracao: tipo.duracao,
+            tem_anuencia: parseInt(tipo.tem_anuencia), tem_diego: parseInt(tipo.tem_diego),
+            conteudo_no_verso: parseInt(tipo.conteudo_no_verso),
+            conteudo_programatico: tipo.conteudo_programatico,
+        };
+        renderPreview(COLAB_TESTE, tipoCert);
+
+        log('Gerando PDF: ' + tipo.codigo + '...');
+        const pages = await gerarPdfParaTipo(tipo);
+        log('OK - ' + pages + ' página(s)');
+    }
+
+    carregarTipos();
+    </script>
+</body>
+</html>

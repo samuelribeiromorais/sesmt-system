@@ -1,0 +1,52 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      - ./storage:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=sesmt_tse
+      - DB_USER=sesmt
+      - DB_PASS=sesmt2026
+      - APP_DEBUG=true
+      - APP_URL=http://localhost:8080
+      - APP_TIMEZONE=America/Sao_Paulo
+      - AES_KEY=tse-sesmt-dev-key-2026-local-test
+      - SMTP_HOST=
+      - SMTP_PORT=587
+      - SMTP_USER=
+      - SMTP_PASS=
+      - SMTP_FROM_NAME=SESMT TSE
+      - SMTP_FROM_EMAIL=
+      - UPLOAD_MAX_SIZE=10485760
+      - UPLOAD_ALLOWED_TYPES=application/pdf
+    restart: unless-stopped
+
+  db:
+    image: mariadb:10.11
+    ports:
+      - "3307:3306"
+    environment:
+      - MARIADB_ROOT_PASSWORD=root2026
+      - MARIADB_DATABASE=sesmt_tse
+      - MARIADB_USER=sesmt
+      - MARIADB_PASSWORD=sesmt2026
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  db_data:
