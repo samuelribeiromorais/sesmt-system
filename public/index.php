@@ -200,6 +200,13 @@ $router->post('/importar/colaboradores/preview', ['ImportController', 'preview']
 $router->post('/importar/colaboradores/executar', ['ImportController', 'executar'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->get('/importar/colaboradores/template', ['ImportController', 'templateDownload'], ['AuthMiddleware']);
 
+// --- Upload Links Externos ---
+$router->get('/upload-links', ['UploadLinkController', 'index'], ['AuthMiddleware']);
+$router->post('/upload-links/gerar', ['UploadLinkController', 'gerar'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/upload-links/{id}/revogar', ['UploadLinkController', 'revogar'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->get('/upload-externo/{token}', ['UploadLinkController', 'paginaUpload']);
+$router->post('/upload-externo/{token}/enviar', ['UploadLinkController', 'processarUpload']);
+
 // --- eSocial SST ---
 $router->get('/esocial', ['EsocialController', 'index'], ['AuthMiddleware']);
 $router->get('/esocial/gerar/{colaboradorId}', ['EsocialController', 'gerar'], ['AuthMiddleware']);

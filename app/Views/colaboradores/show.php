@@ -160,6 +160,7 @@ function statusSemaforo($status) {
         <span class="table-title">Dados do Colaborador</span>
     </div>
     <div style="padding:20px; display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
+        <div><strong>CPF:</strong> <?= htmlspecialchars($cpfDisplay) ?></div>
         <div><strong>Matricula:</strong> <?= htmlspecialchars($colab['matricula'] ?? '-') ?></div>
         <div><strong>Funcao:</strong> <?= htmlspecialchars($colab['funcao'] ?? '-') ?></div>
         <div><strong>Setor:</strong> <?= htmlspecialchars($colab['setor'] ?? '-') ?></div>
