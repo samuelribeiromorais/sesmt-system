@@ -10,6 +10,7 @@ class Notificacao extends Model
 
     public function getUnread(int $usuarioId, int $limit = 20): array
     {
+        $limit = (int)$limit;
         return $this->query(
             "SELECT * FROM {$this->table} WHERE usuario_id = :uid AND lida = 0 ORDER BY criado_em DESC LIMIT {$limit}",
             ['uid' => $usuarioId]
@@ -56,6 +57,8 @@ class Notificacao extends Model
 
     public function getAllForUser(int $usuarioId, int $limit = 50, int $offset = 0): array
     {
+        $limit = (int)$limit;
+        $offset = (int)$offset;
         return $this->query(
             "SELECT * FROM {$this->table} WHERE usuario_id = :uid ORDER BY criado_em DESC LIMIT {$limit} OFFSET {$offset}",
             ['uid' => $usuarioId]

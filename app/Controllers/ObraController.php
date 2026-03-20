@@ -27,7 +27,7 @@ class ObraController extends Controller
 
         // Get all active collaborators assigned to this obra
         $colabStmt = $db->prepare(
-            "SELECT c.id, c.nome_completo, c.cpf, c.matricula, c.cargo, c.funcao, c.setor, c.data_admissao, c.status
+            "SELECT c.id, c.nome_completo, c.matricula, c.cargo, c.funcao, c.setor, c.data_admissao, c.status
              FROM colaboradores c
              WHERE c.obra_id = :oid AND c.status = 'ativo' AND c.excluido_em IS NULL
              ORDER BY c.nome_completo"
@@ -37,11 +37,11 @@ class ObraController extends Controller
 
         // For each collaborator, get doc/cert status summary
         foreach ($colaboradores as &$colab) {
-            // Count docs by status
+            // Count docs by status (only vigente and proximo_vencimento)
             $dStmt = $db->prepare(
                 "SELECT d.status, COUNT(*) as total
                  FROM documentos d
-                 WHERE d.colaborador_id = :cid AND d.status != 'obsoleto' AND d.excluido_em IS NULL
+                 WHERE d.colaborador_id = :cid AND d.status IN ('vigente', 'proximo_vencimento') AND d.excluido_em IS NULL
                  GROUP BY d.status"
             );
             $dStmt->execute(['cid' => $colab['id']]);
@@ -135,12 +135,12 @@ class ObraController extends Controller
         foreach ($colaboradores as $colab) {
             $colabNome = preg_replace('/[^a-zA-Z0-9\s\-_áéíóúâêîôûàãõçÁÉÍÓÚÂÊÎÔÛÀÃÕÇ]/', '', $colab['nome_completo']);
 
-            // Get all active docs
+            // Get only vigente docs for ZIP
             $docStmt = $db->prepare(
                 "SELECT d.arquivo_nome, d.arquivo_path, td.nome as tipo_nome
                  FROM documentos d
                  JOIN tipos_documento td ON d.tipo_documento_id = td.id
-                 WHERE d.colaborador_id = :cid AND d.status != 'obsoleto' AND d.excluido_em IS NULL
+                 WHERE d.colaborador_id = :cid AND d.status IN ('vigente', 'proximo_vencimento') AND d.excluido_em IS NULL
                  ORDER BY td.categoria, d.data_emissao DESC"
             );
             $docStmt->execute(['cid' => $colab['id']]);

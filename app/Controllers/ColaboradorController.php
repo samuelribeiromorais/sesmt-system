@@ -12,6 +12,7 @@ use App\Models\Documento;
 use App\Models\Cliente;
 use App\Models\Obra;
 use App\Services\CryptoService;
+use App\Services\ValidationService;
 
 class ColaboradorController extends Controller
 {
@@ -21,11 +22,14 @@ class ColaboradorController extends Controller
 
         $model = new Colaborador();
         $search = trim($this->input('q', ''));
-        $status = $this->input('status', '');
+        $status = $this->input('status', 'ativo');
         $format = $this->input('format', '');
         $page = max(1, (int)$this->input('page', 1));
         $perPage = 30;
         $offset = ($page - 1) * $perPage;
+
+        // 'todos' means no status filter
+        $statusFilter = ($status && $status !== 'todos') ? $status : '';
 
         // JSON response for live search and lazy loading
         if ($format === 'json') {
@@ -34,10 +38,10 @@ class ColaboradorController extends Controller
             $jsonOffset = ($page > 1) ? $offset : 0;
 
             if ($search) {
-                $results = $model->search($search, $status, $jsonLimit, $jsonOffset);
+                $results = $model->search($search, $statusFilter, $jsonLimit, $jsonOffset);
             } else {
                 $results = $model->allWithRelations(
-                    $status ? ['status' => $status] : [],
+                    $statusFilter ? ['status' => $statusFilter] : [],
                     'c.nome_completo ASC',
                     $jsonLimit,
                     $jsonOffset
@@ -57,16 +61,16 @@ class ColaboradorController extends Controller
         }
 
         if ($search) {
-            $colaboradores = $model->search($search, $status, $perPage, $offset);
-            $total = $model->searchCount($search, $status);
+            $colaboradores = $model->search($search, $statusFilter, $perPage, $offset);
+            $total = $model->searchCount($search, $statusFilter);
         } else {
             $colaboradores = $model->allWithRelations(
-                $status ? ['status' => $status] : [],
+                $statusFilter ? ['status' => $statusFilter] : [],
                 'c.nome_completo ASC',
                 $perPage,
                 $offset
             );
-            $total = $model->count($status ? ['status' => $status] : []);
+            $total = $model->count($statusFilter ? ['status' => $statusFilter] : []);
         }
 
         $this->view('colaboradores/index', [
@@ -111,14 +115,40 @@ class ColaboradorController extends Controller
             ['term' => "%{$colab['nome_completo']}%"]
         );
 
+        $certificados = $certModel->getLatestByColaborador((int)$id);
+        $documentos   = $docModel->findByColaborador((int)$id);
+
+        // Count documents by status
+        $docsVigentes = count(array_filter($documentos, fn($d) => ($d['status'] ?? '') === 'vigente'));
+        $docsVencendo = count(array_filter($documentos, fn($d) => ($d['status'] ?? '') === 'proximo_vencimento'));
+        $docsVencidos = count(array_filter($documentos, fn($d) => ($d['status'] ?? '') === 'vencido'));
+
+        // Count certificates by status
+        $certsVigentes = count(array_filter($certificados, fn($c) => ($c['status'] ?? '') === 'vigente'));
+        $certsVencendo = count(array_filter($certificados, fn($c) => ($c['status'] ?? '') === 'proximo_vencimento'));
+        $certsVencidos = count(array_filter($certificados, fn($c) => ($c['status'] ?? '') === 'vencido'));
+
+        // Conformidade rate
+        $totalItens = count($documentos) + count($certificados);
+        $taxaConformidade = $totalItens > 0
+            ? (($docsVigentes + $certsVigentes) / $totalItens) * 100
+            : 100;
+
         $this->view('colaboradores/show', [
-            'colab'         => $colab,
-            'cpfDisplay'    => $cpfDisplay,
-            'certificados'  => $certModel->getLatestByColaborador((int)$id),
-            'documentos'    => $docModel->findByColaborador((int)$id),
-            'historico'     => $historico,
-            'pageTitle'     => 'Colaboradores',
-            'isReadOnly'    => Session::get('user_perfil') === 'rh',
+            'colab'              => $colab,
+            'cpfDisplay'         => $cpfDisplay,
+            'certificados'       => $certificados,
+            'documentos'         => $documentos,
+            'historico'          => $historico,
+            'docsVigentes'       => $docsVigentes,
+            'docsVencendo'       => $docsVencendo,
+            'docsVencidos'       => $docsVencidos,
+            'certsVigentes'      => $certsVigentes,
+            'certsVencendo'      => $certsVencendo,
+            'certsVencidos'      => $certsVencidos,
+            'taxaConformidade'   => $taxaConformidade,
+            'pageTitle'          => 'Colaboradores',
+            'isReadOnly'         => Session::get('user_perfil') === 'rh',
         ]);
     }
 
@@ -142,6 +172,11 @@ class ColaboradorController extends Controller
         RoleMiddleware::requireAdminOrSesmt();
 
         $cpf = preg_replace('/\D/', '', $this->input('cpf', ''));
+
+        if ($cpf && !ValidationService::validarCPF($cpf)) {
+            $this->flash('error', 'CPF inválido.');
+            $this->redirect('/colaboradores/novo');
+        }
 
         $data = [
             'nome_completo'  => trim($this->input('nome_completo', '')),
@@ -204,6 +239,11 @@ class ColaboradorController extends Controller
         RoleMiddleware::requireAdminOrSesmt();
 
         $cpf = preg_replace('/\D/', '', $this->input('cpf', ''));
+
+        if ($cpf && !ValidationService::validarCPF($cpf)) {
+            $this->flash('error', 'CPF inválido.');
+            $this->redirect("/colaboradores/{$id}/editar");
+        }
 
         $data = [
             'nome_completo'  => trim($this->input('nome_completo', '')),

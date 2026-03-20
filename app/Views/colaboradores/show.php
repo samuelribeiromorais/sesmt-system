@@ -9,6 +9,26 @@ function statusSemaforo($status) {
 }
 ?>
 
+<!-- Resumo de Conformidade -->
+<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; margin-bottom:24px;">
+    <div class="stat-card">
+        <div class="stat-value"><?= ($docsVigentes + $certsVigentes) ?></div>
+        <div class="stat-label">Em dia</div>
+    </div>
+    <div class="stat-card" style="border-left:4px solid #f39c12;">
+        <div class="stat-value" style="color:#f39c12;"><?= ($docsVencendo + $certsVencendo) ?></div>
+        <div class="stat-label">Vencendo em 30 dias</div>
+    </div>
+    <div class="stat-card" style="border-left:4px solid #e74c3c;">
+        <div class="stat-value" style="color:#e74c3c;"><?= ($docsVencidos + $certsVencidos) ?></div>
+        <div class="stat-label">Vencidos</div>
+    </div>
+    <div class="stat-card" style="border-left:4px solid #00b279;">
+        <div class="stat-value" style="color:#00b279;"><?= round($taxaConformidade) ?>%</div>
+        <div class="stat-label">Conformidade</div>
+    </div>
+</div>
+
 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px;">
     <div>
         <h2 style="font-size:24px; margin-bottom:4px;"><?= htmlspecialchars($colab['nome_completo']) ?></h2>
@@ -50,7 +70,7 @@ function statusSemaforo($status) {
             <thead><tr><th>Tipo</th><th>Validade</th><th>Status</th></tr></thead>
             <tbody>
                 <?php if (empty($certificados)): ?>
-                <tr><td colspan="3" style="text-align:center;color:#6b7280;">Nenhum certificado</td></tr>
+                <tr><td colspan="3" style="text-align:center;color:var(--c-gray);">Nenhum certificado</td></tr>
                 <?php else: ?>
                 <?php foreach ($certificados as $cert): ?>
                 <tr>
@@ -79,7 +99,7 @@ function statusSemaforo($status) {
             <thead><tr><th>Tipo</th><th>Emissao</th><th>Validade</th><th>Acoes</th></tr></thead>
             <tbody>
                 <?php if (empty($documentos)): ?>
-                <tr><td colspan="4" style="text-align:center;color:#6b7280;">Nenhum documento</td></tr>
+                <tr><td colspan="4" style="text-align:center;color:var(--c-gray);">Nenhum documento</td></tr>
                 <?php else: ?>
                 <?php foreach ($documentos as $doc): ?>
                 <tr>
@@ -112,9 +132,9 @@ function statusSemaforo($status) {
 
 <!-- PDF Viewer Modal -->
 <div id="pdf-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
-    <div style="background:white; border-radius:8px; width:90%; max-width:900px; height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-bottom:1px solid #e5e7eb;">
-            <span id="pdf-title" style="font-weight:600; font-size:14px; color:#001e21;"></span>
+    <div style="background:var(--c-white); border-radius:8px; width:90%; max-width:900px; height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-bottom:1px solid var(--c-border);">
+            <span id="pdf-title" style="font-weight:600; font-size:14px; color:var(--c-text);"></span>
             <div style="display:flex; gap:8px;">
                 <a id="pdf-download" href="#" class="btn btn-outline btn-sm">Baixar</a>
                 <button type="button" class="btn btn-outline btn-sm" onclick="closePdfModal()" style="font-size:18px; line-height:1; padding:4px 10px;">&times;</button>
@@ -154,14 +174,14 @@ function statusSemaforo($status) {
     </div>
     <div style="padding:20px;">
         <?php foreach ($historico as $h): ?>
-        <div style="display:flex; gap:12px; padding:10px 0; border-bottom:1px solid #f0f0f0;">
-            <div style="min-width:80px; font-size:12px; color:#6b7280;">
+        <div style="display:flex; gap:12px; padding:10px 0; border-bottom:1px solid var(--c-border);">
+            <div style="min-width:80px; font-size:12px; color:var(--c-gray);">
                 <?= date('d/m/Y', strtotime($h['criado_em'])) ?><br>
                 <span style="font-size:11px;"><?= date('H:i', strtotime($h['criado_em'])) ?></span>
             </div>
             <div style="flex:1;">
-                <span style="font-size:13px; color:#001e21;"><?= htmlspecialchars($h['descricao']) ?></span>
-                <span style="font-size:12px; color:#6b7280; margin-left:8px;">por <?= htmlspecialchars($h['usuario_nome'] ?? 'Sistema') ?></span>
+                <span style="font-size:13px; color:var(--c-text);"><?= htmlspecialchars($h['descricao']) ?></span>
+                <span style="font-size:12px; color:var(--c-gray); margin-left:8px;">por <?= htmlspecialchars($h['usuario_nome'] ?? 'Sistema') ?></span>
             </div>
         </div>
         <?php endforeach; ?>

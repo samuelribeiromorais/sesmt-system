@@ -10,6 +10,7 @@ use App\Models\ApiToken;
 use App\Models\Usuario;
 use App\Models\SessaoAtiva;
 use App\Services\TotpService;
+use App\Services\CryptoService;
 
 class UsuarioController extends Controller
 {
@@ -108,6 +109,7 @@ class UsuarioController extends Controller
         $userId = Session::get('user_id');
         if (!$userId) {
             $this->json(['error' => 'Nao autenticado'], 401);
+            return;
         }
 
         $tema = $this->input('tema', 'light');
@@ -194,7 +196,7 @@ class UsuarioController extends Controller
 
         $model = new Usuario();
         $model->update($userId, [
-            'totp_secret' => $secret,
+            'totp_secret' => CryptoService::encrypt($secret),
             'totp_ativo'  => 1,
         ]);
 
@@ -449,11 +451,12 @@ class UsuarioController extends Controller
         }
 
         $token = bin2hex(random_bytes(32)); // 64 hex chars
+        $tokenHash = hash('sha256', $token);
 
         $model = new ApiToken();
         $model->create([
             'usuario_id' => $userId,
-            'token'      => $token,
+            'token_hash' => $tokenHash,
             'nome'       => $nome,
             'ativo'      => 1,
             'criado_em'  => date('Y-m-d H:i:s'),

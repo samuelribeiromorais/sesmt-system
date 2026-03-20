@@ -40,6 +40,8 @@ abstract class Model
         $sql .= " ORDER BY {$orderBy}";
 
         if ($limit > 0) {
+            $limit = (int)$limit;
+            $offset = (int)$offset;
             $sql .= " LIMIT {$limit} OFFSET {$offset}";
         }
 

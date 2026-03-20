@@ -135,17 +135,17 @@ async function apiFetch(url, options = {}) {
             .catch(() => {});
     }
 
-    // Toggle dropdown
+    // Toggle dropdown on bell click
     bell.addEventListener('click', function(e) {
-        e.stopPropagation();
+        e.preventDefault();
         dropdownOpen = !dropdownOpen;
         dropdown.style.display = dropdownOpen ? 'block' : 'none';
         if (dropdownOpen) fetchNotifications();
     });
 
-    // Close dropdown on outside click
-    document.addEventListener('click', function(e) {
-        if (!bell.contains(e.target)) {
+    // Close dropdown on outside mousedown (fires before click, avoids conflicts)
+    document.addEventListener('mousedown', function(e) {
+        if (dropdownOpen && !bell.contains(e.target) && !dropdown.contains(e.target)) {
             dropdownOpen = false;
             dropdown.style.display = 'none';
         }
@@ -232,10 +232,14 @@ async function apiFetch(url, options = {}) {
         }
 
         debounceTimer = setTimeout(function() {
-            apiFetch('/busca/json?q=' + encodeURIComponent(q))
-                .then(data => {
-                    const results = data.results || {};
-                    const categories = Object.keys(results);
+            fetch('/busca/json?q=' + encodeURIComponent(q), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin'
+            })
+            .then(function(resp) { return resp.json(); })
+            .then(function(data) {
+                    var results = data.results || {};
+                    var categories = Object.keys(results);
 
                     if (categories.length === 0) {
                         resultsDiv.innerHTML = '<div style="padding:14px; text-align:center; color:var(--c-gray); font-size:13px;">Nenhum resultado para "' + escapeHtml(q) + '"</div>';
@@ -243,10 +247,10 @@ async function apiFetch(url, options = {}) {
                         return;
                     }
 
-                    let html = '';
-                    categories.forEach(cat => {
+                    var html = '';
+                    categories.forEach(function(cat) {
                         html += '<div class="search-category">' + (categoryLabels[cat] || cat) + '</div>';
-                        results[cat].forEach(item => {
+                        results[cat].forEach(function(item) {
                             html += '<a href="' + escapeHtml(item.link) + '" class="search-item">' +
                                 '<strong>' + escapeHtml(item.titulo) + '</strong>' +
                                 '<span class="search-sub">' + escapeHtml(item.subtitulo || '') + '</span>' +
@@ -261,7 +265,7 @@ async function apiFetch(url, options = {}) {
                     resultsDiv.innerHTML = html;
                     resultsDiv.style.display = 'block';
                 })
-                .catch(() => { resultsDiv.style.display = 'none'; });
+                .catch(function(err) { console.error('Busca erro:', err); resultsDiv.style.display = 'none'; });
         }, 300);
     });
 
@@ -303,3 +307,181 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// =============================================
+// Feature 4: Loading Overlay
+// =============================================
+(function() {
+    // Create loading overlay element
+    var overlay = document.createElement('div');
+    overlay.className = 'loading-overlay';
+    overlay.id = 'loadingOverlay';
+    overlay.innerHTML = '<div class="loading-spinner"></div>';
+    document.body.appendChild(overlay);
+
+    // Show loading on form submit (except search forms)
+    document.querySelectorAll('form').forEach(function(form) {
+        if (form.querySelector('[type="search"]') || form.closest('.search-box')) return;
+        form.addEventListener('submit', function() {
+            var btn = form.querySelector('[type="submit"]');
+            if (btn) btn.classList.add('btn-loading');
+            // Show overlay for file uploads
+            if (form.querySelector('input[type="file"]')) {
+                overlay.classList.add('active');
+            }
+        });
+    });
+
+    // Show loading on navigation links that trigger actions
+    window.showLoading = function() {
+        overlay.classList.add('active');
+    };
+    window.hideLoading = function() {
+        overlay.classList.remove('active');
+        document.querySelectorAll('.btn-loading').forEach(function(b) { b.classList.remove('btn-loading'); });
+    };
+})();
+
+// =============================================
+// Feature 5: Toast Notifications
+// =============================================
+(function() {
+    // Create toast container
+    var container = document.createElement('div');
+    container.className = 'toast-container';
+    container.id = 'toastContainer';
+    document.body.appendChild(container);
+
+    window.showToast = function(message, type, duration) {
+        type = type || 'success';
+        duration = duration || 4000;
+        var toast = document.createElement('div');
+        toast.className = 'toast toast-' + type;
+        var icon = type === 'success' ? '✓' : type === 'error' ? '✗' : '⚠';
+        toast.innerHTML = '<span style="font-weight:700;font-size:16px;">' + icon + '</span>' +
+            '<span>' + escapeHtml(message) + '</span>' +
+            '<button class="toast-close" onclick="this.parentElement.remove()">&times;</button>';
+        container.appendChild(toast);
+        setTimeout(function() {
+            toast.style.animation = 'slideOut 0.3s ease forwards';
+            setTimeout(function() { toast.remove(); }, 300);
+        }, duration);
+    };
+
+    // Convert existing flash alerts to toasts
+    document.querySelectorAll('.alert').forEach(function(alert) {
+        var type = alert.classList.contains('alert-error') ? 'error' :
+                   alert.classList.contains('alert-warning') ? 'warning' : 'success';
+        showToast(alert.textContent.trim(), type, 5000);
+        alert.remove();
+    });
+})();
+
+// =============================================
+// Feature 6: Bulk Actions
+// =============================================
+(function() {
+    // Only activate on pages with tables that have checkboxes
+    var tables = document.querySelectorAll('table');
+    tables.forEach(function(table) {
+        var checkboxes = table.querySelectorAll('.row-checkbox');
+        if (checkboxes.length === 0) return;
+
+        var bulkBar = table.closest('.table-container')?.querySelector('.bulk-bar');
+        if (!bulkBar) return;
+
+        var selectAll = table.querySelector('.select-all');
+        var countSpan = bulkBar.querySelector('.bulk-count');
+
+        function updateBulkBar() {
+            var checked = table.querySelectorAll('.row-checkbox:checked');
+            if (checked.length > 0) {
+                bulkBar.classList.add('active');
+                if (countSpan) countSpan.textContent = checked.length + ' selecionado(s)';
+            } else {
+                bulkBar.classList.remove('active');
+            }
+        }
+
+        checkboxes.forEach(function(cb) {
+            cb.addEventListener('change', updateBulkBar);
+        });
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function() {
+                checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+                updateBulkBar();
+            });
+        }
+    });
+
+    // Export selected IDs
+    window.bulkExport = function(tableId) {
+        var ids = [];
+        document.querySelectorAll('#' + tableId + ' .row-checkbox:checked').forEach(function(cb) {
+            ids.push(cb.value);
+        });
+        if (ids.length === 0) { showToast('Selecione pelo menos um item.', 'warning'); return; }
+        window.location.href = '/exportar/documentos?ids=' + ids.join(',');
+    };
+
+    // Delete selected
+    window.bulkDelete = function(tableId) {
+        var ids = [];
+        document.querySelectorAll('#' + tableId + ' .row-checkbox:checked').forEach(function(cb) {
+            ids.push(cb.value);
+        });
+        if (ids.length === 0) { showToast('Selecione pelo menos um item.', 'warning'); return; }
+        if (!confirm('Excluir ' + ids.length + ' documento(s)? Esta acao nao pode ser desfeita.')) return;
+        showLoading();
+        fetch('/documentos/excluir-lote', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ ids: ids })
+        }).then(function(r) { return r.json(); })
+          .then(function(data) {
+              hideLoading();
+              if (data.success) {
+                  showToast(data.message || ids.length + ' documento(s) excluido(s).', 'success');
+                  setTimeout(function() { window.location.reload(); }, 1000);
+              } else {
+                  showToast(data.error || 'Erro ao excluir.', 'error');
+              }
+          }).catch(function() { hideLoading(); showToast('Erro de conexao.', 'error'); });
+    };
+})();
+
+// =============================================
+// Feature 7: Search Feedback
+// =============================================
+(function() {
+    var globalInput = document.getElementById('globalSearch');
+    var resultsDiv = document.getElementById('globalSearchResults');
+    if (!globalInput || !resultsDiv) return;
+
+    // Add searching indicator
+    var originalPlaceholder = globalInput.placeholder;
+    var searchObserver = new MutationObserver(function() {
+        if (resultsDiv.style.display === 'block' && resultsDiv.innerHTML.includes('Carregando')) {
+            globalInput.placeholder = 'Buscando...';
+        } else {
+            globalInput.placeholder = originalPlaceholder;
+        }
+    });
+    searchObserver.observe(resultsDiv, { attributes: true, childList: true });
+})();
+
+// =============================================
+// Feature 8: Keyboard Shortcuts Help
+// =============================================
+(function() {
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+K / Cmd+K = Focus search (already implemented)
+        // Escape = Close modals/dropdowns
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal-overlay.active').forEach(function(m) {
+                m.classList.remove('active');
+            });
+        }
+    });
+})();

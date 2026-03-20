@@ -258,12 +258,12 @@ CREATE TABLE IF NOT EXISTS logs_acesso (
     descricao TEXT NULL,
     ip_address VARCHAR(45) NULL,
     user_agent VARCHAR(500) NULL,
+    contexto JSON NULL,
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL,
     INDEX idx_usuario (usuario_id),
     INDEX idx_acao (acao),
     INDEX idx_criado (criado_em),
-    -- Audit log viewer (feature 17)
     INDEX idx_descricao (descricao(100))
 ) ENGINE=InnoDB;
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle ?? 'SESMT') ?> - TSE Engenharia</title>
-    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/style.css?v=6">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#005e4e">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,7 +14,7 @@
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <a href="/dashboard" class="sidebar-header" style="text-decoration:none; color:inherit; justify-content:center;">
-            <img src="/assets/img/logo-tse.png" alt="TSE Engenharia e Automacao" class="sidebar-logo" style="height:auto; width:85%; max-width:200px;">
+            <img src="/assets/img/logo-tse.png?v=2" alt="TSESMT Engenharia e Automacao" class="sidebar-logo">
         </a>
 
         <nav class="sidebar-nav">
@@ -150,7 +150,7 @@
         </div>
     </main>
 
-    <script src="/assets/js/app.js"></script>
+    <script src="/assets/js/app.js?v=3"></script>
     <script>
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').catch(() => {});

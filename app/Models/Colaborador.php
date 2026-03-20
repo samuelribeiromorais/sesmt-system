@@ -23,6 +23,8 @@ class Colaborador extends Model
             $params['status'] = $status;
         }
 
+        $limit = (int)$limit;
+        $offset = (int)$offset;
         $sql .= " ORDER BY c.nome_completo ASC LIMIT {$limit} OFFSET {$offset}";
 
         $stmt = $this->db->prepare($sql);
@@ -66,6 +68,8 @@ class Colaborador extends Model
         $sql .= " ORDER BY {$orderBy}";
 
         if ($limit > 0) {
+            $limit = (int)$limit;
+            $offset = (int)$offset;
             $sql .= " LIMIT {$limit} OFFSET {$offset}";
         }
 

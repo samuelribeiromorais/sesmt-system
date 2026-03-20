@@ -6,6 +6,7 @@ use App\Core\Controller;
 use App\Core\Session;
 use App\Middleware\RoleMiddleware;
 use App\Middleware\LoggerMiddleware;
+use App\Core\Database;
 use App\Models\Documento;
 use App\Models\Colaborador;
 use App\Models\TipoDocumento;
@@ -21,11 +22,34 @@ class DocumentoController extends Controller
         $status = $this->input('status', '');
         $categoria = $this->input('categoria', '');
         $search = trim($this->input('q', ''));
+        $mostrarInativos = (int)$this->input('mostrar_inativos', 0);
         $page = max(1, (int)$this->input('page', 1));
         $perPage = 30;
         $offset = ($page - 1) * $perPage;
 
-        // Contadores
+        // Filtro de colaboradores ativos por padrao
+        $colabFilter = $mostrarInativos ? "" : " AND c.status = 'ativo'";
+
+        // View base: apenas o documento mais recente de cada tipo por colaborador (sem duplicatas)
+        $viewBase = "(
+            SELECT d2.* FROM documentos d2
+            INNER JOIN (
+                SELECT colaborador_id, tipo_documento_id, MAX(id) as max_id
+                FROM (
+                    SELECT id, colaborador_id, tipo_documento_id,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY colaborador_id, tipo_documento_id
+                               ORDER BY data_emissao DESC, id DESC
+                           ) as rn
+                    FROM documentos
+                    WHERE status != 'obsoleto' AND excluido_em IS NULL
+                ) ranked
+                WHERE rn = 1
+                GROUP BY colaborador_id, tipo_documento_id
+            ) latest ON d2.id = latest.max_id
+        )";
+
+        // Contadores (respeitando filtro de colaboradores ativos)
         $contadores = [
             'total' => 0,
             'vigente' => 0,
@@ -33,7 +57,9 @@ class DocumentoController extends Controller
             'vencido' => 0,
         ];
         $countRows = $model->query(
-            "SELECT status, COUNT(*) as total FROM documentos WHERE status != 'obsoleto' AND excluido_em IS NULL GROUP BY status"
+            "SELECT d.status, COUNT(*) as total FROM {$viewBase} d
+             JOIN colaboradores c ON d.colaborador_id = c.id
+             WHERE 1=1{$colabFilter} GROUP BY d.status"
         );
         foreach ($countRows as $row) {
             $contadores[$row['status']] = (int)$row['total'];
@@ -42,14 +68,14 @@ class DocumentoController extends Controller
 
         // Query principal
         $sql = "SELECT d.*, c.nome_completo, td.nome as tipo_nome, td.categoria
-                FROM documentos d
+                FROM {$viewBase} d
                 JOIN colaboradores c ON d.colaborador_id = c.id
                 JOIN tipos_documento td ON d.tipo_documento_id = td.id
-                WHERE d.status != 'obsoleto' AND d.excluido_em IS NULL";
-        $countSql = "SELECT COUNT(*) as total FROM documentos d
+                WHERE 1=1{$colabFilter}";
+        $countSql = "SELECT COUNT(*) as total FROM {$viewBase} d
                      JOIN colaboradores c ON d.colaborador_id = c.id
                      JOIN tipos_documento td ON d.tipo_documento_id = td.id
-                     WHERE d.status != 'obsoleto' AND d.excluido_em IS NULL";
+                     WHERE 1=1{$colabFilter}";
         $params = [];
 
         if ($status) {
@@ -74,7 +100,9 @@ class DocumentoController extends Controller
         $totalItems = (int)($totalResult[0]['total'] ?? 0);
         $totalPages = max(1, ceil($totalItems / $perPage));
 
-        $sql .= " ORDER BY d.criado_em DESC LIMIT {$perPage} OFFSET {$offset}";
+        $perPage = (int)$perPage;
+        $offset = (int)$offset;
+        $sql .= " ORDER BY c.nome_completo ASC, td.nome ASC LIMIT {$perPage} OFFSET {$offset}";
         $documentos = $model->query($sql, $params);
 
         // JSON response for lazy loading
@@ -92,22 +120,24 @@ class DocumentoController extends Controller
                     'status'          => $d['status'],
                     'arquivo_nome'    => $d['arquivo_nome'] ?? '',
                 ], $documentos),
-                'page'       => $page,
-                'totalPages' => $totalPages,
-                'total'      => $totalItems,
+                'page'            => $page,
+                'totalPages'      => $totalPages,
+                'total'           => $totalItems,
+                'mostrarInativos' => $mostrarInativos,
             ]);
             return;
         }
 
         $this->view('documentos/index', [
-            'documentos' => $documentos,
-            'contadores' => $contadores,
-            'status'     => $status,
-            'categoria'  => $categoria,
-            'search'     => $search,
-            'page'       => $page,
-            'totalPages' => $totalPages,
-            'pageTitle'  => 'Documentos',
+            'documentos'      => $documentos,
+            'contadores'      => $contadores,
+            'status'          => $status,
+            'categoria'       => $categoria,
+            'search'          => $search,
+            'mostrarInativos' => $mostrarInativos,
+            'page'            => $page,
+            'totalPages'      => $totalPages,
+            'pageTitle'       => 'Documentos',
         ]);
     }
 
@@ -205,9 +235,6 @@ class DocumentoController extends Controller
             $nextVersion = $docModel->getLatestVersion($documentoPaiId) + 1;
         }
 
-        // Mark previous documents of same type as obsolete (once for the batch)
-        $docModel->markAsObsolete($colaboradorId, $tipoDocumentoId);
-
         // Determine status
         $status = 'vigente';
         if ($dataValidade) {
@@ -225,49 +252,77 @@ class DocumentoController extends Controller
         $colabModel = new Colaborador();
         $colab = $colabModel->find($colaboradorId);
         $uploadedCount = 0;
+        $movedFiles = [];
 
-        // Process each file
-        for ($i = 0; $i < $fileCount; $i++) {
-            if ($files['error'][$i] !== UPLOAD_ERR_OK) continue;
+        // Atomic transaction: wrap DB + file operations
+        $db = Database::getInstance();
+        $db->beginTransaction();
 
-            $fileHash = hash_file('sha256', $files['tmp_name'][$i]);
-            $ext = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
-            $safeName = $fileHash . '.' . strtolower($ext);
-            $destPath = $uploadDir . '/' . $safeName;
+        try {
+            // Mark previous documents of same type as obsolete (once for the batch)
+            $docModel->markAsObsolete($colaboradorId, $tipoDocumentoId);
 
-            if (!move_uploaded_file($files['tmp_name'][$i], $destPath)) {
-                continue;
+            // Process each file
+            for ($i = 0; $i < $fileCount; $i++) {
+                if ($files['error'][$i] !== UPLOAD_ERR_OK) continue;
+
+                $fileHash = hash_file('sha256', $files['tmp_name'][$i]);
+                $ext = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
+                $safeName = $fileHash . '.' . strtolower($ext);
+                $destPath = $uploadDir . '/' . $safeName;
+
+                if (!move_uploaded_file($files['tmp_name'][$i], $destPath)) {
+                    throw new \Exception('Falha ao mover arquivo: ' . $files['name'][$i]);
+                }
+                $movedFiles[] = $destPath;
+
+                $createData = [
+                    'colaborador_id'    => $colaboradorId,
+                    'tipo_documento_id' => $tipoDocumentoId,
+                    'arquivo_nome'      => $files['name'][$i],
+                    'arquivo_path'      => $colaboradorId . '/' . $safeName,
+                    'arquivo_hash'      => $fileHash,
+                    'arquivo_tamanho'   => $files['size'][$i],
+                    'data_emissao'      => $dataEmissao,
+                    'data_validade'     => $dataValidade,
+                    'status'            => $status,
+                    'observacoes'       => $observacoes,
+                    'enviado_por'       => Session::get('user_id'),
+                    'versao'            => $nextVersion,
+                    'documento_pai_id'  => $documentoPaiId,
+                ];
+
+                $id = $docModel->create($createData);
+
+                // If this is the first document (no original existed), it becomes its own root
+                // documento_pai_id stays NULL for the root document
+
+                LoggerMiddleware::log('upload', "Documento enviado: {$tipo['nome']} v{$nextVersion} para {$colab['nome_completo']} (Doc ID: {$id})");
+                $uploadedCount++;
+                $nextVersion++;
             }
 
-            $createData = [
-                'colaborador_id'    => $colaboradorId,
-                'tipo_documento_id' => $tipoDocumentoId,
-                'arquivo_nome'      => $files['name'][$i],
-                'arquivo_path'      => $colaboradorId . '/' . $safeName,
-                'arquivo_hash'      => $fileHash,
-                'arquivo_tamanho'   => $files['size'][$i],
-                'data_emissao'      => $dataEmissao,
-                'data_validade'     => $dataValidade,
-                'status'            => $status,
-                'observacoes'       => $observacoes,
-                'enviado_por'       => Session::get('user_id'),
-                'versao'            => $nextVersion,
-                'documento_pai_id'  => $documentoPaiId,
-            ];
+            if ($uploadedCount === 0) {
+                throw new \Exception('Nenhum arquivo foi processado com sucesso.');
+            }
 
-            $id = $docModel->create($createData);
-
-            // If this is the first document (no original existed), it becomes its own root
-            // documento_pai_id stays NULL for the root document
-
-            LoggerMiddleware::log('upload', "Documento enviado: {$tipo['nome']} v{$nextVersion} para {$colab['nome_completo']} (Doc ID: {$id})");
-            $uploadedCount++;
-            $nextVersion++;
+            $db->commit();
+        } catch (\Exception $e) {
+            $db->rollBack();
+            // Clean up any files that were moved
+            foreach ($movedFiles as $filePath) {
+                if (file_exists($filePath)) {
+                    unlink($filePath);
+                }
+            }
+            $this->flash('error', 'Erro ao enviar documento: ' . $e->getMessage());
+            $this->redirect("/documentos/upload/{$colaboradorId}");
         }
 
-        if ($uploadedCount === 0) {
-            $this->flash('error', 'Erro ao salvar os arquivos. Tente novamente.');
-        } elseif ($uploadedCount === 1) {
+        // Invalidate dashboard cache
+        DashboardController::clearCache();
+
+        if ($uploadedCount === 1) {
             $this->flash('success', 'Documento enviado com sucesso.');
         } else {
             $this->flash('success', "{$uploadedCount} documentos enviados com sucesso.");
@@ -287,7 +342,15 @@ class DocumentoController extends Controller
         }
 
         $config = require dirname(__DIR__) . '/config/app.php';
-        $filePath = $config['upload']['path'] . '/' . $doc['arquivo_path'];
+        $fullPath = $config['upload']['path'] . '/' . $doc['arquivo_path'];
+
+        // Path traversal protection
+        $basePath = realpath($config['upload']['path']);
+        $filePath = realpath($fullPath);
+        if (!$filePath || !$basePath || strpos($filePath, $basePath) !== 0) {
+            http_response_code(403);
+            exit('Acesso negado');
+        }
 
         if (!file_exists($filePath)) {
             $this->flash('error', 'Arquivo nao encontrado no servidor.');
@@ -316,7 +379,15 @@ class DocumentoController extends Controller
         }
 
         $config = require dirname(__DIR__) . '/config/app.php';
-        $filePath = $config['upload']['path'] . '/' . $doc['arquivo_path'];
+        $fullPath = $config['upload']['path'] . '/' . $doc['arquivo_path'];
+
+        // Path traversal protection
+        $basePath = realpath($config['upload']['path']);
+        $filePath = realpath($fullPath);
+        if (!$filePath || !$basePath || strpos($filePath, $basePath) !== 0) {
+            http_response_code(403);
+            exit('Acesso negado');
+        }
 
         if (!file_exists($filePath)) {
             http_response_code(404);
@@ -440,8 +511,47 @@ class DocumentoController extends Controller
                 'excluido_em' => date('Y-m-d H:i:s'),
             ]);
             LoggerMiddleware::log('excluir', "Documento movido para lixeira: {$doc['arquivo_nome']} (ID: {$id})");
+            DashboardController::clearCache();
             $this->flash('success', 'Documento movido para a lixeira.');
         }
         $this->redirect("/colaboradores/{$doc['colaborador_id']}");
+    }
+
+    /**
+     * Exclusao em lote (soft delete) via AJAX
+     */
+    public function destroyBatch(): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $ids = $input['ids'] ?? [];
+
+        if (empty($ids) || !is_array($ids)) {
+            $this->json(['success' => false, 'error' => 'Nenhum documento selecionado.'], 400);
+            return;
+        }
+
+        $docModel = new Documento();
+        $count = 0;
+        $now = date('Y-m-d H:i:s');
+
+        foreach ($ids as $id) {
+            $id = (int)$id;
+            $doc = $docModel->find($id);
+            if ($doc && empty($doc['excluido_em'])) {
+                $docModel->update($id, ['excluido_em' => $now]);
+                $count++;
+            }
+        }
+
+        LoggerMiddleware::log('excluir', "Exclusao em lote: {$count} documento(s) movidos para lixeira");
+        DashboardController::clearCache();
+
+        $this->json([
+            'success' => true,
+            'message' => "{$count} documento(s) movido(s) para a lixeira.",
+            'count' => $count,
+        ]);
     }
 }

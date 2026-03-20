@@ -10,22 +10,63 @@ class Documento extends Model
 
     public function findByColaborador(int $colaboradorId): array
     {
+        // Retorna apenas o documento mais recente de cada tipo (vigente, proximo_vencimento ou vencido)
+        // Para cada tipo_documento_id, pega o de emissão mais recente (desempate por id mais alto)
+        // Exclui obsoletos — só mostra o documento atual de cada tipo
         $stmt = $this->db->prepare(
             "SELECT d.*, td.nome as tipo_nome, td.categoria, u.nome as enviado_por_nome
-             FROM documentos d
+             FROM (
+                 SELECT *, ROW_NUMBER() OVER (
+                     PARTITION BY tipo_documento_id
+                     ORDER BY data_emissao DESC, id DESC
+                 ) as rn
+                 FROM documentos
+                 WHERE colaborador_id = :cid
+                   AND status != 'obsoleto'
+                   AND excluido_em IS NULL
+             ) d
              JOIN tipos_documento td ON d.tipo_documento_id = td.id
              LEFT JOIN usuarios u ON d.enviado_por = u.id
-             WHERE d.colaborador_id = :cid AND d.status != 'obsoleto' AND d.excluido_em IS NULL
-             ORDER BY td.categoria, td.nome, d.data_emissao DESC"
+             WHERE d.rn = 1
+             ORDER BY td.categoria, td.nome"
         );
         $stmt->execute(['cid' => $colaboradorId]);
         return $stmt->fetchAll();
     }
 
+    /**
+     * Subquery que retorna apenas o documento mais recente de cada tipo por colaborador.
+     * Usado como base em todas as consultas para evitar duplicatas.
+     */
+    private function latestDocsSubquery(): string
+    {
+        return "(
+            SELECT d2.* FROM documentos d2
+            INNER JOIN (
+                SELECT MAX(id) as max_id
+                FROM (
+                    SELECT id, colaborador_id, tipo_documento_id,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY colaborador_id, tipo_documento_id
+                               ORDER BY data_emissao DESC, id DESC
+                           ) as rn
+                    FROM documentos
+                    WHERE status != 'obsoleto' AND excluido_em IS NULL
+                ) ranked
+                WHERE rn = 1
+                GROUP BY colaborador_id, tipo_documento_id
+            ) latest ON d2.id = latest.max_id
+        )";
+    }
+
     public function countByStatus(): array
     {
+        $sub = $this->latestDocsSubquery();
         $stmt = $this->db->query(
-            "SELECT status, COUNT(*) as total FROM documentos WHERE status != 'obsoleto' AND excluido_em IS NULL GROUP BY status"
+            "SELECT d.status, COUNT(*) as total FROM {$sub} d
+             JOIN colaboradores c ON d.colaborador_id = c.id
+             WHERE c.status = 'ativo'
+             GROUP BY d.status"
         );
         $result = [];
         foreach ($stmt->fetchAll() as $row) {
@@ -36,17 +77,17 @@ class Documento extends Model
 
     public function getExpiring(int $days = 30, int $limit = 20): array
     {
+        $sub = $this->latestDocsSubquery();
         $stmt = $this->db->prepare(
-            "SELECT d.*, c.nome_completo, td.nome as tipo_nome,
+            "SELECT d.*, c.nome_completo, c.cliente_id, td.nome as tipo_nome,
                     DATEDIFF(d.data_validade, CURDATE()) as dias_restantes
-             FROM documentos d
+             FROM {$sub} d
              JOIN colaboradores c ON d.colaborador_id = c.id
              JOIN tipos_documento td ON d.tipo_documento_id = td.id
-             WHERE d.status IN ('vigente','proximo_vencimento')
-               AND d.data_validade IS NOT NULL
+             WHERE d.data_validade IS NOT NULL
                AND d.data_validade <= DATE_ADD(CURDATE(), INTERVAL :days DAY)
                AND d.data_validade >= CURDATE()
-               AND d.excluido_em IS NULL
+               AND c.status = 'ativo'
              ORDER BY d.data_validade ASC
              LIMIT :lim"
         );
@@ -58,16 +99,16 @@ class Documento extends Model
 
     public function getExpired(int $limit = 20): array
     {
+        $sub = $this->latestDocsSubquery();
         $stmt = $this->db->prepare(
-            "SELECT d.*, c.nome_completo, td.nome as tipo_nome,
+            "SELECT d.*, c.nome_completo, c.cliente_id, td.nome as tipo_nome,
                     DATEDIFF(CURDATE(), d.data_validade) as dias_vencido
-             FROM documentos d
+             FROM {$sub} d
              JOIN colaboradores c ON d.colaborador_id = c.id
              JOIN tipos_documento td ON d.tipo_documento_id = td.id
              WHERE d.data_validade IS NOT NULL
                AND d.data_validade < CURDATE()
-               AND d.status != 'obsoleto'
-               AND d.excluido_em IS NULL
+               AND c.status = 'ativo'
              ORDER BY d.data_validade ASC
              LIMIT :lim"
         );

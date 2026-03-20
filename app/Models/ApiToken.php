@@ -10,14 +10,15 @@ class ApiToken extends Model
 
     public function findByToken(string $token): ?array
     {
+        $tokenHash = hash('sha256', $token);
         $stmt = $this->db->prepare(
             "SELECT t.*, u.nome as usuario_nome, u.email as usuario_email, u.perfil as usuario_perfil
              FROM api_tokens t
              JOIN usuarios u ON t.usuario_id = u.id
-             WHERE t.token = :token AND t.ativo = 1
+             WHERE t.token_hash = :token_hash AND t.ativo = 1
              LIMIT 1"
         );
-        $stmt->execute(['token' => $token]);
+        $stmt->execute(['token_hash' => $tokenHash]);
         $result = $stmt->fetch();
         return $result ?: null;
     }

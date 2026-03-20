@@ -253,7 +253,7 @@ $docs = $db->query("SELECT d.id, d.arquivo_nome, d.arquivo_path, d.data_emissao,
     JOIN tipos_documento td ON d.tipo_documento_id=td.id
     JOIN colaboradores c ON c.id=d.colaborador_id
     WHERE d.status != 'obsoleto' AND c.status = 'ativo' AND d.excluido_em IS NULL
-    ORDER BY d.id LIMIT {$batchSize} OFFSET {$offsetStart}")->fetchAll(PDO::FETCH_ASSOC);
+    ORDER BY d.id LIMIT " . (int)$batchSize . " OFFSET " . (int)$offsetStart)->fetchAll(PDO::FETCH_ASSOC);
 
 echo "Total: {$totalDocs} | Batch: " . count($docs) . " (offset {$offsetStart})" . PHP_EOL . PHP_EOL;
 

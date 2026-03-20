@@ -33,18 +33,21 @@ class NotificacaoController extends Controller
         ]);
     }
 
-    public function json(): void
+    public function jsonData(): void
     {
         $userId = Session::get('user_id');
         if (!$userId) {
-            $this->json(['error' => 'Nao autenticado'], 401);
+            header('Content-Type: application/json', true, 401);
+            echo json_encode(['error' => 'Nao autenticado']);
+            exit;
         }
 
         $model = new Notificacao();
         $unreadCount = $model->countUnread((int)$userId);
         $notificacoes = $model->getUnread((int)$userId, 10);
 
-        $this->json([
+        header('Content-Type: application/json');
+        echo json_encode([
             'unread_count'  => $unreadCount,
             'notificacoes'  => array_map(fn($n) => [
                 'id'       => $n['id'],
@@ -54,7 +57,8 @@ class NotificacaoController extends Controller
                 'link'     => $n['link'],
                 'criado_em' => $n['criado_em'],
             ], $notificacoes),
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
     }
 
     public function marcarLida(string $id): void

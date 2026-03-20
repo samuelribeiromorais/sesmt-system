@@ -20,25 +20,25 @@ $corConf = $conformidadeGeral >= 80 ? '#00b279' : ($conformidadeGeral >= 50 ? '#
 
 <!-- Overall Compliance -->
 <div class="cards-row" style="margin-bottom:24px;">
-    <div class="card-stat" style="flex:0 0 280px; text-align:center; border-left:4px solid <?= $corConf ?>; background:#fff;">
+    <a href="#conformidade-table" class="card-stat stat-card-clickable" style="flex:0 0 280px; text-align:center; border-left:4px solid <?= $corConf ?>; background:#fff; text-decoration:none; color:inherit;">
         <div class="card-stat-value" style="font-size:2.5rem; color:<?= $corConf ?>;"><?= $conformidadeGeral ?>%</div>
         <div class="card-stat-label">Conformidade Geral</div>
         <div style="margin-top:12px; background:#e5e7eb; border-radius:6px; height:12px; overflow:hidden;">
             <div style="background:<?= $corConf ?>; height:100%; width:<?= min($conformidadeGeral, 100) ?>%; border-radius:6px; transition:width 0.5s;"></div>
         </div>
-    </div>
-    <div class="card-stat info" style="flex:0 0 180px;">
+    </a>
+    <a href="/colaboradores?obra_id=<?= $obra['id'] ?>" class="card-stat info stat-card-clickable" style="flex:0 0 180px; text-decoration:none; color:inherit;">
         <div class="card-stat-value"><?= count($colaboradores) ?></div>
         <div class="card-stat-label">Colaboradores na Obra</div>
-    </div>
-    <div class="card-stat" style="flex:0 0 180px; border-left:4px solid var(--c-primary); background:#fff;">
+    </a>
+    <a href="/clientes/<?= $obra['cliente_id'] ?? '' ?>" class="card-stat stat-card-clickable" style="flex:0 0 180px; border-left:4px solid var(--c-primary); background:#fff; text-decoration:none; color:inherit;">
         <div class="card-stat-value" style="font-size:1.1rem; color:var(--c-primary);"><?= $totalReqDocs ?> docs / <?= $totalReqCerts ?> certs</div>
         <div class="card-stat-label">Requisitos do Cliente</div>
-    </div>
+    </a>
 </div>
 
 <!-- Collaborator Compliance Table -->
-<div class="table-container">
+<div id="conformidade-table" class="table-container">
     <div class="table-header">
         <span class="table-title">Conformidade por Colaborador</span>
     </div>

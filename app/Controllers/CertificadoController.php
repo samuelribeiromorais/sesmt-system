@@ -19,14 +19,71 @@ class CertificadoController extends Controller
 
         $colabModel = new Colaborador();
         $tipoModel = new TipoCertificado();
+        $certModel = new Certificado();
+        $mostrarInativos = (int)$this->input('mostrar_inativos', 0);
+        $statusFilter = $this->input('status', '');
+        $search = trim($this->input('q', ''));
 
-        $colaboradores = $colabModel->all(['status' => 'ativo'], 'nome_completo ASC');
+        $colaboradores = $mostrarInativos
+            ? $colabModel->all([], 'nome_completo ASC')
+            : $colabModel->all(['status' => 'ativo'], 'nome_completo ASC');
         $tipos = $tipoModel->all(['ativo' => 1], 'codigo ASC');
 
+        // Contadores por status
+        $contadores = $certModel->countByStatus();
+        $contadores['total'] = array_sum($contadores);
+
+        // Listagem de certificados emitidos (com filtro)
+        $page = max(1, (int)$this->input('page', 1));
+        $perPage = 30;
+        $offset = (int)(($page - 1) * $perPage);
+
+        $db = \App\Core\Database::getInstance();
+
+        // Build query with optional status filter
+        $where = "cert.excluido_em IS NULL AND c.status = 'ativo'";
+        $params = [];
+        if ($statusFilter && in_array($statusFilter, ['vigente', 'proximo_vencimento', 'vencido'])) {
+            $where .= " AND cert.status = :status";
+            $params['status'] = $statusFilter;
+        }
+
+        // Search filter
+        if ($search !== '') {
+            $where .= " AND (c.nome_completo LIKE :search OR tc.codigo LIKE :search2)";
+            $params['search'] = "%{$search}%";
+            $params['search2'] = "%{$search}%";
+        }
+
+        // Count
+        $countStmt = $db->prepare("SELECT COUNT(*) FROM certificados cert JOIN colaboradores c ON cert.colaborador_id = c.id JOIN tipos_certificado tc ON cert.tipo_certificado_id = tc.id WHERE {$where}");
+        $countStmt->execute($params);
+        $totalRecords = (int)$countStmt->fetchColumn();
+        $totalPages = max(1, (int)ceil($totalRecords / $perPage));
+
+        // Fetch
+        $sql = "SELECT cert.*, c.nome_completo, tc.codigo as tipo_codigo, tc.titulo as tipo_titulo, tc.duracao, tc.validade_meses
+                FROM certificados cert
+                JOIN colaboradores c ON cert.colaborador_id = c.id
+                JOIN tipos_certificado tc ON cert.tipo_certificado_id = tc.id
+                WHERE {$where}
+                ORDER BY c.nome_completo, tc.codigo
+                LIMIT " . (int)$perPage . " OFFSET " . (int)$offset;
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        $certificadosList = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
         $this->view('certificados/index', [
-            'colaboradores' => $colaboradores,
-            'tipos'         => $tipos,
-            'pageTitle'     => 'Certificados',
+            'colaboradores'    => $colaboradores,
+            'tipos'            => $tipos,
+            'mostrarInativos'  => $mostrarInativos,
+            'contadores'       => $contadores,
+            'certificadosList' => $certificadosList,
+            'status'           => $statusFilter,
+            'search'           => $search,
+            'page'             => $page,
+            'totalPages'       => $totalPages,
+            'pageTitle'        => 'Certificados',
         ]);
     }
 

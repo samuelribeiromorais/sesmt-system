@@ -19,7 +19,7 @@
             <thead><tr><th>Nome</th><th>Local</th><th>Inicio</th><th>Status</th><th>Acoes</th></tr></thead>
             <tbody>
             <?php if (empty($obras)): ?>
-            <tr><td colspan="5" style="text-align:center;color:#6b7280;">Nenhuma obra cadastrada.</td></tr>
+            <tr><td colspan="5" style="text-align:center;color:var(--c-gray);">Nenhuma obra cadastrada.</td></tr>
             <?php else: ?>
             <?php foreach ($obras as $o): ?>
             <tr>
@@ -48,7 +48,7 @@
             <thead><tr><th>Tipo</th><th>Categoria</th><th>Obrigatorio</th><th>Acoes</th></tr></thead>
             <tbody>
             <?php if (empty($requisitos)): ?>
-            <tr><td colspan="4" style="text-align:center;color:#6b7280;">Nenhum requisito configurado.</td></tr>
+            <tr><td colspan="4" style="text-align:center;color:var(--c-gray);">Nenhum requisito configurado.</td></tr>
             <?php else: ?>
             <?php foreach ($requisitos as $req): ?>
             <tr>
@@ -86,7 +86,7 @@
         </table>
 
         <!-- Adicionar requisito -->
-        <div style="padding:16px 20px; border-top:1px solid #e5e7eb; background:#fafafa;">
+        <div style="padding:16px 20px; border-top:1px solid var(--c-border); background:var(--c-bg);">
             <form method="POST" action="/clientes/<?= $cliente['id'] ?>/requisitos" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                 <?= \App\Core\View::csrfField() ?>
                 <select name="tipo_documento_id" class="form-control" style="width:180px;" id="req-doc-select">
@@ -95,7 +95,7 @@
                     <option value="<?= $td['id'] ?>"><?= htmlspecialchars($td['nome']) ?> (<?= strtoupper($td['categoria']) ?>)</option>
                     <?php endforeach; ?>
                 </select>
-                <span style="color:#999; font-size:12px;">ou</span>
+                <span style="color:var(--c-gray); font-size:12px;">ou</span>
                 <select name="tipo_certificado_id" class="form-control" style="width:180px;" id="req-cert-select">
                     <option value="">-- Certificado --</option>
                     <?php foreach ($tiposCerts as $tc): ?>

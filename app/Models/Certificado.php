@@ -35,10 +35,14 @@ class Certificado extends Model
              FROM certificados cert
              JOIN tipos_certificado tc ON cert.tipo_certificado_id = tc.id
              WHERE cert.colaborador_id = :cid
+               AND cert.status IN ('vigente', 'proximo_vencimento')
+               AND cert.excluido_em IS NULL
                AND cert.id = (
                    SELECT MAX(c2.id) FROM certificados c2
                    WHERE c2.colaborador_id = cert.colaborador_id
                      AND c2.tipo_certificado_id = cert.tipo_certificado_id
+                     AND c2.status IN ('vigente', 'proximo_vencimento')
+                     AND c2.excluido_em IS NULL
                )
              ORDER BY tc.codigo"
         );
@@ -49,7 +53,10 @@ class Certificado extends Model
     public function countByStatus(): array
     {
         $stmt = $this->db->query(
-            "SELECT status, COUNT(*) as total FROM certificados WHERE excluido_em IS NULL GROUP BY status"
+            "SELECT cert.status, COUNT(*) as total FROM certificados cert
+             JOIN colaboradores c ON cert.colaborador_id = c.id
+             WHERE cert.excluido_em IS NULL AND c.status = 'ativo'
+             GROUP BY cert.status"
         );
         $result = [];
         foreach ($stmt->fetchAll() as $row) {
@@ -61,7 +68,7 @@ class Certificado extends Model
     public function getExpiring(int $days = 30, int $limit = 20): array
     {
         $stmt = $this->db->prepare(
-            "SELECT cert.*, c.nome_completo, tc.codigo, tc.titulo,
+            "SELECT cert.*, c.nome_completo, c.cliente_id, tc.codigo, tc.titulo,
                     DATEDIFF(cert.data_validade, CURDATE()) as dias_restantes
              FROM certificados cert
              JOIN colaboradores c ON cert.colaborador_id = c.id
@@ -70,6 +77,7 @@ class Certificado extends Model
                AND cert.data_validade <= DATE_ADD(CURDATE(), INTERVAL :days DAY)
                AND cert.data_validade >= CURDATE()
                AND cert.excluido_em IS NULL
+               AND c.status = 'ativo'
              ORDER BY cert.data_validade ASC
              LIMIT :lim"
         );

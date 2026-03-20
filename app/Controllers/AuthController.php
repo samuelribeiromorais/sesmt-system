@@ -9,6 +9,7 @@ use App\Models\Usuario;
 use App\Models\SessaoAtiva;
 use App\Middleware\LoggerMiddleware;
 use App\Services\TotpService;
+use App\Services\CryptoService;
 
 class AuthController extends Controller
 {
@@ -123,7 +124,8 @@ class AuthController extends Controller
         }
 
         $totp = new TotpService();
-        if (!$totp->verify($user['totp_secret'], $code)) {
+        $decryptedSecret = CryptoService::decrypt($user['totp_secret']);
+        if (!$totp->verify($decryptedSecret, $code)) {
             LoggerMiddleware::log('2fa_falha', "Codigo 2FA invalido para: {$user['email']}");
             $this->redirect('/login/2fa?error=invalid');
         }

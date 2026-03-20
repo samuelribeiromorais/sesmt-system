@@ -86,6 +86,7 @@ $router->get('/documentos/{id}/versoes', ['DocumentoController', 'versoes'], ['A
 $router->get('/documentos/{id}/assinar', ['DocumentoController', 'assinar'], ['AuthMiddleware']);
 $router->post('/documentos/{id}/assinar', ['DocumentoController', 'registrarAssinatura'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/documentos/{id}/excluir', ['DocumentoController', 'destroy'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/documentos/excluir-lote', ['DocumentoController', 'destroyBatch'], ['AuthMiddleware']);
 
 // --- Lixeira ---
 $router->get('/lixeira', ['LixeiraController', 'index'], ['AuthMiddleware']);
@@ -150,17 +151,23 @@ $router->post('/usuarios/alterar-senha', ['UsuarioController', 'alterarSenha'], 
 
 // --- Configuracoes ---
 $router->get('/configuracoes', ['ConfigController', 'index'], ['AuthMiddleware']);
-$router->post('/configuracoes/salvar', ['ConfigController', 'save'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/configuracoes/tipo-doc', ['ConfigController', 'salvarTipoDoc'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/configuracoes/tipo-doc/{id}/excluir', ['ConfigController', 'excluirTipoDoc'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/configuracoes/tipo-cert', ['ConfigController', 'salvarTipoCert'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/configuracoes/ministrante', ['ConfigController', 'salvarMinistrante'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/configuracoes/ministrante/{id}/excluir', ['ConfigController', 'excluirMinistrante'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/configuracoes/smtp', ['ConfigController', 'salvarSmtp'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/configuracoes/smtp/testar', ['ConfigController', 'testarSmtp'], ['AuthMiddleware']);
 
 // --- Notificacoes ---
 $router->get('/notificacoes', ['NotificacaoController', 'index'], ['AuthMiddleware']);
-$router->get('/notificacoes/json', ['NotificacaoController', 'json'], ['AuthMiddleware']);
+$router->get('/notificacoes/json', ['NotificacaoController', 'jsonData'], ['AuthMiddleware']);
 $router->post('/notificacoes/marcar-todas', ['NotificacaoController', 'marcarTodasLidas'], ['AuthMiddleware']);
 $router->post('/notificacoes/{id}/lida', ['NotificacaoController', 'marcarLida'], ['AuthMiddleware']);
 
 // --- Busca Global ---
 $router->get('/busca', ['BuscaController', 'index'], ['AuthMiddleware']);
-$router->get('/busca/json', ['BuscaController', 'json'], ['AuthMiddleware']);
+$router->get('/busca/json', ['BuscaController', 'jsonSearch'], ['AuthMiddleware']);
 
 // --- Tema ---
 $router->post('/usuarios/tema', ['UsuarioController', 'salvarTema'], ['AuthMiddleware']);

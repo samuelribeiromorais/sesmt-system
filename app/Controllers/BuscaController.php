@@ -20,20 +20,26 @@ class BuscaController extends Controller
         ]);
     }
 
-    public function json(): void
+    public function jsonSearch(): void
     {
         $userId = Session::get('user_id');
         if (!$userId) {
-            $this->json(['error' => 'Nao autenticado'], 401);
+            header('Content-Type: application/json', true, 401);
+            echo json_encode(['error' => 'Nao autenticado']);
+            exit;
         }
 
         $q = trim($this->input('q', ''));
         if (strlen($q) < 2) {
-            $this->json(['results' => []]);
+            header('Content-Type: application/json');
+            echo json_encode(['results' => []]);
+            exit;
         }
 
         $results = $this->search($q, 10);
-        $this->json(['results' => $results]);
+        header('Content-Type: application/json');
+        echo json_encode(['results' => $results]);
+        exit;
     }
 
     private function search(string $q, int $limitPerCategory = 10): array
@@ -42,6 +48,7 @@ class BuscaController extends Controller
             return [];
         }
 
+        $limitPerCategory = (int)$limitPerCategory;
         $db = Database::getInstance();
         $like = "%{$q}%";
         $results = [];

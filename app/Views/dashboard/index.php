@@ -43,52 +43,51 @@ if (!empty($docs_by_category)) {
 $categoriaNomes = [
     'aso'          => 'ASO',
     'epi'          => 'EPI',
-    'os'           => 'Ordem de Servico',
     'treinamento'  => 'Treinamento',
 ];
 ?>
 
 <!-- ============ STAT CARDS ============ -->
 <div class="cards-row">
-    <div class="card-stat info">
+    <a href="/colaboradores?status=ativo" class="card-stat info stat-card-clickable" style="text-decoration:none; color:inherit;">
         <div class="card-stat-value"><?= $totalAtivos ?></div>
         <div class="card-stat-label">Colaboradores Ativos</div>
-    </div>
-    <div class="card-stat danger">
+    </a>
+    <a href="/documentos?status=vencido" class="card-stat danger stat-card-clickable" style="text-decoration:none; color:inherit;">
         <div class="card-stat-value"><?= $docsVencidos + $certsVencidos ?></div>
         <div class="card-stat-label">Documentos/Certs Vencidos</div>
-    </div>
-    <div class="card-stat warning">
+    </a>
+    <a href="/documentos?status=proximo_vencimento" class="card-stat warning stat-card-clickable" style="text-decoration:none; color:inherit;">
         <div class="card-stat-value"><?= $docsProximos + $certsProximos ?></div>
         <div class="card-stat-label">Vencendo em 30 dias</div>
-    </div>
-    <div class="card-stat ok">
+    </a>
+    <a href="/documentos?status=vigente" class="card-stat ok stat-card-clickable" style="text-decoration:none; color:inherit;">
         <div class="card-stat-value"><?= $docsVigentes + $certsVigentes ?></div>
         <div class="card-stat-label">Em dia</div>
-    </div>
+    </a>
 </div>
 
 <!-- ============ CATEGORY CARDS + MISSING DOCS ============ -->
 <div class="cards-row" style="margin-top: 16px;">
     <?php foreach ($categoriaNomes as $key => $label): ?>
     <?php $cat = $categorias[$key] ?? ['vigente' => 0, 'proximo_vencimento' => 0, 'vencido' => 0]; ?>
-    <div class="card-stat" style="border-left: 4px solid var(--c-primary); background: #fff;">
+    <a href="/documentos?categoria=<?= $key ?>" class="card-stat stat-card-clickable" style="border-left: 4px solid var(--c-primary); background: #fff; text-decoration:none; color:inherit;">
         <div class="card-stat-value" style="font-size: 1.1rem; color: var(--c-primary);"><?= $label ?></div>
         <div class="card-stat-label" style="margin-top: 8px;">
             <span class="badge badge-vigente"><?= $cat['vigente'] ?> vigentes</span>
             <span class="badge badge-proximo"><?= $cat['proximo_vencimento'] ?> vencendo</span>
             <span class="badge badge-vencido"><?= $cat['vencido'] ?> vencidos</span>
         </div>
-    </div>
+    </a>
     <?php endforeach; ?>
 </div>
 
 <?php if (!empty($missing_docs_count) && $missing_docs_count > 0): ?>
 <div class="cards-row" style="margin-top: 16px;">
-    <div class="card-stat warning" style="flex: 0 0 auto; padding: 16px 32px;">
+    <a href="/alertas" class="card-stat warning stat-card-clickable" style="flex: 0 0 auto; padding: 16px 32px; text-decoration:none; color:inherit;">
         <div class="card-stat-value"><?= (int)$missing_docs_count ?></div>
         <div class="card-stat-label">Colaboradores ativos sem categorias obrigatorias</div>
-    </div>
+    </a>
 </div>
 <?php endif; ?>
 
@@ -119,17 +118,17 @@ $jsonVencData = json_encode($vencData);
 </div>
 
 <div class="cards-row" style="margin-top:8px;">
-    <div class="card-stat" style="flex:1; border-left:4px solid <?= $confColor ?>; background:#fff; text-align:center;">
+    <a href="/colaboradores?status=ativo" class="card-stat stat-card-clickable" style="flex:1; border-left:4px solid <?= $confColor ?>; background:#fff; text-align:center; text-decoration:none; color:inherit;">
         <div class="card-stat-value" style="font-size:2rem; color:<?= $confColor ?>;"><?= $kpiConformidade ?>%</div>
         <div class="card-stat-label">Taxa de Conformidade</div>
         <div style="margin-top:6px; font-size:12px; color:#6b7280;">Colaboradores sem docs vencidos</div>
-    </div>
+    </a>
 
-    <div class="card-stat" style="flex:1; border-left:4px solid #e74c3c; background:#fff; text-align:center;">
+    <a href="/documentos?status=vencido" class="card-stat stat-card-clickable" style="flex:1; border-left:4px solid #e74c3c; background:#fff; text-align:center; text-decoration:none; color:inherit;">
         <div class="card-stat-value" style="font-size:2rem; color:#e74c3c;"><?= $kpiDocsVencAtivos ?></div>
         <div class="card-stat-label">Docs Vencidos (Ativos)</div>
         <div style="margin-top:6px; font-size:12px; color:#6b7280;">Requerem acao imediata</div>
-    </div>
+    </a>
 
     <div class="card-stat" style="flex:1; border-left:4px solid <?= $tempoColor ?>; background:#fff; text-align:center;">
         <div class="card-stat-value" style="font-size:2rem; color:<?= $tempoColor ?>;"><?= $tempoIsNum ? $kpiTempoRenov . ' dias' : $kpiTempoRenov ?></div>

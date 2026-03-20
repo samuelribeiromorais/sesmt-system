@@ -30,6 +30,8 @@ class EsocialEvento extends Model
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
 
+        $limit = (int)$limit;
+        $offset = (int)$offset;
         $sql .= " ORDER BY e.criado_em DESC LIMIT {$limit} OFFSET {$offset}";
 
         $stmt = $this->db->prepare($sql);

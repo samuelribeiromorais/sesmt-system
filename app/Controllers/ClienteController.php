@@ -10,6 +10,7 @@ use App\Models\Cliente;
 use App\Models\Obra;
 use App\Models\TipoDocumento;
 use App\Models\TipoCertificado;
+use App\Services\ValidationService;
 
 class ClienteController extends Controller
 {
@@ -17,9 +18,59 @@ class ClienteController extends Controller
     {
         RoleMiddleware::requireAdminOrSesmt();
         $model = new Cliente();
+        $clientes = $model->all([], 'nome_fantasia ASC');
+
+        $db = Database::getInstance();
+
+        // Count active collaborators per client
+        $colabStmt = $db->query(
+            "SELECT cliente_id, COUNT(*) as total FROM colaboradores WHERE status = 'ativo' AND excluido_em IS NULL GROUP BY cliente_id"
+        );
+        $colabCounts = [];
+        foreach ($colabStmt->fetchAll() as $row) {
+            $colabCounts[(int)$row['cliente_id']] = (int)$row['total'];
+        }
+
+        // Compliance per client: check for expired docs and expiring docs/certs
+        $expiredStmt = $db->query(
+            "SELECT c.cliente_id, COUNT(*) as total
+             FROM documentos d
+             JOIN colaboradores c ON d.colaborador_id = c.id
+             WHERE d.data_validade IS NOT NULL
+               AND d.data_validade < CURDATE()
+               AND d.status != 'obsoleto'
+               AND d.excluido_em IS NULL
+               AND c.status = 'ativo'
+             GROUP BY c.cliente_id"
+        );
+        $docsExpired = [];
+        foreach ($expiredStmt->fetchAll() as $row) {
+            $docsExpired[(int)$row['cliente_id']] = (int)$row['total'];
+        }
+
+        $expiringStmt = $db->query(
+            "SELECT c.cliente_id, COUNT(*) as total
+             FROM documentos d
+             JOIN colaboradores c ON d.colaborador_id = c.id
+             WHERE d.data_validade IS NOT NULL
+               AND d.data_validade >= CURDATE()
+               AND d.data_validade <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+               AND d.status IN ('vigente','proximo_vencimento')
+               AND d.excluido_em IS NULL
+               AND c.status = 'ativo'
+             GROUP BY c.cliente_id"
+        );
+        $docsExpiring = [];
+        foreach ($expiringStmt->fetchAll() as $row) {
+            $docsExpiring[(int)$row['cliente_id']] = (int)$row['total'];
+        }
+
         $this->view('clientes/index', [
-            'clientes'  => $model->all([], 'nome_fantasia ASC'),
-            'pageTitle' => 'Clientes',
+            'clientes'      => $clientes,
+            'colabCounts'   => $colabCounts,
+            'docsExpired'   => $docsExpired,
+            'docsExpiring'  => $docsExpiring,
+            'pageTitle'     => 'Clientes',
         ]);
     }
 
@@ -32,11 +83,18 @@ class ClienteController extends Controller
     public function store(): void
     {
         RoleMiddleware::requireAdminOrSesmt();
+
+        $cnpj = trim($this->input('cnpj', ''));
+        if (!empty($cnpj) && !ValidationService::validarCNPJ($cnpj)) {
+            $this->flash('error', 'CNPJ inválido.');
+            $this->redirect('/clientes/novo');
+        }
+
         $model = new Cliente();
         $data = [
             'razao_social'   => trim($this->input('razao_social', '')),
             'nome_fantasia'  => trim($this->input('nome_fantasia', '')),
-            'cnpj'           => trim($this->input('cnpj', '')),
+            'cnpj'           => $cnpj,
             'contato_nome'   => trim($this->input('contato_nome', '')),
             'contato_email'  => trim($this->input('contato_email', '')),
             'contato_telefone' => trim($this->input('contato_telefone', '')),
@@ -105,11 +163,18 @@ class ClienteController extends Controller
     public function update(string $id): void
     {
         RoleMiddleware::requireAdminOrSesmt();
+
+        $cnpj = trim($this->input('cnpj', ''));
+        if (!empty($cnpj) && !ValidationService::validarCNPJ($cnpj)) {
+            $this->flash('error', 'CNPJ inválido.');
+            $this->redirect("/clientes/{$id}/editar");
+        }
+
         $model = new Cliente();
         $data = [
             'razao_social'   => trim($this->input('razao_social', '')),
             'nome_fantasia'  => trim($this->input('nome_fantasia', '')),
-            'cnpj'           => trim($this->input('cnpj', '')),
+            'cnpj'           => $cnpj,
             'contato_nome'   => trim($this->input('contato_nome', '')),
             'contato_email'  => trim($this->input('contato_email', '')),
             'contato_telefone' => trim($this->input('contato_telefone', '')),

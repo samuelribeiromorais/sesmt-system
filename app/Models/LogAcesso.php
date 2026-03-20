@@ -33,6 +33,8 @@ class LogAcesso extends Model
             $params['df'] = $dataFim . ' 23:59:59';
         }
 
+        $limit = (int)$limit;
+        $offset = (int)$offset;
         $sql .= " ORDER BY l.criado_em DESC LIMIT {$limit} OFFSET {$offset}";
 
         $stmt = $this->db->prepare($sql);
