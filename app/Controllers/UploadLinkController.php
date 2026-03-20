@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Core\Database;
+use App\Core\Session;
 use App\Middleware\RoleMiddleware;
 use App\Middleware\LoggerMiddleware;
 use App\Models\Colaborador;
@@ -54,7 +55,7 @@ class UploadLinkController extends Controller
         )->execute([
             'token' => $token,
             'desc'  => $descricao,
-            'uid'   => $_SESSION['user']['id'],
+            'uid'   => Session::get('user_id'),
             'exp'   => $expiraEm,
         ]);
 
@@ -87,6 +88,69 @@ class UploadLinkController extends Controller
         LoggerMiddleware::log('upload_link', "Link de upload #{$id} revogado.");
 
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Link revogado com sucesso.'];
+        header('Location: /upload-links');
+        exit;
+    }
+
+    /**
+     * Upload direto pelo admin (com autenticacao)
+     */
+    public function uploadDireto(): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+        $this->requirePost();
+
+        if (empty($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== UPLOAD_ERR_OK) {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Erro no upload do arquivo.'];
+            header('Location: /upload-links');
+            exit;
+        }
+
+        $file = $_FILES['arquivo'];
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+        if (!in_array($ext, ['xlsx', 'xls', 'csv'])) {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Formato invalido. Use .xlsx, .xls ou .csv'];
+            header('Location: /upload-links');
+            exit;
+        }
+
+        try {
+            if ($ext === 'csv') {
+                $rows = $this->parseCsv($file['tmp_name']);
+            } else {
+                $spreadsheet = IOFactory::load($file['tmp_name']);
+                $sheet = $spreadsheet->getActiveSheet();
+                $rows = $sheet->toArray(null, true, true, false);
+            }
+        } catch (\Exception $e) {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Erro ao ler arquivo: ' . $e->getMessage()];
+            header('Location: /upload-links');
+            exit;
+        }
+
+        if (count($rows) < 2) {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Arquivo vazio ou sem dados.'];
+            header('Location: /upload-links');
+            exit;
+        }
+
+        $resultado = $this->cruzarDados($rows);
+
+        LoggerMiddleware::log('upload_direto', sprintf(
+            'Upload direto por admin: %s — %d atualizados, %d novos, %d ignorados',
+            $file['name'], $resultado['atualizados'], $resultado['novos'], $resultado['ignorados']
+        ));
+
+        $_SESSION['flash'] = [
+            'type' => 'success',
+            'message' => sprintf(
+                'Arquivo "%s" processado! %d atualizados, %d novos, %d ignorados.',
+                $file['name'], $resultado['atualizados'], $resultado['novos'], $resultado['ignorados']
+            )
+        ];
+        $_SESSION['ultimo_resultado_upload'] = $resultado;
+
         header('Location: /upload-links');
         exit;
     }
@@ -297,6 +361,14 @@ class UploadLinkController extends Controller
             // Normalize common variations
             $map = [
                 'nome' => 'nome_completo', 'nome completo' => 'nome_completo',
+                'pe_nome' => 'nome_completo',
+                'pe_cpf' => 'cpf',
+                'codigo' => 'matricula',
+                'ctr_dataadmissao' => 'data_admissao',
+                'ctr_datarescisao' => 'data_demissao',
+                'pe_cidade' => 'cidade',
+                'pe_uf' => 'uf',
+                'ctr_centrocusto4' => 'centro_custo',
                 'matricula' => 'matricula', 'matrícula' => 'matricula',
                 'funcao' => 'funcao', 'função' => 'funcao',
                 'data admissao' => 'data_admissao', 'data_admissao' => 'data_admissao',
@@ -328,8 +400,15 @@ class UploadLinkController extends Controller
 
             $cpfRaw = preg_replace('/\D/', '', $mapped['cpf'] ?? '');
 
+            // Compor unidade a partir de cidade/uf se nao houver unidade direta
+            if (empty($mapped['unidade']) && (!empty($mapped['cidade']) || !empty($mapped['uf']))) {
+                $cidade = $mapped['cidade'] ?? '';
+                $uf = $mapped['uf'] ?? '';
+                $mapped['unidade'] = $cidade && $uf ? "{$cidade}/{$uf}" : ($cidade ?: $uf);
+            }
+
             // Normalizar datas
-            foreach (['data_admissao', 'data_nascimento'] as $dateField) {
+            foreach (['data_admissao', 'data_nascimento', 'data_demissao'] as $dateField) {
                 if (!empty($mapped[$dateField])) {
                     $mapped[$dateField] = $this->parseDate($mapped[$dateField]);
                 }
@@ -354,8 +433,10 @@ class UploadLinkController extends Controller
                         'cargo' => 'cargo',
                         'funcao' => 'funcao',
                         'setor' => 'setor',
+                        'unidade' => 'unidade',
                         'data_admissao' => 'data_admissao',
                         'data_nascimento' => 'data_nascimento',
+                        'data_demissao' => 'data_demissao',
                         'telefone' => 'telefone',
                         'email' => 'email',
                     ];
@@ -392,6 +473,7 @@ class UploadLinkController extends Controller
                     }
                 } else {
                     // CRIAR novo colaborador
+                    $status = !empty($mapped['data_demissao']) ? 'inativo' : 'ativo';
                     $data = [
                         'nome_completo'   => strtoupper($nome),
                         'cpf_encrypted'   => CryptoService::encrypt($cpfRaw),
@@ -400,11 +482,13 @@ class UploadLinkController extends Controller
                         'cargo'           => $mapped['cargo'] ?? null,
                         'funcao'          => $mapped['funcao'] ?? null,
                         'setor'           => $mapped['setor'] ?? null,
+                        'unidade'         => $mapped['unidade'] ?? null,
                         'data_admissao'   => $mapped['data_admissao'] ?? null,
+                        'data_demissao'   => $mapped['data_demissao'] ?? null,
                         'data_nascimento' => $mapped['data_nascimento'] ?? null,
                         'telefone'        => $mapped['telefone'] ?? null,
                         'email'           => $mapped['email'] ?? null,
-                        'status'          => 'ativo',
+                        'status'          => $status,
                     ];
                     $colabModel->create($data);
                     $resultado['novos']++;

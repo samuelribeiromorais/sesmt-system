@@ -203,6 +203,7 @@ $router->get('/importar/colaboradores/template', ['ImportController', 'templateD
 // --- Upload Links Externos ---
 $router->get('/upload-links', ['UploadLinkController', 'index'], ['AuthMiddleware']);
 $router->post('/upload-links/gerar', ['UploadLinkController', 'gerar'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/upload-links/upload-direto', ['UploadLinkController', 'uploadDireto'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/upload-links/{id}/revogar', ['UploadLinkController', 'revogar'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->get('/upload-externo/{token}', ['UploadLinkController', 'paginaUpload']);
 $router->post('/upload-externo/{token}/enviar', ['UploadLinkController', 'processarUpload']);
