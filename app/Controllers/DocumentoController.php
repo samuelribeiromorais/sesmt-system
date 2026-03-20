@@ -360,10 +360,11 @@ class DocumentoController extends Controller
 
         LoggerMiddleware::log('download', "Download: {$doc['arquivo_nome']} (Doc ID: {$id})");
 
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
         header('Content-Type: application/pdf');
         header('Content-Disposition: attachment; filename="' . $doc['arquivo_nome'] . '"');
         header('Content-Length: ' . filesize($filePath));
-        header('Cache-Control: no-cache, must-revalidate');
         readfile($filePath);
         exit;
     }
@@ -395,10 +396,11 @@ class DocumentoController extends Controller
             die('Arquivo nao encontrado.');
         }
 
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
         header('Content-Type: application/pdf');
         header('Content-Disposition: inline; filename="' . $doc['arquivo_nome'] . '"');
         header('Content-Length: ' . filesize($filePath));
-        header('Cache-Control: private, max-age=3600');
         readfile($filePath);
         exit;
     }

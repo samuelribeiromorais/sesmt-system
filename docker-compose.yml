@@ -14,11 +14,11 @@ services:
       - DB_PORT=3306
       - DB_NAME=sesmt_tse
       - DB_USER=sesmt
-      - DB_PASS=sesmt2026
+      - DB_PASS=${DB_PASS:-sesmt2026}
       - APP_DEBUG=true
       - APP_URL=http://localhost:8080
       - APP_TIMEZONE=America/Sao_Paulo
-      - AES_KEY=tse-sesmt-dev-key-2026-local-test
+      - AES_KEY=${AES_KEY:-tse-sesmt-dev-key-2026-local-test}
       - SMTP_HOST=
       - SMTP_PORT=587
       - SMTP_USER=
@@ -34,10 +34,10 @@ services:
     ports:
       - "3307:3306"
     environment:
-      - MARIADB_ROOT_PASSWORD=root2026
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD:-root2026}
       - MARIADB_DATABASE=sesmt_tse
       - MARIADB_USER=sesmt
-      - MARIADB_PASSWORD=sesmt2026
+      - MARIADB_PASSWORD=${MARIADB_PASSWORD:-sesmt2026}
     volumes:
       - db_data:/var/lib/mysql
       - ./docker/init:/docker-entrypoint-initdb.d

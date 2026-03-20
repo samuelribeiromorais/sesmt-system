@@ -2,7 +2,9 @@
 vendor/
 storage/uploads/
 storage/reports/
+storage/cache/
 storage/logs/
+storage/relatorios/
 storage/backups/
 .claude/
 *.log

@@ -64,6 +64,9 @@ class AuthController extends Controller
             $this->redirect('/login?error=invalid');
         }
 
+        // Regenerar session ID para prevenir session fixation
+        session_regenerate_id(true);
+
         // Senha correta - verificar se 2FA está ativo
         if (!empty($user['totp_ativo'])) {
             // Armazenar dados temporários na sessão para o fluxo 2FA
@@ -133,6 +136,9 @@ class AuthController extends Controller
         // Limpar dados temporários do 2FA
         Session::remove('2fa_pending');
         Session::remove('2fa_user_id');
+
+        // Regenerar session ID após 2FA bem-sucedido
+        session_regenerate_id(true);
 
         // Completar login
         $this->completeLogin($user, $userModel);

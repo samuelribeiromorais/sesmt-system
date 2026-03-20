@@ -464,8 +464,8 @@ class UsuarioController extends Controller
 
         LoggerMiddleware::log('api_token', "Token de API criado: {$nome}");
 
-        // Show the token once
-        $this->flash('success', "Token criado com sucesso. Copie agora, ele nao sera exibido novamente: {$token}");
+        // Show the token once (expires in 90 days)
+        $this->flash('success', "Token criado com sucesso (expira em 90 dias). Copie agora, ele nao sera exibido novamente: {$token}");
         $this->redirect('/usuarios/api-tokens');
     }
 

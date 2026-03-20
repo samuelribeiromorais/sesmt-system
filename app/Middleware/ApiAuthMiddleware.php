@@ -3,6 +3,7 @@
 namespace App\Middleware;
 
 use App\Models\ApiToken;
+use App\Middleware\RateLimitMiddleware;
 
 class ApiAuthMiddleware
 {
@@ -11,6 +12,9 @@ class ApiAuthMiddleware
 
     public static function check(): void
     {
+        // Verificar rate limit antes da autenticacao
+        RateLimitMiddleware::check();
+
         $header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 
         if (!preg_match('/^Bearer\s+(.+)$/i', $header, $matches)) {

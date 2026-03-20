@@ -20,7 +20,20 @@ class ApiToken extends Model
         );
         $stmt->execute(['token_hash' => $tokenHash]);
         $result = $stmt->fetch();
-        return $result ?: null;
+
+        if (!$result) {
+            return null;
+        }
+
+        // Verificar se o token expirou (90 dias desde a criacao)
+        if (!empty($result['criado_em'])) {
+            $diasDesdeCreacao = (time() - strtotime($result['criado_em'])) / 86400;
+            if ($diasDesdeCreacao > 90) {
+                return null;
+            }
+        }
+
+        return $result;
     }
 
     public function updateLastUse(int $id): void

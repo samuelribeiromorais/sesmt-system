@@ -1,0 +1,3 @@
+Contact: mailto:samuel.morais@tsea.com.br
+Preferred-Languages: pt-BR, en
+Canonical: https://sesmt.tsea.com.br/.well-known/security.txt

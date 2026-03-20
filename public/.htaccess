@@ -1,8 +1,10 @@
 RewriteEngine On
 
-# Redirecionar HTTP para HTTPS
-# RewriteCond %{HTTPS} off
-# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# Redirecionar HTTP para HTTPS (apenas quando mod_ssl disponivel)
+<IfModule mod_ssl.c>
+    RewriteCond %{HTTPS} off
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
 
 # Se o arquivo ou diretorio existe, servir diretamente
 RewriteCond %{REQUEST_FILENAME} !-f
@@ -22,4 +24,12 @@ RewriteRule ^ index.php [L]
     Header set X-Frame-Options "DENY"
     Header set X-XSS-Protection "1; mode=block"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';"
+</IfModule>
+
+# HSTS (apenas quando mod_ssl disponivel)
+<IfModule mod_ssl.c>
+    <IfModule mod_headers.c>
+        Header set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    </IfModule>
 </IfModule>
