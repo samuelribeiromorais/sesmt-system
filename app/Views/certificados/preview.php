@@ -50,7 +50,7 @@
         };
         const colabData = {
             nome: certData.nome_completo,
-            cpf: '***.***.***-**',
+            cpf: <?= json_encode($cpfFormatado ?? '***.***.***-**') ?>,
             funcao: certData.funcao || certData.cargo || '',
             cargo: certData.cargo || '',
             data_admissao: '',

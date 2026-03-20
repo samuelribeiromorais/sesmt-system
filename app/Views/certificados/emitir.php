@@ -133,7 +133,7 @@
 <script>
 const COLAB_DATA = {
     nome: <?= json_encode($colab['nome_completo']) ?>,
-    cpf: <?= json_encode($colab['cpf_encrypted'] ? '***.***.***-**' : '___.___.___-__') ?>,
+    cpf: <?= json_encode($cpfFormatado ?? '***.***.***-**') ?>,
     funcao: <?= json_encode($colab['funcao'] ?? $colab['cargo'] ?? '') ?>,
     cargo: <?= json_encode($colab['cargo'] ?? '') ?>,
     data_admissao: <?= json_encode($colab['data_admissao'] ?? '') ?>,

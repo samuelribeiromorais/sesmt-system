@@ -10,6 +10,7 @@ use App\Models\Certificado;
 use App\Models\TipoCertificado;
 use App\Models\Colaborador;
 use App\Models\Ministrante;
+use App\Services\CryptoService;
 
 class CertificadoController extends Controller
 {
@@ -106,12 +107,24 @@ class CertificadoController extends Controller
         $ministranteModel = new Ministrante();
         $ministrantes = $ministranteModel->all(['ativo' => 1], 'nome ASC');
 
+        // Decrypt CPF for certificate display
+        $cpfFormatado = '***.***.***-**';
+        if (!empty($colab['cpf_encrypted'])) {
+            try {
+                $cpfRaw = CryptoService::decrypt($colab['cpf_encrypted']);
+                if (strlen($cpfRaw) === 11) {
+                    $cpfFormatado = substr($cpfRaw, 0, 3) . '.' . substr($cpfRaw, 3, 3) . '.' . substr($cpfRaw, 6, 3) . '-' . substr($cpfRaw, 9, 2);
+                }
+            } catch (\Exception $e) {}
+        }
+
         $this->view('certificados/emitir', [
-            'colab'        => $colab,
-            'tipos'        => $tipos,
-            'certs'        => $certs,
-            'ministrantes' => $ministrantes,
-            'pageTitle'    => 'Certificados',
+            'colab'         => $colab,
+            'tipos'         => $tipos,
+            'certs'         => $certs,
+            'ministrantes'  => $ministrantes,
+            'cpfFormatado'  => $cpfFormatado,
+            'pageTitle'     => 'Certificados',
         ]);
     }
 
@@ -190,9 +203,21 @@ class CertificadoController extends Controller
             $this->redirect('/certificados');
         }
 
+        // Decrypt CPF for certificate display
+        $cpfFormatado = '***.***.***-**';
+        if (!empty($cert[0]['cpf_encrypted'])) {
+            try {
+                $cpfRaw = CryptoService::decrypt($cert[0]['cpf_encrypted']);
+                if (strlen($cpfRaw) === 11) {
+                    $cpfFormatado = substr($cpfRaw, 0, 3) . '.' . substr($cpfRaw, 3, 3) . '.' . substr($cpfRaw, 6, 3) . '-' . substr($cpfRaw, 9, 2);
+                }
+            } catch (\Exception $e) {}
+        }
+
         $this->view('certificados/preview', [
-            'cert'      => $cert[0],
-            'pageTitle' => 'Certificados',
+            'cert'          => $cert[0],
+            'cpfFormatado'  => $cpfFormatado,
+            'pageTitle'     => 'Certificados',
         ], '');
     }
 
