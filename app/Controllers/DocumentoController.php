@@ -31,22 +31,23 @@ class DocumentoController extends Controller
         $colabFilter = $mostrarInativos ? "" : " AND c.status = 'ativo'";
 
         // View base: apenas o documento mais recente de cada tipo por colaborador (sem duplicatas)
+        // Desempate por id ASC: menor ID = documento original assinado (não réplica do sistema)
         $viewBase = "(
             SELECT d2.* FROM documentos d2
             INNER JOIN (
-                SELECT colaborador_id, tipo_documento_id, MAX(id) as max_id
+                SELECT colaborador_id, tipo_documento_id, MIN(id) as min_id
                 FROM (
                     SELECT id, colaborador_id, tipo_documento_id,
                            ROW_NUMBER() OVER (
                                PARTITION BY colaborador_id, tipo_documento_id
-                               ORDER BY data_emissao DESC, id DESC
+                               ORDER BY data_emissao DESC, id ASC
                            ) as rn
                     FROM documentos
                     WHERE status != 'obsoleto' AND excluido_em IS NULL
                 ) ranked
                 WHERE rn = 1
                 GROUP BY colaborador_id, tipo_documento_id
-            ) latest ON d2.id = latest.max_id
+            ) latest ON d2.id = latest.min_id
         )";
 
         // Contadores (respeitando filtro de colaboradores ativos)

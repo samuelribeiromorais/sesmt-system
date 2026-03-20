@@ -11,14 +11,15 @@ class Documento extends Model
     public function findByColaborador(int $colaboradorId): array
     {
         // Retorna apenas o documento mais recente de cada tipo (vigente, proximo_vencimento ou vencido)
-        // Para cada tipo_documento_id, pega o de emissão mais recente (desempate por id mais alto)
+        // Para cada tipo_documento_id, pega o de emissão mais recente
+        // Desempate por id ASC (menor id = documento original assinado, não réplica do sistema)
         // Exclui obsoletos — só mostra o documento atual de cada tipo
         $stmt = $this->db->prepare(
             "SELECT d.*, td.nome as tipo_nome, td.categoria, u.nome as enviado_por_nome
              FROM (
                  SELECT *, ROW_NUMBER() OVER (
                      PARTITION BY tipo_documento_id
-                     ORDER BY data_emissao DESC, id DESC
+                     ORDER BY data_emissao DESC, id ASC
                  ) as rn
                  FROM documentos
                  WHERE colaborador_id = :cid
@@ -40,22 +41,24 @@ class Documento extends Model
      */
     private function latestDocsSubquery(): string
     {
+        // Desempate por id ASC: quando duas datas de emissão são iguais,
+        // o menor ID é o documento original assinado (não a réplica do sistema)
         return "(
             SELECT d2.* FROM documentos d2
             INNER JOIN (
-                SELECT MAX(id) as max_id
+                SELECT MIN(id) as min_id
                 FROM (
                     SELECT id, colaborador_id, tipo_documento_id,
                            ROW_NUMBER() OVER (
                                PARTITION BY colaborador_id, tipo_documento_id
-                               ORDER BY data_emissao DESC, id DESC
+                               ORDER BY data_emissao DESC, id ASC
                            ) as rn
                     FROM documentos
                     WHERE status != 'obsoleto' AND excluido_em IS NULL
                 ) ranked
                 WHERE rn = 1
                 GROUP BY colaborador_id, tipo_documento_id
-            ) latest ON d2.id = latest.max_id
+            ) latest ON d2.id = latest.min_id
         )";
     }
 

@@ -41,15 +41,16 @@ class DashboardController extends Controller
         ];
 
         // Subquery base: apenas o doc mais recente de cada tipo por colaborador
+        // Desempate por id ASC: menor ID = documento original assinado (não réplica do sistema)
         $latestDocs = "(
             SELECT d2.* FROM documentos d2
             INNER JOIN (
-                SELECT MAX(id) as max_id FROM (
+                SELECT MIN(id) as min_id FROM (
                     SELECT id, colaborador_id, tipo_documento_id,
-                           ROW_NUMBER() OVER (PARTITION BY colaborador_id, tipo_documento_id ORDER BY data_emissao DESC, id DESC) as rn
+                           ROW_NUMBER() OVER (PARTITION BY colaborador_id, tipo_documento_id ORDER BY data_emissao DESC, id ASC) as rn
                     FROM documentos WHERE status != 'obsoleto' AND excluido_em IS NULL
                 ) ranked WHERE rn = 1 GROUP BY colaborador_id, tipo_documento_id
-            ) latest ON d2.id = latest.max_id
+            ) latest ON d2.id = latest.min_id
         )";
 
         // --- Document status counts by category (SOMENTE COLABORADORES ATIVOS) ---
@@ -167,7 +168,7 @@ class DashboardController extends Controller
                  SELECT id, colaborador_id, status,
                         ROW_NUMBER() OVER (
                             PARTITION BY colaborador_id, tipo_documento_id
-                            ORDER BY data_emissao DESC, id DESC
+                            ORDER BY data_emissao DESC, id ASC
                         ) as rn
                  FROM documentos
                  WHERE status != 'obsoleto' AND excluido_em IS NULL
