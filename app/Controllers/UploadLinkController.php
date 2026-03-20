@@ -93,6 +93,127 @@ class UploadLinkController extends Controller
     }
 
     /**
+     * Importar dados a partir de link/URL/caminho de rede
+     */
+    public function importarLink(): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+        $this->requirePost();
+
+        $linkArquivo = trim($this->input('link_arquivo', ''));
+
+        if (empty($linkArquivo)) {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Informe o link ou caminho do arquivo.'];
+            header('Location: /upload-links');
+            exit;
+        }
+
+        // Determinar tipo de caminho e buscar o arquivo
+        $tempFile = null;
+        $nomeArquivo = basename($linkArquivo);
+
+        try {
+            if (preg_match('#^https?://#i', $linkArquivo)) {
+                // URL HTTP/HTTPS — download via cURL
+                $tempFile = tempnam(sys_get_temp_dir(), 'sesmt_import_');
+                $ch = curl_init($linkArquivo);
+                $fp = fopen($tempFile, 'w');
+                curl_setopt_array($ch, [
+                    CURLOPT_FILE => $fp,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_TIMEOUT => 60,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_USERAGENT => 'SESMT-System/1.0',
+                ]);
+                $success = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $error = curl_error($ch);
+                curl_close($ch);
+                fclose($fp);
+
+                if (!$success || $httpCode >= 400) {
+                    @unlink($tempFile);
+                    throw new \Exception("Erro ao baixar arquivo (HTTP {$httpCode}): {$error}");
+                }
+            } elseif (str_starts_with($linkArquivo, '\\\\') || preg_match('#^[A-Za-z]:\\\\#', $linkArquivo)) {
+                // Caminho de rede Windows (\\servidor\pasta\arquivo) ou caminho local (C:\...)
+                // Normalizar barras
+                $path = str_replace('/', '\\', $linkArquivo);
+                if (!file_exists($path)) {
+                    throw new \Exception("Arquivo nao encontrado: {$path}");
+                }
+                $tempFile = tempnam(sys_get_temp_dir(), 'sesmt_import_');
+                if (!copy($path, $tempFile)) {
+                    throw new \Exception("Nao foi possivel copiar o arquivo de: {$path}");
+                }
+            } elseif (str_starts_with($linkArquivo, '/')) {
+                // Caminho Linux absoluto
+                if (!file_exists($linkArquivo)) {
+                    throw new \Exception("Arquivo nao encontrado: {$linkArquivo}");
+                }
+                $tempFile = tempnam(sys_get_temp_dir(), 'sesmt_import_');
+                copy($linkArquivo, $tempFile);
+            } else {
+                throw new \Exception("Formato de caminho nao reconhecido. Use URL (http://...), caminho de rede (\\\\servidor\\...) ou caminho absoluto.");
+            }
+
+            // Detectar extensao
+            $ext = strtolower(pathinfo($nomeArquivo, PATHINFO_EXTENSION));
+            if (!in_array($ext, ['xlsx', 'xls', 'csv'])) {
+                // Tentar detectar pelo conteudo
+                $firstBytes = file_get_contents($tempFile, false, null, 0, 4);
+                if (str_contains($firstBytes, ',') || str_contains($firstBytes, ';')) {
+                    $ext = 'csv';
+                } else {
+                    $ext = 'xlsx'; // Tentar como Excel
+                }
+            }
+
+            // Parse
+            if ($ext === 'csv') {
+                $rows = $this->parseCsv($tempFile);
+            } else {
+                $spreadsheet = IOFactory::load($tempFile);
+                $sheet = $spreadsheet->getActiveSheet();
+                $rows = $sheet->toArray(null, true, true, false);
+            }
+
+            @unlink($tempFile);
+
+        } catch (\Exception $e) {
+            if ($tempFile) @unlink($tempFile);
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Erro: ' . $e->getMessage()];
+            header('Location: /upload-links');
+            exit;
+        }
+
+        if (count($rows) < 2) {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Arquivo vazio ou sem dados.'];
+            header('Location: /upload-links');
+            exit;
+        }
+
+        $resultado = $this->cruzarDados($rows);
+
+        LoggerMiddleware::log('upload_link_remoto', sprintf(
+            'Importacao via link: %s — %d atualizados, %d novos, %d ignorados',
+            $nomeArquivo, $resultado['atualizados'], $resultado['novos'], $resultado['ignorados']
+        ));
+
+        $_SESSION['flash'] = [
+            'type' => 'success',
+            'message' => sprintf(
+                'Arquivo "%s" importado! %d atualizados, %d novos, %d ignorados.',
+                $nomeArquivo, $resultado['atualizados'], $resultado['novos'], $resultado['ignorados']
+            )
+        ];
+        $_SESSION['ultimo_resultado_upload'] = $resultado;
+
+        header('Location: /upload-links');
+        exit;
+    }
+
+    /**
      * Upload direto pelo admin (com autenticacao)
      */
     public function uploadDireto(): void

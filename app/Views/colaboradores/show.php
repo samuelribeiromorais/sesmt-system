@@ -105,12 +105,27 @@ function statusSemaforo($status) {
                 <tr>
                     <td>
                         <span class="semaforo semaforo-<?= statusSemaforo($doc['status']) ?>"></span>
-                        <?= htmlspecialchars($doc['tipo_nome']) ?>
+                        <a href="/documentos/<?= $doc['id'] ?>" style="color:inherit; text-decoration:none;" title="Ver detalhes"><?= htmlspecialchars($doc['tipo_nome']) ?></a>
                         <?php if (!empty($doc['assinatura_digital'])): ?>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" style="vertical-align:middle; margin-left:4px;" title="Documento assinado por <?= htmlspecialchars($doc['assinado_por'] ?? '') ?>"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                         <?php endif; ?>
                     </td>
-                    <td style="font-size:13px;"><?= $doc['data_emissao'] ? date('d/m/Y', strtotime($doc['data_emissao'])) : '-' ?></td>
+                    <td style="font-size:13px;">
+                        <span id="emissao-show-<?= $doc['id'] ?>">
+                            <?= $doc['data_emissao'] ? date('d/m/Y', strtotime($doc['data_emissao'])) : '-' ?>
+                            <?php if (!$isReadOnly): ?>
+                            <button type="button" onclick="editEmissaoInline(<?= $doc['id'] ?>, '<?= $doc['data_emissao'] ?>')" class="btn btn-outline btn-sm" style="padding:1px 5px; font-size:10px; margin-left:4px;" title="Editar emissao">✎</button>
+                            <?php endif; ?>
+                        </span>
+                        <span id="emissao-form-<?= $doc['id'] ?>" style="display:none;">
+                            <form method="POST" action="/documentos/<?= $doc['id'] ?>/atualizar-emissao" style="display:inline-flex; align-items:center; gap:4px;">
+                                <?= \App\Core\View::csrfField() ?>
+                                <input type="date" name="data_emissao" id="emissao-input-<?= $doc['id'] ?>" value="<?= $doc['data_emissao'] ?>" class="form-input" style="padding:2px 6px; font-size:12px; width:140px;" required>
+                                <button type="submit" class="btn btn-primary btn-sm" style="padding:1px 6px; font-size:10px;">✓</button>
+                                <button type="button" onclick="cancelEmissaoInline(<?= $doc['id'] ?>)" class="btn btn-outline btn-sm" style="padding:1px 6px; font-size:10px;">✗</button>
+                            </form>
+                        </span>
+                    </td>
                     <td style="font-size:13px;">
                         <?php if ($doc['data_validade']): ?>
                             <?= date('d/m/Y', strtotime($doc['data_validade'])) ?>
@@ -199,6 +214,17 @@ function statusSemaforo($status) {
 <?php endif; ?>
 
 <script>
+function editEmissaoInline(docId, currentDate) {
+    document.getElementById('emissao-show-' + docId).style.display = 'none';
+    document.getElementById('emissao-form-' + docId).style.display = 'inline';
+    document.getElementById('emissao-input-' + docId).value = currentDate;
+    document.getElementById('emissao-input-' + docId).focus();
+}
+function cancelEmissaoInline(docId) {
+    document.getElementById('emissao-form-' + docId).style.display = 'none';
+    document.getElementById('emissao-show-' + docId).style.display = 'inline';
+}
+
 function viewPdf(docId, filename) {
     document.getElementById('pdf-title').textContent = filename;
     document.getElementById('pdf-download').href = '/documentos/download/' + docId;

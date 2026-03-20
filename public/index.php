@@ -85,6 +85,7 @@ $router->get('/documentos/{id}', ['DocumentoController', 'show'], ['AuthMiddlewa
 $router->get('/documentos/{id}/versoes', ['DocumentoController', 'versoes'], ['AuthMiddleware']);
 $router->get('/documentos/{id}/assinar', ['DocumentoController', 'assinar'], ['AuthMiddleware']);
 $router->post('/documentos/{id}/assinar', ['DocumentoController', 'registrarAssinatura'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/documentos/{id}/atualizar-emissao', ['DocumentoController', 'atualizarEmissao'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/documentos/{id}/excluir', ['DocumentoController', 'destroy'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/documentos/excluir-lote', ['DocumentoController', 'destroyBatch'], ['AuthMiddleware']);
 
@@ -204,6 +205,7 @@ $router->get('/importar/colaboradores/template', ['ImportController', 'templateD
 $router->get('/upload-links', ['UploadLinkController', 'index'], ['AuthMiddleware']);
 $router->post('/upload-links/gerar', ['UploadLinkController', 'gerar'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/upload-links/upload-direto', ['UploadLinkController', 'uploadDireto'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/upload-links/importar-link', ['UploadLinkController', 'importarLink'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/upload-links/{id}/revogar', ['UploadLinkController', 'revogar'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->get('/upload-externo/{token}', ['UploadLinkController', 'paginaUpload']);
 $router->post('/upload-externo/{token}/enviar', ['UploadLinkController', 'processarUpload']);

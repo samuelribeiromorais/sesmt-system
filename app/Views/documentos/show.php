@@ -16,7 +16,35 @@
     </div>
     <div style="padding:20px; display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
         <div><strong>Arquivo:</strong> <?= htmlspecialchars($doc['arquivo_nome']) ?></div>
-        <div><strong>Emissao:</strong> <?= date('d/m/Y', strtotime($doc['data_emissao'])) ?></div>
+        <div id="emissao-display">
+            <strong>Emissao:</strong> <?= date('d/m/Y', strtotime($doc['data_emissao'])) ?>
+            <?php if (in_array(\App\Core\Session::get('user_perfil'), ['admin', 'sesmt'])): ?>
+            <button type="button" onclick="editarEmissao()" class="btn btn-outline btn-sm" style="margin-left:8px; padding:2px 8px; font-size:11px;" title="Editar data de emissao">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <?php endif; ?>
+        </div>
+        <?php if (in_array(\App\Core\Session::get('user_perfil'), ['admin', 'sesmt'])): ?>
+        <div id="emissao-edit" style="display:none;">
+            <strong>Emissao:</strong>
+            <form method="POST" action="/documentos/<?= $doc['id'] ?>/atualizar-emissao" style="display:inline-flex; align-items:center; gap:6px;">
+                <input type="hidden" name="_csrf_token" value="<?= \App\Core\Session::get('_csrf_token') ?>">
+                <input type="date" name="data_emissao" value="<?= $doc['data_emissao'] ?>" class="form-input" style="padding:4px 8px; font-size:13px; width:160px;" required>
+                <button type="submit" class="btn btn-primary btn-sm" style="padding:2px 10px; font-size:11px;">Salvar</button>
+                <button type="button" onclick="cancelarEmissao()" class="btn btn-outline btn-sm" style="padding:2px 10px; font-size:11px;">Cancelar</button>
+            </form>
+        </div>
+        <script>
+        function editarEmissao() {
+            document.getElementById('emissao-display').style.display = 'none';
+            document.getElementById('emissao-edit').style.display = 'block';
+        }
+        function cancelarEmissao() {
+            document.getElementById('emissao-edit').style.display = 'none';
+            document.getElementById('emissao-display').style.display = 'block';
+        }
+        </script>
+        <?php endif; ?>
         <div><strong>Validade:</strong> <?= $doc['data_validade'] ? date('d/m/Y', strtotime($doc['data_validade'])) : 'N/A' ?></div>
         <div><strong>Status:</strong> <span class="badge badge-<?= $doc['status'] ?>"><?= ucfirst(str_replace('_',' ',$doc['status'])) ?></span></div>
         <div><strong>Hash:</strong> <code style="font-size:11px;"><?= substr($doc['arquivo_hash'], 0, 16) ?>...</code></div>

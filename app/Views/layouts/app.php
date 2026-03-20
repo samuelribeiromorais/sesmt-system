@@ -119,25 +119,6 @@
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--c-gray)" stroke-width="2" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <div id="globalSearchResults" class="search-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--c-white); border:1px solid var(--c-border); border-top:none; border-radius:0 0 6px 6px; box-shadow:0 8px 24px rgba(0,0,0,0.12); max-height:400px; overflow-y:auto; z-index:500;"></div>
             </div>
-
-            <!-- Notification Bell -->
-            <div class="notif-bell" id="notifBell" style="position:relative; cursor:pointer; margin-left:auto;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-                <span class="notif-badge" id="notifBadge" style="display:none; position:absolute; top:-4px; right:-4px; background:var(--c-danger); color:#fff; font-size:10px; font-weight:700; min-width:18px; height:18px; border-radius:9px; align-items:center; justify-content:center; padding:0 4px;">0</span>
-
-                <div class="notif-dropdown" id="notifDropdown" style="display:none; position:absolute; top:100%; right:0; width:360px; background:var(--c-white); border:1px solid var(--c-border); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.15); z-index:500; margin-top:8px;">
-                    <div style="padding:14px 16px; border-bottom:1px solid var(--c-border); display:flex; justify-content:space-between; align-items:center;">
-                        <strong style="font-size:14px; color:var(--c-text);">Notificacoes</strong>
-                        <a href="/notificacoes" style="font-size:12px; color:var(--c-link); text-decoration:none;">Ver todas</a>
-                    </div>
-                    <div id="notifList" style="max-height:320px; overflow-y:auto;">
-                        <div style="padding:20px; text-align:center; color:var(--c-gray); font-size:13px;">Carregando...</div>
-                    </div>
-                    <div style="padding:10px 16px; border-top:1px solid var(--c-border); text-align:center;">
-                        <button type="button" id="notifMarkAllRead" style="background:none; border:none; color:var(--c-link); font-size:12px; cursor:pointer; font-weight:600;">Marcar todas como lidas</button>
-                    </div>
-                </div>
-            </div>
         </header>
 
         <?php

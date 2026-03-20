@@ -2,10 +2,11 @@ services:
   web:
     build: .
     ports:
-      - "8080:80"
+      - "8081:80"
     volumes:
       - .:/var/www/html
       - ./storage:/var/www/html/storage
+      - ../SESMT:/var/www/dossie:ro
     depends_on:
       db:
         condition: service_healthy
@@ -16,7 +17,7 @@ services:
       - DB_USER=sesmt
       - DB_PASS=${DB_PASS:-sesmt2026}
       - APP_DEBUG=true
-      - APP_URL=http://localhost:8080
+      - APP_URL=http://localhost:8081
       - APP_TIMEZONE=America/Sao_Paulo
       - AES_KEY=${AES_KEY:-tse-sesmt-dev-key-2026-local-test}
       - SMTP_HOST=

@@ -1,26 +1,64 @@
 <?php $csrfToken = $_SESSION['csrf_token'] ?? ''; ?>
 
-<!-- ============ UPLOAD DIRETO ============ -->
+<!-- ============ IMPORTAR DADOS ============ -->
 <div class="table-container" style="margin-bottom: 24px;">
     <div class="table-header">
-        <span class="table-title">Upload Direto de Dados</span>
+        <span class="table-title">Importar Dados de Colaboradores</span>
     </div>
     <div style="padding: 20px;">
         <p style="font-size:13px; color:#6b7280; margin-bottom:16px;">
-            Envie uma planilha CSV ou Excel diretamente. Colaboradores existentes serao atualizados (por CPF) e novos serao cadastrados.
+            Importe dados via arquivo local ou link de servidor. Colaboradores existentes serao atualizados (por CPF) e novos serao cadastrados.
         </p>
-        <form method="POST" action="/upload-links/upload-direto" enctype="multipart/form-data" id="uploadDiretoForm" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
-            <input type="hidden" name="_csrf_token" value="<?= $csrfToken ?>">
-            <div style="flex:1; min-width:250px;">
-                <label style="display:block; font-size:12px; font-weight:600; color:var(--c-text); margin-bottom:4px;">Arquivo (.xlsx, .xls, .csv)</label>
-                <input type="file" name="arquivo" accept=".xlsx,.xls,.csv" required
-                       style="width:100%; padding:8px; border:1px solid var(--c-border); border-radius:6px; font-size:13px; background:var(--c-bg); color:var(--c-text);">
-            </div>
-            <button type="submit" class="btn btn-primary btn-sm" id="btnUploadDireto">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Processar
+
+        <!-- Tabs -->
+        <div style="display:flex; gap:0; margin-bottom:16px; border-bottom:2px solid var(--c-border);">
+            <button type="button" class="tab-btn active" onclick="switchTab('arquivo')" id="tab-arquivo"
+                    style="padding:8px 20px; border:none; background:none; font-size:13px; font-weight:600; cursor:pointer; color:var(--c-text); border-bottom:2px solid #005e4e; margin-bottom:-2px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Arquivo Local
             </button>
-        </form>
+            <button type="button" class="tab-btn" onclick="switchTab('link')" id="tab-link"
+                    style="padding:8px 20px; border:none; background:none; font-size:13px; font-weight:600; cursor:pointer; color:var(--c-gray); border-bottom:2px solid transparent; margin-bottom:-2px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:4px;"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                Link / Caminho de Rede
+            </button>
+        </div>
+
+        <!-- Tab: Arquivo -->
+        <div id="panel-arquivo">
+            <form method="POST" action="/upload-links/upload-direto" enctype="multipart/form-data" id="uploadDiretoForm" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+                <input type="hidden" name="_csrf_token" value="<?= $csrfToken ?>">
+                <div style="flex:1; min-width:250px;">
+                    <label style="display:block; font-size:12px; font-weight:600; color:var(--c-text); margin-bottom:4px;">Arquivo (.xlsx, .xls, .csv)</label>
+                    <input type="file" name="arquivo" accept=".xlsx,.xls,.csv" required
+                           style="width:100%; padding:8px; border:1px solid var(--c-border); border-radius:6px; font-size:13px; background:var(--c-bg); color:var(--c-text);">
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm" id="btnUploadDireto">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Processar
+                </button>
+            </form>
+        </div>
+
+        <!-- Tab: Link -->
+        <div id="panel-link" style="display:none;">
+            <form method="POST" action="/upload-links/importar-link" id="importLinkForm" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+                <input type="hidden" name="_csrf_token" value="<?= $csrfToken ?>">
+                <div style="flex:1; min-width:300px;">
+                    <label style="display:block; font-size:12px; font-weight:600; color:var(--c-text); margin-bottom:4px;">URL ou Caminho do Arquivo</label>
+                    <input type="text" name="link_arquivo" placeholder="https://servidor.empresa.com/rh/colaboradores.csv  ou  \\servidor\rh\dados.xlsx"
+                           style="width:100%; padding:10px 12px; border:1px solid var(--c-border); border-radius:6px; font-size:13px; background:var(--c-bg); color:var(--c-text); font-family:monospace;" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm" id="btnImportLink">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Buscar e Processar
+                </button>
+            </form>
+            <div style="margin-top:8px; font-size:11px; color:#9ca3af;">
+                Aceita URLs (http/https), caminhos de rede (\\servidor\pasta\arquivo) ou caminhos locais do servidor.
+            </div>
+        </div>
+
         <div style="margin-top:12px; font-size:11px; color:#9ca3af;">
             <strong>Colunas aceitas:</strong> nome_completo (ou PE_NOME), cpf (ou PE_CPF), matricula (ou CODIGO), cargo, funcao, setor, unidade, data_admissao, data_nascimento, telefone, email, PE_CIDADE, PE_UF
         </div>
@@ -200,10 +238,25 @@
 </div>
 
 <script>
+function switchTab(tab) {
+    document.getElementById('panel-arquivo').style.display = tab === 'arquivo' ? 'block' : 'none';
+    document.getElementById('panel-link').style.display = tab === 'link' ? 'block' : 'none';
+    document.getElementById('tab-arquivo').style.borderBottomColor = tab === 'arquivo' ? '#005e4e' : 'transparent';
+    document.getElementById('tab-arquivo').style.color = tab === 'arquivo' ? 'var(--c-text)' : 'var(--c-gray)';
+    document.getElementById('tab-link').style.borderBottomColor = tab === 'link' ? '#005e4e' : 'transparent';
+    document.getElementById('tab-link').style.color = tab === 'link' ? 'var(--c-text)' : 'var(--c-gray)';
+}
+
 document.getElementById('uploadDiretoForm').addEventListener('submit', function() {
     var btn = document.getElementById('btnUploadDireto');
     btn.disabled = true;
     btn.textContent = 'Processando...';
+});
+
+document.getElementById('importLinkForm').addEventListener('submit', function() {
+    var btn = document.getElementById('btnImportLink');
+    btn.disabled = true;
+    btn.textContent = 'Buscando...';
 });
 
 function copiarLink() {

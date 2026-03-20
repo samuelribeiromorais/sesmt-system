@@ -521,6 +521,66 @@ class DocumentoController extends Controller
     }
 
     /**
+     * Atualizar data de emissao de um documento
+     */
+    public function atualizarEmissao(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $docModel = new Documento();
+        $doc = $docModel->find((int)$id);
+        if (!$doc) {
+            $this->flash('error', 'Documento nao encontrado.');
+            $this->redirect('/documentos');
+            return;
+        }
+
+        $dataEmissao = $this->input('data_emissao');
+        if (!$dataEmissao || !strtotime($dataEmissao)) {
+            $this->flash('error', 'Data de emissao invalida.');
+            $this->redirect("/documentos/{$id}");
+            return;
+        }
+
+        // Recalcular validade com base na nova emissao
+        $tipoModel = new TipoDocumento();
+        $tipo = $tipoModel->find((int)$doc['tipo_documento_id']);
+        $dataValidade = null;
+        if ($tipo && $tipo['validade_meses']) {
+            $dataValidade = date('Y-m-d', strtotime("{$dataEmissao} + {$tipo['validade_meses']} months"));
+        }
+
+        // Recalcular status
+        $status = 'vigente';
+        if ($dataValidade) {
+            $daysLeft = (strtotime($dataValidade) - time()) / 86400;
+            if ($daysLeft < 0) $status = 'vencido';
+            elseif ($daysLeft <= 30) $status = 'proximo_vencimento';
+        }
+
+        $updateData = [
+            'data_emissao'  => $dataEmissao,
+            'data_validade' => $dataValidade,
+            'status'        => $status,
+        ];
+
+        $docModel->update((int)$id, $updateData);
+
+        LoggerMiddleware::log('editar', "Data de emissao alterada para {$dataEmissao} (Doc ID: {$id})");
+        DashboardController::clearCache();
+
+        $this->flash('success', 'Data de emissao atualizada com sucesso.');
+
+        // Voltar para a pagina do colaborador se veio de la
+        $referer = $_SERVER['HTTP_REFERER'] ?? '';
+        if (strpos($referer, '/colaboradores/') !== false) {
+            $this->redirect("/colaboradores/{$doc['colaborador_id']}");
+        } else {
+            $this->redirect("/documentos/{$id}");
+        }
+    }
+
+    /**
      * Exclusao em lote (soft delete) via AJAX
      */
     public function destroyBatch(): void
