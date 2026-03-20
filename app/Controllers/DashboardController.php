@@ -177,6 +177,20 @@ class DashboardController extends Controller
         )[0]['total'] ?? 0);
         $data['kpi_docs_vencidos_ativos'] = $docsVencidosAtivos;
 
+        // --- Colaboradores ativos SEM NENHUM documento ---
+        $semDocsList = $docModel->query(
+            "SELECT c.id, c.nome_completo, c.cargo, cl.nome_fantasia as cliente_nome
+             FROM colaboradores c
+             LEFT JOIN clientes cl ON c.cliente_id = cl.id
+             LEFT JOIN documentos d ON d.colaborador_id = c.id AND d.status != 'obsoleto' AND d.excluido_em IS NULL
+             WHERE c.status = 'ativo' AND c.excluido_em IS NULL
+             GROUP BY c.id
+             HAVING COUNT(d.id) = 0
+             ORDER BY c.nome_completo ASC"
+        );
+        $data['colab_sem_docs'] = $semDocsList;
+        $data['colab_sem_docs_count'] = count($semDocsList);
+
         // --- Active collaborators missing required doc categories ---
         $data['missing_docs_count'] = $docModel->query(
             "SELECT COUNT(DISTINCT c.id) as total

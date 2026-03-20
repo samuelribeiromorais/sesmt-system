@@ -82,14 +82,20 @@ $categoriaNomes = [
     <?php endforeach; ?>
 </div>
 
-<?php if (!empty($missing_docs_count) && $missing_docs_count > 0): ?>
 <div class="cards-row" style="margin-top: 16px;">
+    <?php if (!empty($colab_sem_docs_count) && $colab_sem_docs_count > 0): ?>
+    <a href="#colab-sem-docs" class="card-stat danger stat-card-clickable" style="flex: 0 0 auto; padding: 16px 32px; text-decoration:none; color:inherit;" onclick="document.getElementById('colab-sem-docs').scrollIntoView({behavior:'smooth'}); return false;">
+        <div class="card-stat-value"><?= (int)$colab_sem_docs_count ?></div>
+        <div class="card-stat-label">Colaboradores ativos sem nenhum documento</div>
+    </a>
+    <?php endif; ?>
+    <?php if (!empty($missing_docs_count) && $missing_docs_count > 0): ?>
     <a href="/alertas" class="card-stat warning stat-card-clickable" style="flex: 0 0 auto; padding: 16px 32px; text-decoration:none; color:inherit;">
         <div class="card-stat-value"><?= (int)$missing_docs_count ?></div>
         <div class="card-stat-label">Colaboradores ativos sem categorias obrigatorias</div>
     </a>
+    <?php endif; ?>
 </div>
-<?php endif; ?>
 
 <!-- ============ KPI INDICATORS ============ -->
 <?php
@@ -148,6 +154,39 @@ $jsonVencData = json_encode($vencData);
         </div>
     </div>
 </div>
+
+<!-- ============ COLABORADORES SEM DOCUMENTOS ============ -->
+<?php if (!empty($colab_sem_docs) && count($colab_sem_docs) > 0): ?>
+<div class="table-container" style="margin-top: 24px;" id="colab-sem-docs">
+    <div class="table-header">
+        <span class="table-title" style="color: var(--c-danger);">
+            Colaboradores Ativos Sem Nenhum Documento (<?= count($colab_sem_docs) ?>)
+        </span>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Colaborador</th>
+                <th>Cargo</th>
+                <th>Cliente</th>
+                <th width="100">Acao</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($colab_sem_docs as $cs): ?>
+            <tr>
+                <td><a href="/colaboradores/<?= $cs['id'] ?>"><?= htmlspecialchars($cs['nome_completo']) ?></a></td>
+                <td><?= htmlspecialchars($cs['cargo'] ?? '—') ?></td>
+                <td><?= htmlspecialchars($cs['cliente_nome'] ?? '—') ?></td>
+                <td>
+                    <a href="/colaboradores/<?= $cs['id'] ?>" class="btn btn-primary btn-sm">Enviar Docs</a>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+<?php endif; ?>
 
 <!-- ============ CHARTS ============ -->
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
