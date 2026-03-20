@@ -181,7 +181,7 @@ class ReportService
         $row++;
 
         $colabs = $this->db->prepare(
-            "SELECT * FROM colaboradores WHERE cliente_id = :cid AND status = 'ativo' ORDER BY nome_completo"
+            "SELECT * FROM colaboradores WHERE cliente_id = :cid AND status = 'ativo' AND excluido_em IS NULL ORDER BY nome_completo"
         );
         $colabs->execute(['cid' => $clienteId]);
 

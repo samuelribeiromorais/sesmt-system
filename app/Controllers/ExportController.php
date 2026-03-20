@@ -19,10 +19,11 @@ class ExportController extends Controller
         $sql = "SELECT c.*, cl.nome_fantasia as cliente_nome, o.nome as obra_nome
                 FROM colaboradores c
                 LEFT JOIN clientes cl ON c.cliente_id = cl.id
-                LEFT JOIN obras o ON c.obra_id = o.id";
+                LEFT JOIN obras o ON c.obra_id = o.id
+                WHERE c.excluido_em IS NULL";
         $params = [];
         if ($status) {
-            $sql .= " WHERE c.status = :status";
+            $sql .= " AND c.status = :status";
             $params['status'] = $status;
         }
         $sql .= " ORDER BY c.nome_completo";

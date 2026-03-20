@@ -14,7 +14,7 @@ class EsocialEvento extends Model
                 FROM esocial_eventos e
                 JOIN colaboradores c ON e.colaborador_id = c.id";
         $params = [];
-        $where = [];
+        $where = ["c.excluido_em IS NULL"];
 
         if (!empty($filters['tipo_evento'])) {
             $where[] = "e.tipo_evento = :tipo_evento";
@@ -26,9 +26,7 @@ class EsocialEvento extends Model
             $params['status'] = $filters['status'];
         }
 
-        if (!empty($where)) {
-            $sql .= ' WHERE ' . implode(' AND ', $where);
-        }
+        $sql .= ' WHERE ' . implode(' AND ', $where);
 
         $limit = (int)$limit;
         $offset = (int)$offset;

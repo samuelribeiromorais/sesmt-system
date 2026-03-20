@@ -103,14 +103,14 @@ class DashboardController extends Controller
 
         // --- KPI: Taxa de conformidade (% colaboradores ativos com TODOS docs em dia) ---
         $totalAtivosKpi = (int)($docModel->query(
-            "SELECT COUNT(*) as total FROM colaboradores WHERE status = 'ativo'"
+            "SELECT COUNT(*) as total FROM colaboradores WHERE status = 'ativo' AND excluido_em IS NULL"
         )[0]['total'] ?? 0);
 
         $comProblemas = (int)($docModel->query(
             "SELECT COUNT(DISTINCT c.id) as total
              FROM colaboradores c
              JOIN {$latestDocs} d ON d.colaborador_id = c.id
-             WHERE c.status = 'ativo'
+             WHERE c.status = 'ativo' AND c.excluido_em IS NULL
                AND d.status IN ('vencido', 'proximo_vencimento')"
         )[0]['total'] ?? 0);
 
@@ -130,7 +130,7 @@ class DashboardController extends Controller
                     AND d_new.id != d_old.id
                     AND d_new.data_emissao > d_old.data_emissao
                     AND d_new.excluido_em IS NULL
-                JOIN colaboradores c ON c.id = d_old.colaborador_id AND c.status = 'ativo'
+                JOIN colaboradores c ON c.id = d_old.colaborador_id AND c.status = 'ativo' AND c.excluido_em IS NULL
                 WHERE d_old.data_validade IS NOT NULL
                     AND d_old.data_validade >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
                     AND d_old.excluido_em IS NULL
@@ -145,13 +145,13 @@ class DashboardController extends Controller
             "SELECT
                 DATE_FORMAT(m.mes, '%b/%Y') as mes_label,
                 (SELECT COUNT(*) FROM documentos d
-                 JOIN colaboradores c ON c.id = d.colaborador_id AND c.status = 'ativo'
+                 JOIN colaboradores c ON c.id = d.colaborador_id AND c.status = 'ativo' AND c.excluido_em IS NULL
                  WHERE d.data_validade >= DATE_FORMAT(m.mes, '%Y-%m-01')
                    AND d.data_validade <= LAST_DAY(m.mes)
                    AND d.status != 'obsoleto' AND d.excluido_em IS NULL
                 ) +
                 (SELECT COUNT(*) FROM certificados cert
-                 JOIN colaboradores c ON c.id = cert.colaborador_id AND c.status = 'ativo'
+                 JOIN colaboradores c ON c.id = cert.colaborador_id AND c.status = 'ativo' AND c.excluido_em IS NULL
                  WHERE cert.data_validade >= DATE_FORMAT(m.mes, '%Y-%m-01')
                    AND cert.data_validade <= LAST_DAY(m.mes)
                 ) as total
@@ -173,7 +173,7 @@ class DashboardController extends Controller
                  FROM documentos
                  WHERE status != 'obsoleto' AND excluido_em IS NULL
              ) d
-             JOIN colaboradores c ON c.id = d.colaborador_id AND c.status = 'ativo'
+             JOIN colaboradores c ON c.id = d.colaborador_id AND c.status = 'ativo' AND c.excluido_em IS NULL
              WHERE d.status = 'vencido' AND d.rn = 1"
         )[0]['total'] ?? 0);
         $data['kpi_docs_vencidos_ativos'] = $docsVencidosAtivos;
@@ -196,7 +196,7 @@ class DashboardController extends Controller
         $data['missing_docs_count'] = $docModel->query(
             "SELECT COUNT(DISTINCT c.id) as total
              FROM colaboradores c
-             WHERE c.status = 'ativo'
+             WHERE c.status = 'ativo' AND c.excluido_em IS NULL
                AND (
                    NOT EXISTS (SELECT 1 FROM documentos d JOIN tipos_documento td ON d.tipo_documento_id = td.id WHERE d.colaborador_id = c.id AND td.categoria = 'aso' AND d.status != 'obsoleto')
                    OR NOT EXISTS (SELECT 1 FROM documentos d JOIN tipos_documento td ON d.tipo_documento_id = td.id WHERE d.colaborador_id = c.id AND td.categoria = 'epi' AND d.status != 'obsoleto')

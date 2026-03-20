@@ -19,7 +19,7 @@ class Alerta extends Model
              LEFT JOIN tipos_documento td ON d.tipo_documento_id = td.id
              LEFT JOIN certificados cert ON a.certificado_id = cert.id
              LEFT JOIN tipos_certificado tc ON cert.tipo_certificado_id = tc.id
-             WHERE a.notificado = 0
+             WHERE a.notificado = 0 AND c.excluido_em IS NULL
              ORDER BY a.dias_restantes ASC, a.criado_em DESC
              LIMIT :lim OFFSET :off"
         );

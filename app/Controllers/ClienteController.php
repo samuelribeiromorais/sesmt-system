@@ -137,7 +137,7 @@ class ClienteController extends Controller
 
         // Compliance summary
         $colabStmt = $db->prepare(
-            "SELECT COUNT(*) FROM colaboradores WHERE cliente_id = :cid AND status = 'ativo'"
+            "SELECT COUNT(*) FROM colaboradores WHERE cliente_id = :cid AND status = 'ativo' AND excluido_em IS NULL"
         );
         $colabStmt->execute(['cid' => (int)$id]);
         $totalColabs = (int)$colabStmt->fetchColumn();
