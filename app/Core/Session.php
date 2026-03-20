@@ -19,6 +19,7 @@ class Session
         }
 
         self::checkInactivity();
+        self::updateActiveSession();
     }
 
     private static function checkInactivity(): void
@@ -34,6 +35,30 @@ class Session
             }
         }
         $_SESSION['last_activity'] = time();
+    }
+
+    /**
+     * Atualiza o timestamp de último acesso da sessão ativa no banco.
+     * Executa no máximo a cada 60 segundos para não sobrecarregar o DB.
+     */
+    private static function updateActiveSession(): void
+    {
+        if (!self::isLoggedIn()) {
+            return;
+        }
+
+        $lastUpdate = $_SESSION['_sessao_ativa_update'] ?? 0;
+        if (time() - $lastUpdate < 60) {
+            return;
+        }
+
+        try {
+            $sessaoModel = new \App\Models\SessaoAtiva();
+            $sessaoModel->atualizarAcesso(session_id());
+            $_SESSION['_sessao_ativa_update'] = time();
+        } catch (\Throwable $e) {
+            // Silenciar erros para não quebrar a sessão
+        }
     }
 
     public static function set(string $key, $value): void

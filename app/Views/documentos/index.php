@@ -134,8 +134,21 @@
         </tbody>
     </table>
 
+    <!-- Load More Button -->
+    <?php if ($page < ($totalPages ?? 1)): ?>
+    <button type="button" class="btn-load-more" id="docLoadMore"
+            data-page="<?= $page ?>"
+            data-total-pages="<?= $totalPages ?>"
+            data-search="<?= htmlspecialchars($search ?? '') ?>"
+            data-status="<?= htmlspecialchars($status ?? '') ?>"
+            data-categoria="<?= htmlspecialchars($categoria ?? '') ?>">
+        Carregar mais
+    </button>
+    <?php endif; ?>
+
+    <!-- Traditional Pagination (fallback) -->
     <?php if (($totalPages ?? 1) > 1): ?>
-    <div style="padding:12px 20px; display:flex; justify-content:center; align-items:center; gap:6px;">
+    <div id="docPagination" style="padding:12px 20px; display:flex; justify-content:center; align-items:center; gap:6px;">
         <?php if ($page > 1): ?>
         <a href="/documentos?page=1&q=<?= urlencode($search ?? '') ?>&status=<?= urlencode($status ?? '') ?>&categoria=<?= urlencode($categoria ?? '') ?>" class="btn btn-outline btn-sm">&laquo;</a>
         <a href="/documentos?page=<?= $page - 1 ?>&q=<?= urlencode($search ?? '') ?>&status=<?= urlencode($status ?? '') ?>&categoria=<?= urlencode($categoria ?? '') ?>" class="btn btn-outline btn-sm">&lsaquo;</a>
@@ -259,4 +272,98 @@ document.getElementById('doc-pdf-modal').addEventListener('click', function(e) {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeDocPdfModal();
 });
+
+// Lazy loading / Load More for documentos
+(function() {
+    var btn = document.getElementById('docLoadMore');
+    if (!btn) return;
+
+    var tbody = document.querySelector('.table-container table tbody');
+    var currentPage = parseInt(btn.dataset.page);
+    var totalPages = parseInt(btn.dataset.totalPages);
+    var searchQ = btn.dataset.search;
+    var statusFilter = btn.dataset.status;
+    var categoriaFilter = btn.dataset.categoria;
+
+    var categoryColors = {
+        'aso': '#e8f5e9; color:#2e7d32',
+        'epi': '#e3f2fd; color:#1565c0',
+        'os': '#fff3e0; color:#e65100',
+        'treinamento': '#f3e5f5; color:#7b1fa2',
+        'anuencia': '#e0f7fa; color:#00838f',
+    };
+
+    var statusBadges = {
+        'vigente': { cls: 'badge-vigente', label: 'Vigente' },
+        'proximo_vencimento': { cls: 'badge-proximo_vencimento', label: 'Vencendo' },
+        'vencido': { cls: 'badge-vencido', label: 'Vencido' },
+    };
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '\u2014';
+        var parts = dateStr.split('-');
+        if (parts.length === 3) return parts[2] + '/' + parts[1] + '/' + parts[0];
+        return dateStr;
+    }
+
+    function esc(text) {
+        if (!text) return '';
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    btn.addEventListener('click', function() {
+        if (btn.disabled) return;
+        currentPage++;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Carregando...';
+
+        var url = '/documentos?page=' + currentPage +
+                  '&q=' + encodeURIComponent(searchQ) +
+                  '&status=' + encodeURIComponent(statusFilter) +
+                  '&categoria=' + encodeURIComponent(categoriaFilter) +
+                  '&format=json';
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var docs = data.documentos || [];
+                docs.forEach(function(d) {
+                    var catColor = categoryColors[d.categoria] || '#f5f5f5; color:#616161';
+                    var badge = statusBadges[d.status] || { cls: '', label: d.status };
+
+                    var tr = document.createElement('tr');
+                    tr.innerHTML =
+                        '<td><a href="/colaboradores/' + d.colaborador_id + '" style="color:var(--c-primary);font-weight:600;">' + esc(d.nome_completo) + '</a></td>' +
+                        '<td style="font-size:13px;">' + esc(d.tipo_nome) + '</td>' +
+                        '<td><span class="badge" style="background:' + catColor + ';">' + esc((d.categoria || '').toUpperCase()) + '</span></td>' +
+                        '<td style="font-size:13px;">' + formatDate(d.data_emissao) + '</td>' +
+                        '<td style="font-size:13px;">' + formatDate(d.data_validade) + '</td>' +
+                        '<td><span class="badge ' + badge.cls + '">' + badge.label + '</span></td>' +
+                        '<td style="white-space:nowrap;">' +
+                            '<button type="button" class="btn btn-outline btn-sm" onclick="viewDocPdf(' + d.id + ', \'' + esc(d.arquivo_nome || 'documento.pdf').replace(/'/g, "\\'") + '\')" title="Visualizar">Ver</button> ' +
+                            '<a href="/documentos/download/' + d.id + '" class="btn btn-outline btn-sm" title="Download">' +
+                            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>' +
+                        '</td>';
+                    tbody.appendChild(tr);
+                });
+
+                if (currentPage >= data.totalPages) {
+                    btn.style.display = 'none';
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Carregar mais';
+                }
+
+                // Hide pagination when using load more
+                var pag = document.getElementById('docPagination');
+                if (pag) pag.style.display = 'none';
+            })
+            .catch(function() {
+                btn.disabled = false;
+                btn.innerHTML = 'Carregar mais';
+            });
+    });
+})();
 </script>

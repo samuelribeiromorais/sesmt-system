@@ -29,16 +29,17 @@ class DashboardController extends Controller
             'pageTitle'            => 'Dashboard',
         ];
 
-        // --- Document status counts by category ---
+        // --- Document status counts by category (SOMENTE COLABORADORES ATIVOS) ---
         $data['docs_by_category'] = $docModel->query(
             "SELECT td.categoria, d.status, COUNT(*) as total
              FROM documentos d
              JOIN tipos_documento td ON d.tipo_documento_id = td.id
-             WHERE d.status != 'obsoleto'
+             JOIN colaboradores c ON d.colaborador_id = c.id
+             WHERE d.status != 'obsoleto' AND c.status = 'ativo' AND d.excluido_em IS NULL
              GROUP BY td.categoria, d.status"
         );
 
-        // --- Top 10 collaborators with most expired/expiring items ---
+        // --- Top 10 collaborators ATIVOS with most expired/expiring items ---
         $data['top_pendentes'] = $docModel->query(
             "SELECT c.id as colaborador_id, c.nome_completo,
                     COALESCE(doc_cnt.total, 0) as docs_pendentes,
@@ -48,7 +49,7 @@ class DashboardController extends Controller
              LEFT JOIN (
                  SELECT colaborador_id, COUNT(*) as total
                  FROM documentos
-                 WHERE status IN ('vencido', 'proximo_vencimento')
+                 WHERE status IN ('vencido', 'proximo_vencimento') AND excluido_em IS NULL
                  GROUP BY colaborador_id
              ) doc_cnt ON doc_cnt.colaborador_id = c.id
              LEFT JOIN (
@@ -63,18 +64,88 @@ class DashboardController extends Controller
              LIMIT 10"
         );
 
-        // --- Documents by client (top 10) ---
+        // --- Documents by client (top 10, SOMENTE ATIVOS) ---
         $data['docs_by_client'] = $docModel->query(
             "SELECT cl.nome_fantasia, COUNT(*) as total,
                     SUM(CASE WHEN d.status='vencido' THEN 1 ELSE 0 END) as vencidos
              FROM documentos d
              JOIN colaboradores c ON d.colaborador_id = c.id
              JOIN clientes cl ON c.cliente_id = cl.id
-             WHERE d.status != 'obsoleto'
+             WHERE d.status != 'obsoleto' AND c.status = 'ativo' AND d.excluido_em IS NULL
              GROUP BY cl.id
              ORDER BY total DESC
              LIMIT 10"
         );
+
+        // --- KPI: Taxa de conformidade (% colaboradores ativos com TODOS docs em dia) ---
+        $totalAtivosKpi = (int)($docModel->query(
+            "SELECT COUNT(*) as total FROM colaboradores WHERE status = 'ativo'"
+        )[0]['total'] ?? 0);
+
+        $comProblemas = (int)($docModel->query(
+            "SELECT COUNT(DISTINCT c.id) as total
+             FROM colaboradores c
+             JOIN documentos d ON d.colaborador_id = c.id
+             WHERE c.status = 'ativo'
+               AND d.status IN ('vencido', 'proximo_vencimento')
+               AND d.excluido_em IS NULL"
+        )[0]['total'] ?? 0);
+
+        $data['kpi_conformidade_atual'] = $totalAtivosKpi > 0
+            ? round(($totalAtivosKpi - $comProblemas) / $totalAtivosKpi * 100, 1)
+            : 0;
+        $data['kpi_conformidade_tendencia'] = 0; // Will calculate after we have historical data
+
+        // --- KPI: Tempo medio de renovacao (dias entre vencimento e nova emissao) ---
+        // Usa documento_pai_id ou status obsoleto para encontrar renovacoes reais
+        $tempoRenovacao = $docModel->query(
+            "SELECT ROUND(AVG(dias), 1) as media FROM (
+                SELECT DATEDIFF(d_new.data_emissao, d_old.data_validade) as dias
+                FROM documentos d_old
+                JOIN documentos d_new ON d_new.colaborador_id = d_old.colaborador_id
+                    AND d_new.tipo_documento_id = d_old.tipo_documento_id
+                    AND d_new.id > d_old.id
+                    AND d_new.excluido_em IS NULL
+                JOIN colaboradores c ON c.id = d_old.colaborador_id AND c.status = 'ativo'
+                WHERE d_old.status = 'obsoleto'
+                    AND d_old.data_validade IS NOT NULL
+                    AND d_old.data_validade >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+                    AND d_old.excluido_em IS NULL
+                    AND DATEDIFF(d_new.data_emissao, d_old.data_validade) BETWEEN -90 AND 180
+                GROUP BY d_old.id
+            ) sub"
+        );
+        $data['kpi_tempo_renovacao'] = $tempoRenovacao[0]['media'] ?? 'N/A';
+
+        // --- KPI: Tendencia vencimentos (proximos 6 meses) ---
+        $data['kpi_tendencia_vencimentos'] = $docModel->query(
+            "SELECT
+                DATE_FORMAT(m.mes, '%b/%Y') as mes_label,
+                (SELECT COUNT(*) FROM documentos d
+                 JOIN colaboradores c ON c.id = d.colaborador_id AND c.status = 'ativo'
+                 WHERE d.data_validade >= DATE_FORMAT(m.mes, '%Y-%m-01')
+                   AND d.data_validade <= LAST_DAY(m.mes)
+                   AND d.status != 'obsoleto' AND d.excluido_em IS NULL
+                ) +
+                (SELECT COUNT(*) FROM certificados cert
+                 JOIN colaboradores c ON c.id = cert.colaborador_id AND c.status = 'ativo'
+                 WHERE cert.data_validade >= DATE_FORMAT(m.mes, '%Y-%m-01')
+                   AND cert.data_validade <= LAST_DAY(m.mes)
+                ) as total
+             FROM (
+                SELECT DATE_ADD(CURDATE(), INTERVAL n MONTH) as mes
+                FROM (SELECT 0 n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5) nums
+             ) m
+             ORDER BY m.mes ASC"
+        );
+
+        // --- KPI: Docs vencidos de colaboradores ativos ---
+        $docsVencidosAtivos = (int)($docModel->query(
+            "SELECT COUNT(*) as total FROM documentos d
+             JOIN colaboradores c ON c.id = d.colaborador_id AND c.status = 'ativo'
+             WHERE d.status = 'vencido' AND d.excluido_em IS NULL"
+        )[0]['total'] ?? 0);
+        $data['kpi_docs_vencidos_ativos'] = $docsVencidosAtivos;
 
         // --- Active collaborators missing required doc categories ---
         $data['missing_docs_count'] = $docModel->query(

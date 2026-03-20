@@ -33,7 +33,7 @@ class DocumentoController extends Controller
             'vencido' => 0,
         ];
         $countRows = $model->query(
-            "SELECT status, COUNT(*) as total FROM documentos WHERE status != 'obsoleto' GROUP BY status"
+            "SELECT status, COUNT(*) as total FROM documentos WHERE status != 'obsoleto' AND excluido_em IS NULL GROUP BY status"
         );
         foreach ($countRows as $row) {
             $contadores[$row['status']] = (int)$row['total'];
@@ -45,11 +45,11 @@ class DocumentoController extends Controller
                 FROM documentos d
                 JOIN colaboradores c ON d.colaborador_id = c.id
                 JOIN tipos_documento td ON d.tipo_documento_id = td.id
-                WHERE d.status != 'obsoleto'";
+                WHERE d.status != 'obsoleto' AND d.excluido_em IS NULL";
         $countSql = "SELECT COUNT(*) as total FROM documentos d
                      JOIN colaboradores c ON d.colaborador_id = c.id
                      JOIN tipos_documento td ON d.tipo_documento_id = td.id
-                     WHERE d.status != 'obsoleto'";
+                     WHERE d.status != 'obsoleto' AND d.excluido_em IS NULL";
         $params = [];
 
         if ($status) {
@@ -76,6 +76,28 @@ class DocumentoController extends Controller
 
         $sql .= " ORDER BY d.criado_em DESC LIMIT {$perPage} OFFSET {$offset}";
         $documentos = $model->query($sql, $params);
+
+        // JSON response for lazy loading
+        $format = $this->input('format', '');
+        if ($format === 'json') {
+            $this->json([
+                'documentos' => array_map(fn($d) => [
+                    'id'              => $d['id'],
+                    'colaborador_id'  => $d['colaborador_id'],
+                    'nome_completo'   => $d['nome_completo'],
+                    'tipo_nome'       => $d['tipo_nome'],
+                    'categoria'       => $d['categoria'],
+                    'data_emissao'    => $d['data_emissao'],
+                    'data_validade'   => $d['data_validade'],
+                    'status'          => $d['status'],
+                    'arquivo_nome'    => $d['arquivo_nome'] ?? '',
+                ], $documentos),
+                'page'       => $page,
+                'totalPages' => $totalPages,
+                'total'      => $totalItems,
+            ]);
+            return;
+        }
 
         $this->view('documentos/index', [
             'documentos' => $documentos,
@@ -172,8 +194,18 @@ class DocumentoController extends Controller
             $dataValidade = date('Y-m-d', strtotime("{$dataEmissao} + {$tipo['validade_meses']} months"));
         }
 
-        // Mark previous documents of same type as obsolete (once for the batch)
+        // Versioning: find original document of same type for this collaborator
         $docModel = new Documento();
+        $original = $docModel->findOriginal($colaboradorId, $tipoDocumentoId);
+        $documentoPaiId = null;
+        $nextVersion = 1;
+
+        if ($original) {
+            $documentoPaiId = (int) $original['id'];
+            $nextVersion = $docModel->getLatestVersion($documentoPaiId) + 1;
+        }
+
+        // Mark previous documents of same type as obsolete (once for the batch)
         $docModel->markAsObsolete($colaboradorId, $tipoDocumentoId);
 
         // Determine status
@@ -207,7 +239,7 @@ class DocumentoController extends Controller
                 continue;
             }
 
-            $id = $docModel->create([
+            $createData = [
                 'colaborador_id'    => $colaboradorId,
                 'tipo_documento_id' => $tipoDocumentoId,
                 'arquivo_nome'      => $files['name'][$i],
@@ -219,10 +251,18 @@ class DocumentoController extends Controller
                 'status'            => $status,
                 'observacoes'       => $observacoes,
                 'enviado_por'       => Session::get('user_id'),
-            ]);
+                'versao'            => $nextVersion,
+                'documento_pai_id'  => $documentoPaiId,
+            ];
 
-            LoggerMiddleware::log('upload', "Documento enviado: {$tipo['nome']} para {$colab['nome_completo']} (Doc ID: {$id})");
+            $id = $docModel->create($createData);
+
+            // If this is the first document (no original existed), it becomes its own root
+            // documento_pai_id stays NULL for the root document
+
+            LoggerMiddleware::log('upload', "Documento enviado: {$tipo['nome']} v{$nextVersion} para {$colab['nome_completo']} (Doc ID: {$id})");
             $uploadedCount++;
+            $nextVersion++;
         }
 
         if ($uploadedCount === 0) {
@@ -301,10 +341,91 @@ class DocumentoController extends Controller
             $this->redirect('/documentos');
         }
 
+        // Count versions for this document
+        $versions = $docModel->findVersions((int)$id);
+        $versionCount = count($versions);
+
         $this->view('documentos/show', [
+            'doc'          => $doc,
+            'versionCount' => $versionCount,
+            'pageTitle'    => 'Documentos',
+        ]);
+    }
+
+    public function versoes(string $id): void
+    {
+        RoleMiddleware::requireAny();
+
+        $docModel = new Documento();
+        $doc = $docModel->find((int)$id);
+        if (!$doc) {
+            $this->redirect('/documentos');
+        }
+
+        $versions = $docModel->findVersions((int)$id);
+
+        $this->view('documentos/versoes', [
+            'doc'       => $doc,
+            'versions'  => $versions,
+            'pageTitle' => 'Documentos',
+        ]);
+    }
+
+    public function assinar(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $docModel = new Documento();
+        $doc = $docModel->find((int)$id);
+        if (!$doc) {
+            $this->redirect('/documentos');
+        }
+
+        if ($doc['assinatura_digital']) {
+            $this->flash('warning', 'Este documento ja foi assinado.');
+            $this->redirect("/documentos/{$id}");
+        }
+
+        $this->view('documentos/assinar', [
             'doc'       => $doc,
             'pageTitle' => 'Documentos',
         ]);
+    }
+
+    public function registrarAssinatura(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $docModel = new Documento();
+        $doc = $docModel->find((int)$id);
+        if (!$doc) {
+            $this->flash('error', 'Documento nao encontrado.');
+            $this->redirect('/documentos');
+        }
+
+        if ($doc['assinatura_digital']) {
+            $this->flash('warning', 'Este documento ja foi assinado.');
+            $this->redirect("/documentos/{$id}");
+        }
+
+        $signerName = trim($this->input('assinado_por', ''));
+        if (!$signerName) {
+            $this->flash('error', 'Informe o nome do assinante.');
+            $this->redirect("/documentos/{$id}/assinar");
+        }
+
+        $timestamp = date('Y-m-d H:i:s');
+        $signature = hash('sha256', $doc['arquivo_hash'] . $signerName . $timestamp);
+
+        $docModel->update((int)$id, [
+            'assinatura_digital' => $signature,
+            'assinado_por'       => $signerName,
+            'assinado_em'        => $timestamp,
+        ]);
+
+        LoggerMiddleware::log('assinar', "Documento assinado por {$signerName} (Doc ID: {$id})");
+        $this->flash('success', 'Documento assinado com sucesso.');
+        $this->redirect("/documentos/{$id}");
     }
 
     public function destroy(string $id): void
@@ -314,14 +435,12 @@ class DocumentoController extends Controller
         $docModel = new Documento();
         $doc = $docModel->find((int)$id);
         if ($doc) {
-            $config = require dirname(__DIR__) . '/config/app.php';
-            $filePath = $config['upload']['path'] . '/' . $doc['arquivo_path'];
-            if (file_exists($filePath)) {
-                unlink($filePath);
-            }
-            $docModel->delete((int)$id);
-            LoggerMiddleware::log('excluir', "Documento excluido: {$doc['arquivo_nome']} (ID: {$id})");
-            $this->flash('success', 'Documento excluido.');
+            // Soft delete: set excluido_em instead of hard delete
+            $docModel->update((int)$id, [
+                'excluido_em' => date('Y-m-d H:i:s'),
+            ]);
+            LoggerMiddleware::log('excluir', "Documento movido para lixeira: {$doc['arquivo_nome']} (ID: {$id})");
+            $this->flash('success', 'Documento movido para a lixeira.');
         }
         $this->redirect("/colaboradores/{$doc['colaborador_id']}");
     }

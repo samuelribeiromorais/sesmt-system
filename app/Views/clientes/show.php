@@ -23,11 +23,17 @@
             <?php else: ?>
             <?php foreach ($obras as $o): ?>
             <tr>
-                <td><?= htmlspecialchars($o['nome']) ?></td>
+                <td><a href="/obras/<?= $o['id'] ?>" style="color:var(--c-accent); font-weight:500;"><?= htmlspecialchars($o['nome']) ?></a></td>
                 <td><?= htmlspecialchars($o['local_obra'] ?? '-') ?></td>
                 <td><?= $o['data_inicio'] ? date('d/m/Y', strtotime($o['data_inicio'])) : '-' ?></td>
                 <td><span class="badge badge-<?= $o['status'] === 'ativa' ? 'ativo' : ($o['status'] === 'suspensa' ? 'afastado' : 'inativo') ?>"><?= ucfirst($o['status']) ?></span></td>
-                <td><a href="/obras/<?= $o['id'] ?>/editar" class="btn btn-outline btn-sm">Editar</a></td>
+                <td>
+                    <div style="display:flex;gap:4px;">
+                        <a href="/obras/<?= $o['id'] ?>" class="btn btn-outline btn-sm">Ver</a>
+                        <a href="/obras/<?= $o['id'] ?>/editar" class="btn btn-outline btn-sm">Editar</a>
+                        <a href="/obras/<?= $o['id'] ?>/download-zip" class="btn btn-primary btn-sm" title="Baixar docs de todos os colaboradores desta obra">ZIP</a>
+                    </div>
+                </td>
             </tr>
             <?php endforeach; ?>
             <?php endif; ?>

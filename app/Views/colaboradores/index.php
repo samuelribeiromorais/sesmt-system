@@ -66,8 +66,20 @@
         </tbody>
     </table>
 
+    <!-- Load More Button -->
+    <?php if ($page < $totalPages): ?>
+    <button type="button" class="btn-load-more" id="colabLoadMore"
+            data-page="<?= $page ?>"
+            data-total-pages="<?= $totalPages ?>"
+            data-search="<?= htmlspecialchars($search) ?>"
+            data-status="<?= htmlspecialchars($status) ?>">
+        Carregar mais
+    </button>
+    <?php endif; ?>
+
+    <!-- Traditional Pagination (fallback) -->
     <?php if ($totalPages > 1): ?>
-    <div style="padding:12px 20px; display:flex; justify-content:center; align-items:center; gap:6px;">
+    <div id="colabPagination" style="padding:12px 20px; display:flex; justify-content:center; align-items:center; gap:6px;">
         <?php if ($page > 1): ?>
         <a href="/colaboradores?page=1&q=<?= urlencode($search) ?>&status=<?= $status ?>" class="btn btn-outline btn-sm">&laquo;</a>
         <a href="/colaboradores?page=<?= $page - 1 ?>&q=<?= urlencode($search) ?>&status=<?= $status ?>" class="btn btn-outline btn-sm">&lsaquo;</a>
@@ -144,5 +156,70 @@
 
     // Focus search on page load if no search term
     if (!input.value) input.focus();
+})();
+
+// Lazy loading / Load More for colaboradores
+(function() {
+    const btn = document.getElementById('colabLoadMore');
+    if (!btn) return;
+
+    const tbody = document.querySelector('.table-container table tbody');
+    let currentPage = parseInt(btn.dataset.page);
+    const totalPages = parseInt(btn.dataset.totalPages);
+    const searchQ = btn.dataset.search;
+    const statusFilter = btn.dataset.status;
+
+    btn.addEventListener('click', function() {
+        if (btn.disabled) return;
+        currentPage++;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Carregando...';
+
+        const url = '/colaboradores?page=' + currentPage +
+                    '&q=' + encodeURIComponent(searchQ) +
+                    '&status=' + encodeURIComponent(statusFilter) +
+                    '&format=json';
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(r => r.json())
+            .then(data => {
+                if (Array.isArray(data) && data.length > 0) {
+                    data.forEach(c => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML =
+                            '<td><a href="/colaboradores/' + c.id + '" style="color:var(--c-primary);font-weight:600;">' + escapeHtml(c.nome_completo) + '</a></td>' +
+                            '<td style="font-size:13px;">' + escapeHtml(c.cargo || '-') + '</td>' +
+                            '<td style="font-size:13px;">' + escapeHtml(c.setor || '-') + '</td>' +
+                            '<td style="font-size:13px;">' + escapeHtml(c.cliente_nome || '-') + '</td>' +
+                            '<td><span class="badge badge-' + (c.status || 'ativo') + '">' + ucfirst(c.status || 'ativo') + '</span></td>' +
+                            '<td><a href="/colaboradores/' + c.id + '" class="btn btn-outline btn-sm">Ver</a></td>';
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                if (currentPage >= totalPages) {
+                    btn.style.display = 'none';
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Carregar mais';
+                }
+
+                // Hide pagination when using load more
+                var pag = document.getElementById('colabPagination');
+                if (pag) pag.style.display = 'none';
+            })
+            .catch(() => {
+                btn.disabled = false;
+                btn.innerHTML = 'Carregar mais';
+            });
+    });
+
+    function ucfirst(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+    function escapeHtml(text) {
+        if (!text) return '';
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 })();
 </script>

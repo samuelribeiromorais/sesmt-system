@@ -92,6 +92,64 @@ $categoriaNomes = [
 </div>
 <?php endif; ?>
 
+<!-- ============ KPI INDICATORS ============ -->
+<?php
+$kpiConformidade = $kpi_conformidade_atual ?? 0;
+$kpiTempoRenov = $kpi_tempo_renovacao ?? 'N/A';
+$kpiDocsVencAtivos = $kpi_docs_vencidos_ativos ?? 0;
+
+$confColor = $kpiConformidade >= 80 ? '#00b279' : ($kpiConformidade >= 50 ? '#f39c12' : '#e74c3c');
+$tempoIsNum = is_numeric($kpiTempoRenov);
+$tempoColor = !$tempoIsNum ? '#6b7280' : ($kpiTempoRenov <= 15 ? '#00b279' : ($kpiTempoRenov <= 30 ? '#f39c12' : '#e74c3c'));
+
+$vencLabels = [];
+$vencData = [];
+if (!empty($kpi_tendencia_vencimentos)) {
+    foreach ($kpi_tendencia_vencimentos as $row) {
+        $vencLabels[] = $row['mes_label'];
+        $vencData[] = (int)$row['total'];
+    }
+}
+$jsonVencLabels = json_encode($vencLabels);
+$jsonVencData = json_encode($vencData);
+?>
+
+<div style="margin-top:24px; margin-bottom:8px;">
+    <h3 style="color:var(--c-primary); font-size:16px; font-weight:600; margin:0;">Indicadores KPI (Colaboradores Ativos)</h3>
+</div>
+
+<div class="cards-row" style="margin-top:8px;">
+    <div class="card-stat" style="flex:1; border-left:4px solid <?= $confColor ?>; background:#fff; text-align:center;">
+        <div class="card-stat-value" style="font-size:2rem; color:<?= $confColor ?>;"><?= $kpiConformidade ?>%</div>
+        <div class="card-stat-label">Taxa de Conformidade</div>
+        <div style="margin-top:6px; font-size:12px; color:#6b7280;">Colaboradores sem docs vencidos</div>
+    </div>
+
+    <div class="card-stat" style="flex:1; border-left:4px solid #e74c3c; background:#fff; text-align:center;">
+        <div class="card-stat-value" style="font-size:2rem; color:#e74c3c;"><?= $kpiDocsVencAtivos ?></div>
+        <div class="card-stat-label">Docs Vencidos (Ativos)</div>
+        <div style="margin-top:6px; font-size:12px; color:#6b7280;">Requerem acao imediata</div>
+    </div>
+
+    <div class="card-stat" style="flex:1; border-left:4px solid <?= $tempoColor ?>; background:#fff; text-align:center;">
+        <div class="card-stat-value" style="font-size:2rem; color:<?= $tempoColor ?>;"><?= $tempoIsNum ? $kpiTempoRenov . ' dias' : $kpiTempoRenov ?></div>
+        <div class="card-stat-label">Tempo Medio Renovacao</div>
+        <div style="margin-top:6px; font-size:12px; color:#6b7280;">Ultimos 12 meses</div>
+    </div>
+</div>
+
+<!-- KPI Chart: Upcoming Expirations -->
+<div style="margin-top: 16px;">
+    <div class="table-container">
+        <div class="table-header">
+            <span class="table-title">Vencimentos Previstos - Proximos 6 Meses (Apenas Ativos)</span>
+        </div>
+        <div style="padding: 24px;">
+            <canvas id="chartKpiVencimentos" style="max-height: 280px;"></canvas>
+        </div>
+    </div>
+</div>
+
 <!-- ============ CHARTS ============ -->
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
     <!-- Doughnut: Document status distribution -->
@@ -266,6 +324,41 @@ document.addEventListener('DOMContentLoaded', function () {
                     position: 'bottom',
                     labels: { padding: 16, usePointStyle: true }
                 }
+            }
+        }
+    });
+
+    // --- Bar: KPI Upcoming Expirations ---
+    new Chart(document.getElementById('chartKpiVencimentos'), {
+        type: 'bar',
+        data: {
+            labels: <?= $jsonVencLabels ?>,
+            datasets: [{
+                label: 'Vencimentos',
+                data: <?= $jsonVencData ?>,
+                backgroundColor: function(ctx) {
+                    var v = ctx.parsed?.y || 0;
+                    if (v > 20) return 'rgba(231, 76, 60, 0.7)';
+                    if (v > 10) return 'rgba(243, 156, 18, 0.7)';
+                    return 'rgba(0, 178, 121, 0.7)';
+                },
+                borderColor: function(ctx) {
+                    var v = ctx.parsed?.y || 0;
+                    if (v > 20) return '#e74c3c';
+                    if (v > 10) return '#f39c12';
+                    return '#00b279';
+                },
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0 } }
+            },
+            plugins: {
+                legend: { display: false }
             }
         }
     });

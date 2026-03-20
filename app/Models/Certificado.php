@@ -49,7 +49,7 @@ class Certificado extends Model
     public function countByStatus(): array
     {
         $stmt = $this->db->query(
-            "SELECT status, COUNT(*) as total FROM certificados GROUP BY status"
+            "SELECT status, COUNT(*) as total FROM certificados WHERE excluido_em IS NULL GROUP BY status"
         );
         $result = [];
         foreach ($stmt->fetchAll() as $row) {
@@ -69,12 +69,29 @@ class Certificado extends Model
              WHERE cert.status IN ('vigente','proximo_vencimento')
                AND cert.data_validade <= DATE_ADD(CURDATE(), INTERVAL :days DAY)
                AND cert.data_validade >= CURDATE()
+               AND cert.excluido_em IS NULL
              ORDER BY cert.data_validade ASC
              LIMIT :lim"
         );
         $stmt->bindValue('days', $days, \PDO::PARAM_INT);
         $stmt->bindValue('lim', $limit, \PDO::PARAM_INT);
         $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Get all soft-deleted certificates.
+     */
+    public function getDeleted(): array
+    {
+        $stmt = $this->db->query(
+            "SELECT cert.*, c.nome_completo, tc.codigo, tc.titulo
+             FROM certificados cert
+             JOIN colaboradores c ON cert.colaborador_id = c.id
+             JOIN tipos_certificado tc ON cert.tipo_certificado_id = tc.id
+             WHERE cert.excluido_em IS NOT NULL
+             ORDER BY cert.excluido_em DESC"
+        );
         return $stmt->fetchAll();
     }
 }

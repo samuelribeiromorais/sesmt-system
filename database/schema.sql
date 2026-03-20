@@ -25,6 +25,14 @@ CREATE TABLE IF NOT EXISTS usuarios (
     tentativas_login INT NOT NULL DEFAULT 0,
     bloqueado_ate DATETIME NULL,
     ultimo_login DATETIME NULL,
+    -- 2FA TOTP (feature 1)
+    totp_secret VARCHAR(255) NULL,
+    totp_ativo TINYINT(1) NOT NULL DEFAULT 0,
+    -- Politica de senhas (feature 3)
+    senha_alterada_em DATETIME NULL,
+    senha_historico JSON NULL,
+    -- Dark mode (feature 8)
+    tema VARCHAR(10) NOT NULL DEFAULT 'light',
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_email (email),
@@ -88,6 +96,8 @@ CREATE TABLE IF NOT EXISTS colaboradores (
     data_demissao DATE NULL,
     status ENUM('ativo','inativo','afastado') NOT NULL DEFAULT 'ativo',
     unidade VARCHAR(100) NULL,
+    -- Soft delete / lixeira (feature 16)
+    excluido_em DATETIME NULL,
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL,
@@ -96,7 +106,8 @@ CREATE TABLE IF NOT EXISTS colaboradores (
     INDEX idx_status (status),
     INDEX idx_cliente (cliente_id),
     INDEX idx_obra (obra_id),
-    INDEX idx_cpf_hash (cpf_hash)
+    INDEX idx_cpf_hash (cpf_hash),
+    INDEX idx_excluido_em (excluido_em)
 ) ENGINE=InnoDB;
 
 -- ============================================
@@ -132,13 +143,16 @@ CREATE TABLE IF NOT EXISTS certificados (
     criado_por INT NULL,
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    -- Soft delete / lixeira (feature 16)
+    excluido_em DATETIME NULL,
     FOREIGN KEY (colaborador_id) REFERENCES colaboradores(id) ON DELETE CASCADE,
     FOREIGN KEY (tipo_certificado_id) REFERENCES tipos_certificado(id) ON DELETE RESTRICT,
     FOREIGN KEY (criado_por) REFERENCES usuarios(id) ON DELETE SET NULL,
     INDEX idx_colaborador (colaborador_id),
     INDEX idx_tipo (tipo_certificado_id),
     INDEX idx_validade (data_validade),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+    INDEX idx_excluido_em (excluido_em)
 ) ENGINE=InnoDB;
 
 -- ============================================
@@ -172,15 +186,26 @@ CREATE TABLE IF NOT EXISTS documentos (
     status ENUM('vigente','vencido','proximo_vencimento','obsoleto') NOT NULL DEFAULT 'vigente',
     observacoes TEXT NULL,
     enviado_por INT NULL,
+    -- Versionamento (feature 14)
+    versao INT NOT NULL DEFAULT 1,
+    documento_pai_id INT NULL,
+    -- Assinatura digital (feature 15)
+    assinatura_digital TEXT NULL,
+    assinado_por VARCHAR(200) NULL,
+    assinado_em DATETIME NULL,
+    -- Soft delete / lixeira (feature 16)
+    excluido_em DATETIME NULL,
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (colaborador_id) REFERENCES colaboradores(id) ON DELETE CASCADE,
     FOREIGN KEY (tipo_documento_id) REFERENCES tipos_documento(id) ON DELETE RESTRICT,
     FOREIGN KEY (enviado_por) REFERENCES usuarios(id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_pai FOREIGN KEY (documento_pai_id) REFERENCES documentos(id) ON DELETE SET NULL,
     INDEX idx_colaborador (colaborador_id),
     INDEX idx_tipo (tipo_documento_id),
     INDEX idx_validade (data_validade),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+    INDEX idx_excluido_em (excluido_em)
 ) ENGINE=InnoDB;
 
 -- ============================================
@@ -237,5 +262,79 @@ CREATE TABLE IF NOT EXISTS logs_acesso (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL,
     INDEX idx_usuario (usuario_id),
     INDEX idx_acao (acao),
+    INDEX idx_criado (criado_em),
+    -- Audit log viewer (feature 17)
+    INDEX idx_descricao (descricao(100))
+) ENGINE=InnoDB;
+
+-- ============================================
+-- SESSOES ATIVAS (feature 2)
+-- ============================================
+CREATE TABLE IF NOT EXISTS sessoes_ativas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    session_id VARCHAR(128) NOT NULL,
+    ip_address VARCHAR(45) NULL,
+    user_agent VARCHAR(500) NULL,
+    ultimo_acesso DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    UNIQUE INDEX idx_session_id (session_id),
+    INDEX idx_usuario (usuario_id),
+    INDEX idx_ultimo_acesso (ultimo_acesso)
+) ENGINE=InnoDB;
+
+-- ============================================
+-- NOTIFICACOES IN-APP (feature 7)
+-- ============================================
+CREATE TABLE IF NOT EXISTS notificacoes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NULL,
+    tipo ENUM('alerta','info','sucesso','erro') NOT NULL DEFAULT 'info',
+    titulo VARCHAR(200) NOT NULL,
+    mensagem TEXT NOT NULL,
+    lida TINYINT(1) NOT NULL DEFAULT 0,
+    link VARCHAR(500) NULL,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    INDEX idx_usuario (usuario_id),
+    INDEX idx_lida (lida),
+    INDEX idx_tipo (tipo),
+    INDEX idx_criado (criado_em)
+) ENGINE=InnoDB;
+
+-- ============================================
+-- API TOKENS (feature 11)
+-- ============================================
+CREATE TABLE IF NOT EXISTS api_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    token VARCHAR(64) NOT NULL UNIQUE,
+    nome VARCHAR(100) NOT NULL,
+    ultimo_uso DATETIME NULL,
+    ativo TINYINT(1) NOT NULL DEFAULT 1,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    INDEX idx_usuario (usuario_id),
+    INDEX idx_token (token),
+    INDEX idx_ativo (ativo)
+) ENGINE=InnoDB;
+
+-- ============================================
+-- eSocial EVENTOS (feature 13)
+-- ============================================
+CREATE TABLE IF NOT EXISTS esocial_eventos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    colaborador_id INT NOT NULL,
+    tipo_evento ENUM('S-2210','S-2220','S-2240') NOT NULL,
+    payload JSON NOT NULL,
+    status ENUM('pendente','enviado','aceito','rejeitado') NOT NULL DEFAULT 'pendente',
+    protocolo VARCHAR(100) NULL,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    enviado_em DATETIME NULL,
+    FOREIGN KEY (colaborador_id) REFERENCES colaboradores(id) ON DELETE CASCADE,
+    INDEX idx_colaborador (colaborador_id),
+    INDEX idx_tipo_evento (tipo_evento),
+    INDEX idx_status (status),
     INDEX idx_criado (criado_em)
 ) ENGINE=InnoDB;

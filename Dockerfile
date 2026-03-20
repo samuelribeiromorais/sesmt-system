@@ -10,6 +10,8 @@ RUN apt-get update && apt-get install -y \
     cron \
     tesseract-ocr \
     tesseract-ocr-por \
+    poppler-utils \
+    ghostscript \
     mariadb-client \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo pdo_mysql zip gd fileinfo \

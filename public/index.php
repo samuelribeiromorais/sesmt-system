@@ -50,6 +50,10 @@ $router->get('/login', ['AuthController', 'loginForm']);
 $router->post('/login', ['AuthController', 'login']);
 $router->get('/logout', ['AuthController', 'logout']);
 
+// --- 2FA ---
+$router->get('/login/2fa', ['AuthController', 'twoFactorForm']);
+$router->post('/login/2fa', ['AuthController', 'twoFactorVerify']);
+
 // --- Dashboard ---
 $router->get('/', ['DashboardController', 'index'], ['AuthMiddleware']);
 $router->get('/dashboard', ['DashboardController', 'index'], ['AuthMiddleware']);
@@ -78,7 +82,15 @@ $router->post('/documentos/upload', ['DocumentoController', 'upload'], ['AuthMid
 $router->get('/documentos/download/{id}', ['DocumentoController', 'download'], ['AuthMiddleware']);
 $router->get('/documentos/visualizar/{id}', ['DocumentoController', 'visualizar'], ['AuthMiddleware']);
 $router->get('/documentos/{id}', ['DocumentoController', 'show'], ['AuthMiddleware']);
+$router->get('/documentos/{id}/versoes', ['DocumentoController', 'versoes'], ['AuthMiddleware']);
+$router->get('/documentos/{id}/assinar', ['DocumentoController', 'assinar'], ['AuthMiddleware']);
+$router->post('/documentos/{id}/assinar', ['DocumentoController', 'registrarAssinatura'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/documentos/{id}/excluir', ['DocumentoController', 'destroy'], ['AuthMiddleware', 'CsrfMiddleware']);
+
+// --- Lixeira ---
+$router->get('/lixeira', ['LixeiraController', 'index'], ['AuthMiddleware']);
+$router->post('/lixeira/{tipo}/{id}/restaurar', ['LixeiraController', 'restaurar'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/lixeira/{tipo}/{id}/excluir', ['LixeiraController', 'excluirPermanente'], ['AuthMiddleware', 'CsrfMiddleware']);
 
 // --- Exportar ---
 $router->get('/exportar/colaboradores', ['ExportController', 'colaboradores'], ['AuthMiddleware']);
@@ -98,7 +110,9 @@ $router->post('/clientes/{id}/requisitos/{reqId}/excluir', ['ClienteController',
 // --- Obras ---
 $router->get('/obras/novo/{clienteId}', ['ObraController', 'create'], ['AuthMiddleware']);
 $router->post('/obras/salvar', ['ObraController', 'store'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->get('/obras/{id}', ['ObraController', 'show'], ['AuthMiddleware']);
 $router->get('/obras/{id}/editar', ['ObraController', 'edit'], ['AuthMiddleware']);
+$router->get('/obras/{id}/download-zip', ['ObraController', 'downloadZip'], ['AuthMiddleware']);
 $router->post('/obras/{id}/atualizar', ['ObraController', 'update'], ['AuthMiddleware', 'CsrfMiddleware']);
 
 // --- Alertas ---
@@ -108,6 +122,8 @@ $router->get('/alertas', ['AlertaController', 'index'], ['AuthMiddleware']);
 $router->get('/relatorios', ['RelatorioController', 'index'], ['AuthMiddleware']);
 $router->get('/relatorios/colaborador/{id}', ['RelatorioController', 'porColaborador'], ['AuthMiddleware']);
 $router->get('/relatorios/cliente/{id}', ['RelatorioController', 'porCliente'], ['AuthMiddleware']);
+$router->get('/relatorios/obra/{id}', ['RelatorioController', 'porObra'], ['AuthMiddleware']);
+$router->get('/relatorios/mensal', ['RelatorioController', 'mensal'], ['AuthMiddleware']);
 
 // --- Logs ---
 $router->get('/logs', ['LogController', 'index'], ['AuthMiddleware']);
@@ -119,12 +135,67 @@ $router->post('/usuarios/salvar', ['UsuarioController', 'store'], ['AuthMiddlewa
 $router->post('/usuarios/{id}/resetar', ['UsuarioController', 'resetPassword'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/usuarios/{id}/excluir', ['UsuarioController', 'destroy'], ['AuthMiddleware', 'CsrfMiddleware']);
 
+// --- 2FA Setup ---
+$router->get('/usuarios/2fa/setup', ['UsuarioController', 'setup2fa'], ['AuthMiddleware']);
+$router->post('/usuarios/2fa/ativar', ['UsuarioController', 'enable2fa'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/usuarios/2fa/desativar', ['UsuarioController', 'disable2fa'], ['AuthMiddleware', 'CsrfMiddleware']);
+
+// --- Sessoes Ativas ---
+$router->get('/usuarios/sessoes', ['UsuarioController', 'sessoes'], ['AuthMiddleware']);
+$router->post('/usuarios/sessoes/{id}/encerrar', ['UsuarioController', 'encerrarSessao'], ['AuthMiddleware', 'CsrfMiddleware']);
+
+// --- Alterar Senha ---
+$router->get('/usuarios/alterar-senha', ['UsuarioController', 'alterarSenhaForm'], ['AuthMiddleware']);
+$router->post('/usuarios/alterar-senha', ['UsuarioController', 'alterarSenha'], ['AuthMiddleware', 'CsrfMiddleware']);
+
 // --- Configuracoes ---
 $router->get('/configuracoes', ['ConfigController', 'index'], ['AuthMiddleware']);
 $router->post('/configuracoes/salvar', ['ConfigController', 'save'], ['AuthMiddleware', 'CsrfMiddleware']);
 
+// --- Notificacoes ---
+$router->get('/notificacoes', ['NotificacaoController', 'index'], ['AuthMiddleware']);
+$router->get('/notificacoes/json', ['NotificacaoController', 'json'], ['AuthMiddleware']);
+$router->post('/notificacoes/marcar-todas', ['NotificacaoController', 'marcarTodasLidas'], ['AuthMiddleware']);
+$router->post('/notificacoes/{id}/lida', ['NotificacaoController', 'marcarLida'], ['AuthMiddleware']);
+
+// --- Busca Global ---
+$router->get('/busca', ['BuscaController', 'index'], ['AuthMiddleware']);
+$router->get('/busca/json', ['BuscaController', 'json'], ['AuthMiddleware']);
+
+// --- Tema ---
+$router->post('/usuarios/tema', ['UsuarioController', 'salvarTema'], ['AuthMiddleware']);
+
 // --- API (teste) ---
 $router->get('/api/tipos-certificado', ['CertificadoController', 'tiposJson']);
+
+// --- API v1 (autenticacao via token, sem sessao) ---
+$router->get('/api/v1/colaboradores', ['ApiController', 'colaboradores']);
+$router->get('/api/v1/colaboradores/{id}', ['ApiController', 'colaborador']);
+$router->get('/api/v1/documentos', ['ApiController', 'documentos']);
+$router->get('/api/v1/documentos/{id}', ['ApiController', 'documento']);
+$router->get('/api/v1/certificados', ['ApiController', 'certificados']);
+$router->get('/api/v1/certificados/{id}', ['ApiController', 'certificado']);
+$router->get('/api/v1/clientes', ['ApiController', 'clientes']);
+$router->get('/api/v1/obras', ['ApiController', 'obras']);
+$router->get('/api/v1/stats', ['ApiController', 'stats']);
+
+// --- Tokens de API (web interface) ---
+$router->get('/usuarios/api-tokens', ['UsuarioController', 'apiTokens'], ['AuthMiddleware']);
+$router->post('/usuarios/api-tokens/criar', ['UsuarioController', 'createApiToken'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/usuarios/api-tokens/{id}/revogar', ['UsuarioController', 'revokeApiToken'], ['AuthMiddleware', 'CsrfMiddleware']);
+
+// --- Importar Colaboradores ---
+$router->get('/importar/colaboradores', ['ImportController', 'form'], ['AuthMiddleware']);
+$router->post('/importar/colaboradores/preview', ['ImportController', 'preview'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/importar/colaboradores/executar', ['ImportController', 'executar'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->get('/importar/colaboradores/template', ['ImportController', 'templateDownload'], ['AuthMiddleware']);
+
+// --- eSocial SST ---
+$router->get('/esocial', ['EsocialController', 'index'], ['AuthMiddleware']);
+$router->get('/esocial/gerar/{colaboradorId}', ['EsocialController', 'gerar'], ['AuthMiddleware']);
+$router->post('/esocial/criar', ['EsocialController', 'criarEvento'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->get('/esocial/{id}', ['EsocialController', 'visualizar'], ['AuthMiddleware']);
+$router->get('/esocial/{id}/xml', ['EsocialController', 'exportarXml'], ['AuthMiddleware']);
 
 // Dispatch
 $router->dispatch();

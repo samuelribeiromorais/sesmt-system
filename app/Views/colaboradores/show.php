@@ -86,6 +86,9 @@ function statusSemaforo($status) {
                     <td>
                         <span class="semaforo semaforo-<?= statusSemaforo($doc['status']) ?>"></span>
                         <?= htmlspecialchars($doc['tipo_nome']) ?>
+                        <?php if (!empty($doc['assinatura_digital'])): ?>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" style="vertical-align:middle; margin-left:4px;" title="Documento assinado por <?= htmlspecialchars($doc['assinado_por'] ?? '') ?>"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        <?php endif; ?>
                     </td>
                     <td style="font-size:13px;"><?= $doc['data_emissao'] ? date('d/m/Y', strtotime($doc['data_emissao'])) : '-' ?></td>
                     <td style="font-size:13px;"><?= $doc['data_validade'] ? date('d/m/Y', strtotime($doc['data_validade'])) : 'N/A' ?></td>

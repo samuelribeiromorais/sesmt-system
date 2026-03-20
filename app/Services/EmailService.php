@@ -129,6 +129,14 @@ class EmailService
         return $this->enviar($assunto, $corpo);
     }
 
+    /**
+     * Envia relatorio mensal de vencimentos
+     */
+    public function enviarRelatorioMensal(string $assunto, string $corpo): bool
+    {
+        return $this->enviar($assunto, $corpo);
+    }
+
     private function gerarHtmlAlerta(string $urgencia, string $cor, string $colaborador, string $tipo, string $status, string $validade): string
     {
         return "

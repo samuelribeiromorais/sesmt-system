@@ -27,14 +27,31 @@ class ColaboradorController extends Controller
         $perPage = 30;
         $offset = ($page - 1) * $perPage;
 
-        // JSON response for live search
+        // JSON response for live search and lazy loading
         if ($format === 'json') {
-            $results = $model->search($search, $status, 10, 0);
+            // For lazy loading (page > 1), use pagination; for live search, limit to 10
+            $jsonLimit = ($page > 1) ? $perPage : 10;
+            $jsonOffset = ($page > 1) ? $offset : 0;
+
+            if ($search) {
+                $results = $model->search($search, $status, $jsonLimit, $jsonOffset);
+            } else {
+                $results = $model->allWithRelations(
+                    $status ? ['status' => $status] : [],
+                    'c.nome_completo ASC',
+                    $jsonLimit,
+                    $jsonOffset
+                );
+            }
+
             $this->json(array_map(fn($c) => [
                 'id' => $c['id'],
                 'nome_completo' => $c['nome_completo'],
                 'cargo' => $c['cargo'] ?? $c['funcao'] ?? '',
+                'setor' => $c['setor'] ?? '',
+                'status' => $c['status'] ?? 'ativo',
                 'cliente_nome' => $c['cliente_nome'] ?? '',
+                'obra_nome' => $c['obra_nome'] ?? '',
             ], $results));
             return;
         }
@@ -302,9 +319,12 @@ class ColaboradorController extends Controller
         $model = new Colaborador();
         $colab = $model->find((int)$id);
         if ($colab) {
-            $model->delete((int)$id);
-            LoggerMiddleware::log('excluir', "Colaborador excluido: {$colab['nome_completo']} (ID: {$id})");
-            $this->flash('success', 'Colaborador excluido.');
+            // Soft delete: set excluido_em instead of hard delete
+            $model->update((int)$id, [
+                'excluido_em' => date('Y-m-d H:i:s'),
+            ]);
+            LoggerMiddleware::log('excluir', "Colaborador movido para lixeira: {$colab['nome_completo']} (ID: {$id})");
+            $this->flash('success', 'Colaborador movido para a lixeira.');
         }
         $this->redirect('/colaboradores');
     }

@@ -223,6 +223,131 @@ class ReportService
         return $filePath;
     }
 
+    /**
+     * Gera relatorio Excel de conformidade por obra
+     */
+    public function excelObra(int $obraId): string
+    {
+        $stmt = $this->db->prepare(
+            "SELECT o.*, c.razao_social, c.nome_fantasia
+             FROM obras o JOIN clientes c ON o.cliente_id = c.id WHERE o.id = :id"
+        );
+        $stmt->execute(['id' => $obraId]);
+        $obra = $stmt->fetch();
+        if (!$obra) throw new \RuntimeException('Obra nao encontrada.');
+
+        $clienteNome = $obra['nome_fantasia'] ?? $obra['razao_social'];
+
+        // Get requirements
+        $stmt = $this->db->prepare(
+            "SELECT ccd.*, td.nome as doc_nome, tc.codigo as cert_codigo
+             FROM config_cliente_docs ccd
+             LEFT JOIN tipos_documento td ON ccd.tipo_documento_id = td.id
+             LEFT JOIN tipos_certificado tc ON ccd.tipo_certificado_id = tc.id
+             WHERE ccd.cliente_id = :cid"
+        );
+        $stmt->execute(['cid' => $obra['cliente_id']]);
+        $requisitos = $stmt->fetchAll();
+
+        $reqDocs = array_filter($requisitos, fn($r) => !empty($r['tipo_documento_id']));
+        $reqCerts = array_filter($requisitos, fn($r) => !empty($r['tipo_certificado_id']));
+
+        // Get collaborators
+        $stmt = $this->db->prepare(
+            "SELECT * FROM colaboradores WHERE obra_id = :oid AND status = 'ativo' ORDER BY nome_completo"
+        );
+        $stmt->execute(['oid' => $obraId]);
+        $colaboradores = $stmt->fetchAll();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Conformidade Obra');
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '005E4E']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ];
+
+        // Title
+        $sheet->setCellValue('A1', 'RELATÓRIO DE CONFORMIDADE - OBRA: ' . $obra['nome']);
+        $sheet->mergeCells('A1:G1');
+        $sheet->getStyle('A1')->applyFromArray([
+            'font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => '005E4E']],
+        ]);
+        $sheet->setCellValue('A2', 'Cliente: ' . $clienteNome . ' | Local: ' . ($obra['local_obra'] ?? '-'));
+        $sheet->setCellValue('A3', 'Gerado em: ' . date('d/m/Y H:i'));
+
+        // Headers
+        $row = 5;
+        $headers = ['Colaborador', 'Docs Em Dia', 'Docs Vencidos', 'Docs Faltantes', 'Certs Em Dia', 'Certs Vencidos', '% Conformidade'];
+        foreach ($headers as $i => $h) {
+            $col = chr(65 + $i);
+            $sheet->setCellValue("{$col}{$row}", $h);
+        }
+        $sheet->getStyle("A{$row}:G{$row}")->applyFromArray($headerStyle);
+        $row++;
+
+        foreach ($colaboradores as $colab) {
+            $docsOk = 0; $docsVenc = 0; $docsFalt = 0;
+            $certsOk = 0; $certsVenc = 0;
+
+            foreach ($reqDocs as $req) {
+                $s = $this->db->prepare(
+                    "SELECT status FROM documentos WHERE colaborador_id = :cid AND tipo_documento_id = :tid AND status != 'obsoleto' AND excluido_em IS NULL ORDER BY data_emissao DESC LIMIT 1"
+                );
+                $s->execute(['cid' => $colab['id'], 'tid' => $req['tipo_documento_id']]);
+                $d = $s->fetch();
+                if (!$d) $docsFalt++;
+                elseif ($d['status'] === 'vigente') $docsOk++;
+                else $docsVenc++;
+            }
+
+            foreach ($reqCerts as $req) {
+                $s = $this->db->prepare(
+                    "SELECT status FROM certificados WHERE colaborador_id = :cid AND tipo_certificado_id = :tid ORDER BY data_realizacao DESC LIMIT 1"
+                );
+                $s->execute(['cid' => $colab['id'], 'tid' => $req['tipo_certificado_id']]);
+                $ct = $s->fetch();
+                if (!$ct || in_array($ct['status'], ['vencido', 'proximo_vencimento'])) $certsVenc++;
+                else $certsOk++;
+            }
+
+            $totalReq = count($reqDocs) + count($reqCerts);
+            $pct = $totalReq > 0 ? round(($docsOk + $certsOk) / $totalReq * 100, 1) : 100;
+
+            $sheet->setCellValue("A{$row}", $colab['nome_completo']);
+            $sheet->setCellValue("B{$row}", $docsOk);
+            $sheet->setCellValue("C{$row}", $docsVenc);
+            $sheet->setCellValue("D{$row}", $docsFalt);
+            $sheet->setCellValue("E{$row}", $certsOk);
+            $sheet->setCellValue("F{$row}", $certsVenc);
+            $sheet->setCellValue("G{$row}", $pct . '%');
+
+            // Color code
+            if ($pct >= 80) $cor = 'AEF085';
+            elseif ($pct >= 50) $cor = 'FFE082';
+            else $cor = 'FFAAAA';
+            $sheet->getStyle("G{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($cor);
+            $row++;
+        }
+
+        foreach (range('A', 'G') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $config = require dirname(__DIR__) . '/config/app.php';
+        $fileName = 'Conformidade_Obra_' . preg_replace('/[^a-zA-Z0-9]/', '_', $obra['nome']) . '_' . date('Y-m-d') . '.xlsx';
+        $filePath = $config['upload']['path'] . '/../reports/' . $fileName;
+        $dir = dirname($filePath);
+        if (!is_dir($dir)) mkdir($dir, 0750, true);
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($filePath);
+
+        return $filePath;
+    }
+
     private function getDocStatusResumo(int $colaboradorId): array
     {
         $categorias = ['aso', 'epi', 'os', 'treinamento'];
