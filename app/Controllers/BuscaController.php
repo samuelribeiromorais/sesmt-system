@@ -58,7 +58,8 @@ class BuscaController extends Controller
             $stmt = $db->prepare(
                 "SELECT id, nome_completo, matricula, cargo, funcao
                  FROM colaboradores
-                 WHERE nome_completo LIKE :q1 OR matricula LIKE :q2 OR cargo LIKE :q3
+                 WHERE (nome_completo LIKE :q1 OR matricula LIKE :q2 OR cargo LIKE :q3)
+                   AND excluido_em IS NULL
                  ORDER BY nome_completo ASC
                  LIMIT {$limitPerCategory}"
             );
@@ -123,7 +124,8 @@ class BuscaController extends Controller
                 "SELECT d.id, d.arquivo_nome, d.colaborador_id, col.nome_completo
                  FROM documentos d
                  JOIN colaboradores col ON d.colaborador_id = col.id
-                 WHERE d.arquivo_nome LIKE :q1 OR col.nome_completo LIKE :q2
+                 WHERE (d.arquivo_nome LIKE :q1 OR col.nome_completo LIKE :q2)
+                   AND d.excluido_em IS NULL AND col.excluido_em IS NULL
                  ORDER BY d.criado_em DESC
                  LIMIT {$limitPerCategory}"
             );
@@ -146,7 +148,8 @@ class BuscaController extends Controller
                  FROM certificados cert
                  JOIN colaboradores col ON cert.colaborador_id = col.id
                  LEFT JOIN tipos_certificado tc ON cert.tipo_certificado_id = tc.id
-                 WHERE col.nome_completo LIKE :q1 OR tc.nome LIKE :q2
+                 WHERE (col.nome_completo LIKE :q1 OR tc.nome LIKE :q2)
+                   AND cert.excluido_em IS NULL AND col.excluido_em IS NULL
                  ORDER BY cert.criado_em DESC
                  LIMIT {$limitPerCategory}"
             );
