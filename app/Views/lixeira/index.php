@@ -38,7 +38,7 @@
             <?php else: ?>
             <?php foreach ($colaboradores as $c): ?>
             <tr>
-                <td><?= htmlspecialchars($c['nome_completo']) ?></td>
+                <td><a href="/colaboradores/<?= $c['id'] ?>"><?= htmlspecialchars($c['nome_completo']) ?></a></td>
                 <td><?= htmlspecialchars($c['cargo'] ?? $c['funcao'] ?? '-') ?></td>
                 <td><?= htmlspecialchars($c['cliente_nome'] ?? '-') ?></td>
                 <td><?= date('d/m/Y H:i', strtotime($c['excluido_em'])) ?></td>
@@ -83,7 +83,7 @@
             <tr>
                 <td><?= htmlspecialchars($d['arquivo_nome']) ?></td>
                 <td><?= htmlspecialchars($d['tipo_nome']) ?></td>
-                <td><?= htmlspecialchars($d['nome_completo']) ?></td>
+                <td><a href="/colaboradores/<?= $d['colaborador_id'] ?>"><?= htmlspecialchars($d['nome_completo']) ?></a></td>
                 <td><?= date('d/m/Y H:i', strtotime($d['excluido_em'])) ?></td>
                 <td style="white-space:nowrap;">
                     <form method="POST" action="/lixeira/documento/<?= $d['id'] ?>/restaurar" style="display:inline;">
@@ -126,7 +126,7 @@
             <tr>
                 <td><?= htmlspecialchars($cert['codigo']) ?></td>
                 <td><?= htmlspecialchars($cert['titulo']) ?></td>
-                <td><?= htmlspecialchars($cert['nome_completo']) ?></td>
+                <td><a href="/colaboradores/<?= $cert['colaborador_id'] ?>"><?= htmlspecialchars($cert['nome_completo']) ?></a></td>
                 <td><?= date('d/m/Y H:i', strtotime($cert['excluido_em'])) ?></td>
                 <td style="white-space:nowrap;">
                     <form method="POST" action="/lixeira/certificado/<?= $cert['id'] ?>/restaurar" style="display:inline;">

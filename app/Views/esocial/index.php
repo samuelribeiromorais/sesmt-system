@@ -66,7 +66,7 @@
                     </span>
                     <br><small style="color:#6b7280;"><?= $label[0] ?></small>
                 </td>
-                <td><?= htmlspecialchars($e['colaborador_nome']) ?></td>
+                <td><a href="/colaboradores/<?= $e['colaborador_id'] ?>"><?= htmlspecialchars($e['colaborador_nome']) ?></a></td>
                 <td>
                     <?php
                     $statusClasses = [
