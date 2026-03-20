@@ -97,6 +97,29 @@ $categoriaNomes = [
     <?php endif; ?>
 </div>
 
+<!-- ============ CHARTS (Pizza + Barras) ============ -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+    <!-- Doughnut: Document status distribution -->
+    <div class="table-container">
+        <div class="table-header">
+            <span class="table-title">Distribuicao por Status</span>
+        </div>
+        <div style="padding: 24px; display: flex; justify-content: center;">
+            <canvas id="chartStatus" style="max-width: 320px; max-height: 320px;"></canvas>
+        </div>
+    </div>
+
+    <!-- Bar: Documents by client -->
+    <div class="table-container">
+        <div class="table-header">
+            <span class="table-title">Documentos por Cliente (Top 10)</span>
+        </div>
+        <div style="padding: 24px;">
+            <canvas id="chartClients" style="max-height: 320px;"></canvas>
+        </div>
+    </div>
+</div>
+
 <!-- ============ KPI INDICATORS ============ -->
 <?php
 $kpiConformidade = $kpi_conformidade_atual ?? 0;
@@ -187,29 +210,6 @@ $jsonVencData = json_encode($vencData);
     </table>
 </div>
 <?php endif; ?>
-
-<!-- ============ CHARTS ============ -->
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
-    <!-- Doughnut: Document status distribution -->
-    <div class="table-container">
-        <div class="table-header">
-            <span class="table-title">Distribuicao por Status</span>
-        </div>
-        <div style="padding: 24px; display: flex; justify-content: center;">
-            <canvas id="chartStatus" style="max-width: 320px; max-height: 320px;"></canvas>
-        </div>
-    </div>
-
-    <!-- Bar: Documents by client -->
-    <div class="table-container">
-        <div class="table-header">
-            <span class="table-title">Documentos por Cliente (Top 10)</span>
-        </div>
-        <div style="padding: 24px;">
-            <canvas id="chartClients" style="max-height: 320px;"></canvas>
-        </div>
-    </div>
-</div>
 
 <!-- ============ EXPIRING TABLES (side by side) ============ -->
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">

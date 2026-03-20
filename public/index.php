@@ -118,6 +118,9 @@ $router->post('/obras/{id}/atualizar', ['ObraController', 'update'], ['AuthMiddl
 
 // --- Alertas ---
 $router->get('/alertas', ['AlertaController', 'index'], ['AuthMiddleware']);
+$router->post('/alertas/verificar', ['AlertaController', 'executarVerificacao'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/alertas/enviar-emails', ['AlertaController', 'enviarEmails'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/alertas/limpar-historico', ['AlertaController', 'limparHistorico'], ['AuthMiddleware', 'CsrfMiddleware']);
 
 // --- Relatorios ---
 $router->get('/relatorios', ['RelatorioController', 'index'], ['AuthMiddleware']);

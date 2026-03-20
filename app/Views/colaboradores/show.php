@@ -111,7 +111,15 @@ function statusSemaforo($status) {
                         <?php endif; ?>
                     </td>
                     <td style="font-size:13px;"><?= $doc['data_emissao'] ? date('d/m/Y', strtotime($doc['data_emissao'])) : '-' ?></td>
-                    <td style="font-size:13px;"><?= $doc['data_validade'] ? date('d/m/Y', strtotime($doc['data_validade'])) : 'N/A' ?></td>
+                    <td style="font-size:13px;">
+                        <?php if ($doc['data_validade']): ?>
+                            <?= date('d/m/Y', strtotime($doc['data_validade'])) ?>
+                        <?php elseif (($doc['categoria'] ?? '') === 'epi' || ($doc['categoria'] ?? '') === 'os'): ?>
+                            <span style="color:#6b7280; font-size:11px;" title="Atualizado em <?= date('d/m/Y', strtotime($doc['data_emissao'])) ?>">N/A</span>
+                        <?php else: ?>
+                            N/A
+                        <?php endif; ?>
+                    </td>
                     <td style="white-space:nowrap;">
                         <button type="button" class="btn btn-outline btn-sm" onclick="viewPdf(<?= $doc['id'] ?>, '<?= htmlspecialchars($doc['arquivo_nome'], ENT_QUOTES) ?>')" title="Visualizar">Ver</button>
                         <a href="/documentos/download/<?= $doc['id'] ?>" class="btn btn-outline btn-sm" title="Baixar">PDF</a>

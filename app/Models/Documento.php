@@ -82,10 +82,12 @@ class Documento extends Model
     {
         $sub = $this->latestDocsSubquery();
         $stmt = $this->db->prepare(
-            "SELECT d.*, c.nome_completo, c.cliente_id, td.nome as tipo_nome,
+            "SELECT d.*, c.nome_completo, c.cliente_id, cl.nome_fantasia as cliente_nome,
+                    td.nome as tipo_nome,
                     DATEDIFF(d.data_validade, CURDATE()) as dias_restantes
              FROM {$sub} d
              JOIN colaboradores c ON d.colaborador_id = c.id
+             LEFT JOIN clientes cl ON c.cliente_id = cl.id
              JOIN tipos_documento td ON d.tipo_documento_id = td.id
              WHERE d.data_validade IS NOT NULL
                AND d.data_validade <= DATE_ADD(CURDATE(), INTERVAL :days DAY)
@@ -104,10 +106,12 @@ class Documento extends Model
     {
         $sub = $this->latestDocsSubquery();
         $stmt = $this->db->prepare(
-            "SELECT d.*, c.nome_completo, c.cliente_id, td.nome as tipo_nome,
+            "SELECT d.*, c.nome_completo, c.cliente_id, cl.nome_fantasia as cliente_nome,
+                    td.nome as tipo_nome,
                     DATEDIFF(CURDATE(), d.data_validade) as dias_vencido
              FROM {$sub} d
              JOIN colaboradores c ON d.colaborador_id = c.id
+             LEFT JOIN clientes cl ON c.cliente_id = cl.id
              JOIN tipos_documento td ON d.tipo_documento_id = td.id
              WHERE d.data_validade IS NOT NULL
                AND d.data_validade < CURDATE()

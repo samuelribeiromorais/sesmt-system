@@ -68,10 +68,12 @@ class Certificado extends Model
     public function getExpiring(int $days = 30, int $limit = 20): array
     {
         $stmt = $this->db->prepare(
-            "SELECT cert.*, c.nome_completo, c.cliente_id, tc.codigo, tc.titulo,
+            "SELECT cert.*, c.nome_completo, c.cliente_id, cl.nome_fantasia as cliente_nome,
+                    tc.codigo, tc.titulo,
                     DATEDIFF(cert.data_validade, CURDATE()) as dias_restantes
              FROM certificados cert
              JOIN colaboradores c ON cert.colaborador_id = c.id
+             LEFT JOIN clientes cl ON c.cliente_id = cl.id
              JOIN tipos_certificado tc ON cert.tipo_certificado_id = tc.id
              WHERE cert.status IN ('vigente','proximo_vencimento')
                AND cert.data_validade <= DATE_ADD(CURDATE(), INTERVAL :days DAY)
