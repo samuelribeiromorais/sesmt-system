@@ -198,6 +198,7 @@ class ObraController extends Controller
             'data_inicio' => $this->input('data_inicio') ?: null,
             'data_fim'    => $this->input('data_fim') ?: null,
             'status'      => $this->input('status', 'ativa'),
+            'epi_validade_meses' => $this->input('epi_validade_meses') ? (int)$this->input('epi_validade_meses') : null,
         ];
         $id = $model->create($data);
         LoggerMiddleware::log('criar', "Obra criada: {$data['nome']} (ID: {$id})");
@@ -229,6 +230,7 @@ class ObraController extends Controller
             'data_inicio' => $this->input('data_inicio') ?: null,
             'data_fim'    => $this->input('data_fim') ?: null,
             'status'      => $this->input('status', 'ativa'),
+            'epi_validade_meses' => $this->input('epi_validade_meses') ? (int)$this->input('epi_validade_meses') : null,
         ];
         $model->update((int)$id, $data);
         $obra = $model->find((int)$id);

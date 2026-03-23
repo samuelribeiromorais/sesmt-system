@@ -32,6 +32,13 @@
                         <option value="suspensa" <?= ($obra['status'] ?? '') === 'suspensa' ? 'selected' : '' ?>>Suspensa</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label>Validade EPI (meses)</label>
+                    <input type="number" name="epi_validade_meses" class="form-control" min="1" max="24"
+                           value="<?= htmlspecialchars($obra['epi_validade_meses'] ?? '') ?>"
+                           placeholder="Padrao: 6 meses">
+                    <small style="color:var(--c-gray);">Deixe vazio para usar o padrao (6 meses). Preencha se esta obra exige validade diferente.</small>
+                </div>
             </div>
             <div style="margin-top:24px;display:flex;gap:8px;">
                 <button type="submit" class="btn btn-primary"><?= $editing ? 'Salvar' : 'Cadastrar' ?></button>

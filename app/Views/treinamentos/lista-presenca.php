@@ -89,13 +89,17 @@
             </tbody>
         </table>
 
-        <div class="footer-line">
+        <div class="footer-line" style="align-items: flex-end;">
             <div class="sign">
+                <div style="height:70px;"></div>
                 <div class="line"></div>
                 <div><?= htmlspecialchars($treinamento['ministrante_nome'] ?? 'Instrutor') ?></div>
                 <div style="font-size:8pt;">Instrutor</div>
             </div>
             <div class="sign">
+                <div style="height:70px; display:flex; align-items:flex-end; justify-content:center;">
+                    <img src="/assets/images/assinatura_mariana.png?v=3" style="max-height:60px; max-width:160px;">
+                </div>
                 <div class="line"></div>
                 <div>Mariana Toscano Rios</div>
                 <div style="font-size:8pt;">Eng. de Seguranca do Trabalho</div>

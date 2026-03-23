@@ -303,4 +303,51 @@ class ConfigController extends Controller
             $this->json(['success' => false, 'error' => 'Erro ao testar SMTP: ' . $e->getMessage()]);
         }
     }
+
+    /**
+     * Gera preview de um certificado usando dados de exemplo.
+     */
+    public function previewCertificado(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare(
+            "SELECT tc.*, m.nome as ministrante_nome, m.cargo_titulo, m.registro
+             FROM tipos_certificado tc
+             LEFT JOIN ministrantes m ON tc.ministrante_id = m.id
+             WHERE tc.id = :id"
+        );
+        $stmt->execute(['id' => (int)$id]);
+        $tipoCert = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$tipoCert) {
+            $this->flash('error', 'Tipo de certificado nao encontrado.');
+            $this->redirect('/configuracoes');
+            return;
+        }
+
+        // Buscar ministrantes vinculados
+        $stmt = $db->prepare(
+            "SELECT m.*, tcm.papel
+             FROM tipo_certificado_ministrante tcm
+             JOIN ministrantes m ON tcm.ministrante_id = m.id
+             WHERE tcm.tipo_certificado_id = :id"
+        );
+        $stmt->execute(['id' => (int)$id]);
+        $ministrantes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        $instrutor = null;
+        $responsavel = null;
+        foreach ($ministrantes as $m) {
+            if ($m['papel'] === 'instrutor' && !$instrutor) $instrutor = $m;
+            if ($m['papel'] === 'responsavel_tecnico') $responsavel = $m;
+        }
+
+        $this->view('config/preview-certificado', [
+            'tipoCert' => $tipoCert,
+            'instrutor' => $instrutor,
+            'responsavel' => $responsavel,
+        ], '');
+    }
 }

@@ -67,101 +67,55 @@ function gerarCertificadoHtml(colaborador, tipoCert, ministrante) {
     // Caso especial: NR-12 com ministrante separado (2 assinaturas distintas obrigatórias)
     const ehNr12 = (nrNum === '12');
 
+    // Helper: gera um bloco de assinatura alinhado
+    const sigBlock = (imgHtml, name, role) => `
+        <div class="sig">
+            <div class="sig-img-space">${imgHtml}</div>
+            <div class="sig-line"></div>
+            <div class="sig-name">${name}</div>
+            <div class="sig-role">${role}</div>
+        </div>`;
+
+    const imgMariana = '<img src="/assets/images/assinatura_mariana.png?v=3">';
+    const imgCarimbo = '<img src="/assets/images/carimbo_tse.png?v=3" class="sig-stamp">';
+
     if (ehNr12 && ministranteSeparado) {
         // NR-12: 4 assinaturas - Ministrante + Participante + Responsável + Empresa
-        signaturesHtml = `
-            <div class="cert-sig-grid">
-                <div class="sig">
-                    <div class="sig-line"></div>
-                    <div class="sig-name">${minNome}</div>
-                    <div class="sig-role">Instrutor(a)<br>${minCargo}<br>${minRegistro}</div>
-                </div>
-                <div class="sig">
-                    <div class="sig-line"></div>
-                    <div class="sig-name">${nome}</div>
-                    <div class="sig-role">Participante</div>
-                </div>
-                <div class="sig">
-                    <div class="sig-line"></div>
-                    <div class="sig-name">${respNome}</div>
-                    <div class="sig-role">Responsável Técnico<br>${respCargo}<br>${respRegistro}</div>
-                </div>
-                <div class="sig">
-                    <div class="sig-line"></div>
-                    <div class="sig-name">TSE Automação Industrial Ltda</div>
-                    <div class="sig-role">CNPJ 05.149.152/0002-55</div>
-                </div>
-            </div>`;
+        signaturesHtml = `<div class="cert-sig-grid">
+            ${sigBlock('', minNome, `Instrutor(a)<br>${minCargo}<br>${minRegistro}`)}
+            ${sigBlock('', nome, 'Participante')}
+            ${sigBlock(imgMariana, respNome, `Responsável Técnico<br>${respCargo}<br>${respRegistro}`)}
+            ${sigBlock(imgCarimbo, 'TSE Automação Industrial Ltda', 'CNPJ 05.149.152/0002-55')}
+        </div>`;
     } else if (c.tem_diego) {
-        // Layout 4 assinaturas: Ministrante + Participante + Diego + Empresa
-        signaturesHtml = `
-            <div class="cert-sig-grid">
-                <div class="sig">
-                    <div class="sig-line"></div>
-                    <div class="sig-name">${minNome}</div>
-                    <div class="sig-role">Instrutor(a) / Responsável Técnico<br>${minCargo}<br>${minRegistro}</div>
-                </div>
-                <div class="sig">
-                    <div class="sig-line"></div>
-                    <div class="sig-name">${nome}</div>
-                    <div class="sig-role">Participante</div>
-                </div>
-                <div class="sig">
-                    <div class="sig-line"></div>
-                    <div class="sig-name">Diego Costa Rodrigues</div>
-                    <div class="sig-role">Engenheiro Eletricista<br>Instrutor / Responsável Técnico<br>CREA - 1018746617D/GO</div>
-                </div>
-                <div class="sig">
-                    <div class="sig-line"></div>
-                    <div class="sig-name">TSE Automação Industrial Ltda</div>
-                    <div class="sig-role">CNPJ 05.149.152/0002-55</div>
-                </div>
-            </div>`;
+        // Layout 4 assinaturas: Diego + Participante + Mariana + TSE
+        signaturesHtml = `<div class="cert-sig-grid">
+            ${sigBlock('', 'Diego Costa Rodrigues', 'Instrutor<br>Engenheiro Eletricista<br>CREA - 1018746617D/GO')}
+            ${sigBlock('', nome, 'Participante')}
+            ${sigBlock(imgMariana, respNome, `Responsável Técnico<br>${respCargo}<br>${respRegistro}`)}
+            ${sigBlock(imgCarimbo, 'TSE Automação Industrial Ltda', 'CNPJ 05.149.152/0002-55')}
+        </div>`;
     } else if (ministranteSeparado) {
         // Ministrante diferente da responsável: 4 assinaturas
-        signaturesHtml = `
-            <div class="cert-sig-grid">
-                <div class="sig">
-                    <div class="sig-line"></div>
-                    <div class="sig-name">${minNome}</div>
-                    <div class="sig-role">Instrutor(a)<br>${minCargo}<br>${minRegistro}</div>
-                </div>
-                <div class="sig">
-                    <div class="sig-line"></div>
-                    <div class="sig-name">${nome}</div>
-                    <div class="sig-role">Participante</div>
-                </div>
-                <div class="sig">
-                    <div class="sig-line"></div>
-                    <div class="sig-name">${respNome}</div>
-                    <div class="sig-role">Responsável Técnico<br>${respCargo}<br>${respRegistro}</div>
-                </div>
-                <div class="sig">
-                    <div class="sig-line"></div>
-                    <div class="sig-name">TSE Automação Industrial Ltda</div>
-                    <div class="sig-role">CNPJ 05.149.152/0002-55</div>
-                </div>
-            </div>`;
+        signaturesHtml = `<div class="cert-sig-grid">
+            ${sigBlock('', minNome, `Instrutor(a)<br>${minCargo}<br>${minRegistro}`)}
+            ${sigBlock('', nome, 'Participante')}
+            ${sigBlock(imgMariana, respNome, `Responsável Técnico<br>${respCargo}<br>${respRegistro}`)}
+            ${sigBlock(imgCarimbo, 'TSE Automação Industrial Ltda', 'CNPJ 05.149.152/0002-55')}
+        </div>`;
     } else {
         // Layout 3 assinaturas: Ministrante/Responsável combinado + Participante + Empresa
-        signaturesHtml = `
-            <div class="cert-sig-grid">
-                <div class="sig">
-                    <div class="sig-line"></div>
-                    <div class="sig-name">${minNome}</div>
-                    <div class="sig-role">Instrutor(a) / Responsável Técnico<br>${minCargo}<br>${minRegistro}</div>
-                </div>
-                <div class="sig">
-                    <div class="sig-line"></div>
-                    <div class="sig-name">${nome}</div>
-                    <div class="sig-role">Participante</div>
-                </div>
-                <div class="sig" style="grid-column: 1 / -1; max-width: 320px; margin: 0 auto;">
-                    <div class="sig-line"></div>
-                    <div class="sig-name">TSE Automação Industrial Ltda</div>
-                    <div class="sig-role">CNPJ 05.149.152/0002-55</div>
-                </div>
-            </div>`;
+        const ehMariana = minNome.includes('Mariana');
+        signaturesHtml = `<div class="cert-sig-grid">
+            ${sigBlock(ehMariana ? imgMariana : '', minNome, `Instrutor(a) / Responsável Técnico<br>${minCargo}<br>${minRegistro}`)}
+            ${sigBlock('', nome, 'Participante')}
+            <div class="sig" style="grid-column: 1 / -1; max-width: 320px; margin: 0 auto;">
+                <div class="sig-img-space">${imgCarimbo}</div>
+                <div class="sig-line"></div>
+                <div class="sig-name">TSE Automação Industrial Ltda</div>
+                <div class="sig-role">CNPJ 05.149.152/0002-55</div>
+            </div>
+        </div>`;
     }
 
     // ===== CONTEUDO =====
@@ -276,8 +230,8 @@ function gerarCertificadoHtml(colaborador, tipoCert, ministrante) {
         if (c.tem_diego) {
             anuenciaSigRows += `<tr><td class="role-cell">Responsável técnico Habilitado</td><td>Diego Costa Rodrigues<br>Engenheiro Eletricista<br>CREA - 1018746617D/GO</td></tr>`;
         }
-        anuenciaSigRows += `<tr><td class="role-cell">Setor de Segurança, Saúde e Meio Ambiente</td><td>Mariana Toscano Rios<br>Engenheira Seg. Trabalho<br>CREA - 5071365203/SP</td></tr>`;
-        anuenciaSigRows += `<tr><td class="role-cell">TSE Automação Industrial Ltda.</td><td></td></tr>`;
+        anuenciaSigRows += `<tr><td class="role-cell">Setor de Segurança, Saúde e Meio Ambiente</td><td><img src="/assets/images/assinatura_mariana.png?v=2" style="max-height:60px;max-width:160px;display:block;margin-bottom:4px;">Mariana Toscano Rios<br>Engenheira Seg. Trabalho<br>CREA - 5071365203/SP</td></tr>`;
+        anuenciaSigRows += `<tr><td class="role-cell">TSE Automação Industrial Ltda.</td><td><img src="/assets/images/carimbo_tse.png?v=2" style="max-height:55px;max-width:150px;display:block;margin-bottom:4px;">CNPJ 05.149.152/0002-55</td></tr>`;
 
         html += `
             <div class="cert-page">

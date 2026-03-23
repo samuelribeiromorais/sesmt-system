@@ -131,7 +131,8 @@ $categorias = [
                         <td><?= $tc['validade_meses'] ?> meses</td>
                         <td style="font-size:12px;"><?= htmlspecialchars($tc['ministrante_nome'] ?? '—') ?></td>
                         <td><span class="badge-status <?= $tc['ativo'] ? 'badge-ativo' : 'badge-inativo' ?>"><?= $tc['ativo'] ? 'Ativo' : 'Inativo' ?></span></td>
-                        <td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn btn-outline btn-sm" onclick="previewCert(<?= $tc['id'] ?>)" title="Visualizar certificado modelo">Ver</button>
                             <button class="btn btn-outline btn-sm" onclick='editTipoCert(<?= json_encode($tc, JSON_HEX_APOS | JSON_HEX_QUOT) ?>)'>Editar</button>
                         </td>
                     </tr>
@@ -564,5 +565,9 @@ function testarSmtp() {
     .catch(() => {
         resultDiv.innerHTML = '<span style="color:var(--c-danger);">Erro ao testar conexao.</span>';
     });
+}
+
+function previewCert(tipoCertId) {
+    window.open('/configuracoes/preview-certificado/' + tipoCertId, '_blank');
 }
 </script>

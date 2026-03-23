@@ -95,9 +95,24 @@
     gap: 10px 30px;
 }
 .cert-sig-grid .sig { text-align: center; }
+.cert-sig-grid .sig .sig-img-space {
+    height: 90px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+.cert-sig-grid .sig .sig-img-space img {
+    max-height: 80px;
+    max-width: 200px;
+    object-fit: contain;
+}
+.cert-sig-grid .sig .sig-img-space img.sig-stamp {
+    max-height: 85px;
+    max-width: 220px;
+}
 .cert-sig-grid .sig-line {
     border-top: 1px solid #001D21;
-    margin: 75px 0 3px 0;
+    margin: 3px 0 3px 0;
 }
 .cert-sig-grid .sig-name {
     font-size: 11pt; font-weight: bold; color: #001D21;
@@ -180,7 +195,8 @@
 .cert-page.for-pdf .cert-empresa { font-size: 8.5pt; margin-top: 3px; }
 .cert-page.for-pdf .cert-local { font-size: 10pt; margin-top: 3px; }
 .cert-page.for-pdf .cert-sig-grid { margin-top: 8px; gap: 8px 28px; }
-.cert-page.for-pdf .cert-sig-grid .sig-line { margin: 55px 0 2px 0; }
+.cert-page.for-pdf .cert-sig-grid .sig .sig-img-space { height: 80px; }
+.cert-page.for-pdf .cert-sig-grid .sig-line { margin: 3px 0 2px 0; }
 .cert-page.for-pdf .cert-sig-grid .sig-name { font-size: 10pt; }
 .cert-page.for-pdf .cert-sig-grid .sig-role { font-size: 8.5pt; }
 .cert-page.for-pdf .cert-spacer { min-height: 3px; max-height: 15px; }

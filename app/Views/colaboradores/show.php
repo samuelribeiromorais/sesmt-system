@@ -92,6 +92,14 @@ function statusSemaforo($status) {
         <div class="table-header">
             <span class="table-title">Documentos (<?= count($documentos) ?>)</span>
             <?php if (!$isReadOnly): ?>
+            <?php
+            $pendentesCount = count(array_filter($documentos, fn($d) => ($d['aprovacao_status'] ?? '') === 'pendente'));
+            if ($pendentesCount > 0): ?>
+            <form method="POST" action="/documentos/aprovar-todos/<?= $colab['id'] ?>" style="display:inline;">
+                <?= \App\Core\View::csrfField() ?>
+                <button type="submit" class="btn btn-sm" style="background:#059669; color:white;" data-confirm="Aprovar todos os <?= $pendentesCount ?> documentos pendentes?">&#10003; Aprovar Todos (<?= $pendentesCount ?>)</button>
+            </form>
+            <?php endif; ?>
             <a href="/documentos/upload/<?= $colab['id'] ?>" class="btn btn-primary btn-sm">Upload</a>
             <?php endif; ?>
         </div>
@@ -143,17 +151,24 @@ function statusSemaforo($status) {
                         <?php elseif ($apStatus === 'rejeitado'): ?>
                             <span class="badge badge-vencido" title="<?= htmlspecialchars($doc['aprovacao_obs'] ?? '') ?>">Rejeitado</span>
                         <?php elseif ($apStatus === 'pendente'): ?>
-                            <span class="badge badge-proximo_vencimento">Pendente</span>
-                        <?php else: ?>
                             <?php if (!$isReadOnly): ?>
-                            <form method="POST" action="/documentos/<?= $doc['id'] ?>/aprovar" style="display:inline-flex; gap:2px;">
-                                <?= \App\Core\View::csrfField() ?>
-                                <input type="hidden" name="decisao" value="aprovado">
-                                <button type="submit" class="btn btn-sm" style="padding:1px 6px; font-size:10px; background:#059669; color:white;" title="Aprovar">&#10003;</button>
-                            </form>
+                            <div style="display:flex; gap:3px; justify-content:center; align-items:center;">
+                                <form method="POST" action="/documentos/<?= $doc['id'] ?>/aprovar" style="display:inline;">
+                                    <?= \App\Core\View::csrfField() ?>
+                                    <input type="hidden" name="decisao" value="aprovado">
+                                    <button type="submit" class="btn btn-sm" style="padding:2px 8px; font-size:11px; background:#059669; color:white;" title="Aprovar">&#10003; Aprovar</button>
+                                </form>
+                                <form method="POST" action="/documentos/<?= $doc['id'] ?>/aprovar" style="display:inline;">
+                                    <?= \App\Core\View::csrfField() ?>
+                                    <input type="hidden" name="decisao" value="rejeitado">
+                                    <button type="submit" class="btn btn-sm" style="padding:2px 8px; font-size:11px; background:#dc2626; color:white;" title="Rejeitar">&#10007;</button>
+                                </form>
+                            </div>
                             <?php else: ?>
-                            <span style="color:#999;">-</span>
+                            <span class="badge badge-proximo_vencimento">Pendente</span>
                             <?php endif; ?>
+                        <?php else: ?>
+                            <span style="color:#999;">-</span>
                         <?php endif; ?>
                     </td>
                     <td style="white-space:nowrap;">

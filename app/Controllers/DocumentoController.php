@@ -227,7 +227,22 @@ class DocumentoController extends Controller
         $tipo = $tipoModel->find($tipoDocumentoId);
         $dataValidade = null;
         if ($tipo && $tipo['validade_meses']) {
-            $dataValidade = date('Y-m-d', strtotime("{$dataEmissao} + {$tipo['validade_meses']} months"));
+            $validadeMeses = (int)$tipo['validade_meses'];
+
+            // EPI: verificar se a obra do colaborador tem validade customizada
+            if ($tipoDocumentoId == 6) {
+                $colabModel = new Colaborador();
+                $colab = $colabModel->find($colaboradorId);
+                if ($colab && $colab['obra_id']) {
+                    $db = \App\Core\Database::getInstance();
+                    $stmtObra = $db->prepare("SELECT epi_validade_meses FROM obras WHERE id = :oid AND epi_validade_meses IS NOT NULL");
+                    $stmtObra->execute(['oid' => $colab['obra_id']]);
+                    $obraEpi = $stmtObra->fetchColumn();
+                    if ($obraEpi) $validadeMeses = (int)$obraEpi;
+                }
+            }
+
+            $dataValidade = date('Y-m-d', strtotime("{$dataEmissao} + {$validadeMeses} months"));
         }
 
         // Versioning: find original document of same type for this collaborator
@@ -570,7 +585,21 @@ class DocumentoController extends Controller
         $tipo = $tipoModel->find((int)$doc['tipo_documento_id']);
         $dataValidade = null;
         if ($tipo && $tipo['validade_meses']) {
-            $dataValidade = date('Y-m-d', strtotime("{$dataEmissao} + {$tipo['validade_meses']} months"));
+            $validadeMeses = (int)$tipo['validade_meses'];
+
+            // EPI: verificar validade customizada por obra
+            if ((int)$doc['tipo_documento_id'] === 6) {
+                $colabModel = new Colaborador();
+                $colab = $colabModel->find((int)$doc['colaborador_id']);
+                if ($colab && $colab['obra_id']) {
+                    $stmtObra = $db->prepare("SELECT epi_validade_meses FROM obras WHERE id = :oid AND epi_validade_meses IS NOT NULL");
+                    $stmtObra->execute(['oid' => $colab['obra_id']]);
+                    $obraEpi = $stmtObra->fetchColumn();
+                    if ($obraEpi) $validadeMeses = (int)$obraEpi;
+                }
+            }
+
+            $dataValidade = date('Y-m-d', strtotime("{$dataEmissao} + {$validadeMeses} months"));
         }
 
         // Recalcular status
@@ -689,6 +718,27 @@ class DocumentoController extends Controller
         } else {
             $this->redirect("/colaboradores/{$doc['colaborador_id']}");
         }
+    }
+
+    /**
+     * Aprovar todos os documentos pendentes de um colaborador.
+     */
+    public function aprovarTodos(string $colaboradorId): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+        $this->requirePost();
+
+        $db = \App\Core\Database::getInstance();
+        $stmt = $db->prepare(
+            "UPDATE documentos SET aprovacao_status = 'aprovado', aprovado_por = :uid, aprovado_em = NOW()
+             WHERE colaborador_id = :cid AND aprovacao_status = 'pendente' AND excluido_em IS NULL"
+        );
+        $stmt->execute(['uid' => Session::get('user_id'), 'cid' => (int)$colaboradorId]);
+        $count = $stmt->rowCount();
+
+        LoggerMiddleware::log('editar', "Aprovacao em massa: {$count} documentos aprovados para colaborador ID {$colaboradorId}");
+        $this->flash('success', "{$count} documentos aprovados com sucesso.");
+        $this->redirect("/colaboradores/{$colaboradorId}");
     }
 
     /**

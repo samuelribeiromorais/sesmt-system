@@ -53,6 +53,9 @@ if (file_exists($composerAutoload)) {
 // Configurar rotas
 $router = new \App\Core\Router();
 
+// --- Manual (publico) ---
+$router->get('/manual', ['ManualController', 'index']);
+
 // --- Auth ---
 $router->get('/login', ['AuthController', 'loginForm']);
 $router->post('/login', ['AuthController', 'login']);
@@ -94,6 +97,26 @@ $router->get('/treinamentos/{id}/certificados', ['TreinamentoController', 'certi
 $router->get('/treinamentos/{id}/lista-presenca', ['TreinamentoController', 'listaPresenca'], ['AuthMiddleware']);
 $router->get('/treinamentos/{id}', ['TreinamentoController', 'show'], ['AuthMiddleware']);
 
+// --- Backup ---
+$router->get('/backup', ['BackupController', 'index'], ['AuthMiddleware']);
+$router->post('/backup/executar', ['BackupController', 'executar'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->get('/backup/download/{nome}', ['BackupController', 'download'], ['AuthMiddleware']);
+$router->post('/backup/excluir/{nome}', ['BackupController', 'excluir'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/backup/configurar-cron', ['BackupController', 'configurarCron'], ['AuthMiddleware', 'CsrfMiddleware']);
+
+// --- Agenda de Exames ---
+$router->get('/agenda-exames', ['AgendaExamesController', 'index'], ['AuthMiddleware']);
+
+// --- Checklist Pre-Obra ---
+$router->get('/checklist', ['ChecklistController', 'index'], ['AuthMiddleware']);
+$router->get('/checklist/{id}/verificar', ['ChecklistController', 'verificar'], ['AuthMiddleware']);
+
+// --- Kit PJ ---
+$router->get('/kit-pj', ['KitPjController', 'index'], ['AuthMiddleware']);
+$router->get('/kit-pj/novo', ['KitPjController', 'create'], ['AuthMiddleware']);
+$router->post('/kit-pj/salvar', ['KitPjController', 'store'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->get('/kit-pj/{id}/imprimir', ['KitPjController', 'imprimir'], ['AuthMiddleware']);
+
 // --- Documentos ---
 $router->get('/documentos', ['DocumentoController', 'index'], ['AuthMiddleware']);
 $router->get('/documentos/upload/{colaboradorId}', ['DocumentoController', 'uploadForm'], ['AuthMiddleware']);
@@ -108,6 +131,7 @@ $router->post('/documentos/{id}/atualizar-emissao', ['DocumentoController', 'atu
 $router->post('/documentos/{id}/excluir', ['DocumentoController', 'destroy'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/documentos/excluir-lote', ['DocumentoController', 'destroyBatch'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/documentos/{id}/aprovar', ['DocumentoController', 'aprovar'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/documentos/aprovar-todos/{colaboradorId}', ['DocumentoController', 'aprovarTodos'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/documentos/ocr-analise', ['DocumentoController', 'ocrAnalise'], ['AuthMiddleware']);
 
 // --- Lixeira ---
@@ -183,6 +207,7 @@ $router->post('/configuracoes/ministrante', ['ConfigController', 'salvarMinistra
 $router->post('/configuracoes/ministrante/{id}/excluir', ['ConfigController', 'excluirMinistrante'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/configuracoes/smtp', ['ConfigController', 'salvarSmtp'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/configuracoes/smtp/testar', ['ConfigController', 'testarSmtp'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->get('/configuracoes/preview-certificado/{id}', ['ConfigController', 'previewCertificado'], ['AuthMiddleware']);
 
 // --- Notificacoes ---
 $router->get('/notificacoes', ['NotificacaoController', 'index'], ['AuthMiddleware']);
