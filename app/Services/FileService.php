@@ -45,28 +45,96 @@ class FileService
     }
 
     /**
-     * Salva arquivo no storage
+     * Retorna o nome da pasta do colaborador no formato "ID - NOME"
+     */
+    public function getDiretorioColaborador(int $colaboradorId, string $nomeCompleto = ''): string
+    {
+        // Procurar pasta existente que comece com "{id} - "
+        $basePath = $this->config['path'];
+        $pattern = $basePath . '/' . $colaboradorId . ' - *';
+        $matches = glob($pattern);
+        if (!empty($matches) && is_dir($matches[0])) {
+            return basename($matches[0]);
+        }
+
+        // Se tem nome, criar com formato novo
+        if ($nomeCompleto !== '') {
+            $nome = $this->sanitizarNome($nomeCompleto);
+            return $colaboradorId . ' - ' . $nome;
+        }
+
+        // Fallback: apenas ID
+        return (string)$colaboradorId;
+    }
+
+    /**
+     * Gera nome legível para o arquivo
+     */
+    public function gerarNomeArquivo(string $nomeColaborador, string $tipoDocumento, string $dataEmissao, string $ext = 'pdf'): string
+    {
+        $nome = $this->sanitizarNome($nomeColaborador);
+        $tipo = $this->sanitizarNome($tipoDocumento);
+        $data = '00.00.0000';
+        if ($dataEmissao && $dataEmissao !== '0000-00-00') {
+            $dt = \DateTime::createFromFormat('Y-m-d', $dataEmissao);
+            if ($dt) $data = $dt->format('d.m.Y');
+        }
+        return $nome . ' - ' . $tipo . ' - ' . $data . '.' . $ext;
+    }
+
+    /**
+     * Remove caracteres inválidos de nomes de arquivo/pasta
+     */
+    private function sanitizarNome(string $nome): string
+    {
+        $nome = str_replace(['\\', '/', ':', '*', '?', '"', '<', '>', '|'], '', $nome);
+        $nome = preg_replace('/\s+/', ' ', trim($nome));
+        if (mb_strlen($nome) > 120) $nome = mb_substr($nome, 0, 120);
+        return $nome;
+    }
+
+    /**
+     * Salva arquivo no storage com nome legível
      * @return array ['path' => string, 'hash' => string] ou ['error' => string]
      */
-    public function salvar(array $file, int $colaboradorId): array
+    public function salvar(array $file, int $colaboradorId, string $nomeColaborador = '', string $tipoDocumento = '', string $dataEmissao = ''): array
     {
         $hash = hash_file('sha256', $file['tmp_name']);
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $safeName = $hash . '.' . $ext;
 
-        $dir = $this->config['path'] . '/' . $colaboradorId;
+        $pastaNome = $this->getDiretorioColaborador($colaboradorId, $nomeColaborador);
+
+        // Gerar nome legível ou fallback para hash
+        if ($nomeColaborador !== '' && $tipoDocumento !== '') {
+            $safeName = $this->gerarNomeArquivo($nomeColaborador, $tipoDocumento, $dataEmissao, $ext);
+        } else {
+            $safeName = $hash . '.' . $ext;
+        }
+
+        $dir = $this->config['path'] . '/' . $pastaNome;
         if (!is_dir($dir)) {
             mkdir($dir, 0750, true);
         }
 
         $destPath = $dir . '/' . $safeName;
 
+        // Se já existe arquivo com mesmo nome, adicionar sufixo
+        if (file_exists($destPath)) {
+            $base = pathinfo($safeName, PATHINFO_FILENAME);
+            $counter = 2;
+            while (file_exists($dir . '/' . $base . ' (' . $counter . ').' . $ext)) {
+                $counter++;
+            }
+            $safeName = $base . ' (' . $counter . ').' . $ext;
+            $destPath = $dir . '/' . $safeName;
+        }
+
         if (!move_uploaded_file($file['tmp_name'], $destPath)) {
             return ['error' => 'Erro ao mover arquivo para o storage.'];
         }
 
         return [
-            'path' => $colaboradorId . '/' . $safeName,
+            'path' => $pastaNome . '/' . $safeName,
             'hash' => $hash,
         ];
     }

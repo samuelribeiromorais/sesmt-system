@@ -20,6 +20,14 @@ if (file_exists($envFile)) {
 // Timezone
 date_default_timezone_set($_ENV['APP_TIMEZONE'] ?? 'America/Sao_Paulo');
 
+// Security Headers
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: SAMEORIGIN');
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'");
+
 // Autoloader
 spl_autoload_register(function (string $class) {
     $prefix = 'App\\';
@@ -67,6 +75,7 @@ $router->get('/colaboradores/{id}/download-zip', ['ColaboradorController', 'down
 $router->get('/colaboradores/{id}/editar', ['ColaboradorController', 'edit'], ['AuthMiddleware']);
 $router->post('/colaboradores/{id}/atualizar', ['ColaboradorController', 'update'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/colaboradores/{id}/excluir', ['ColaboradorController', 'destroy'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/colaboradores/bulk-update', ['ColaboradorController', 'bulkUpdate'], ['AuthMiddleware', 'CsrfMiddleware']);
 
 // --- Certificados ---
 $router->get('/certificados', ['CertificadoController', 'index'], ['AuthMiddleware']);
@@ -74,6 +83,16 @@ $router->get('/certificados/emitir/{colaboradorId}', ['CertificadoController', '
 $router->post('/certificados/salvar', ['CertificadoController', 'store'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->get('/certificados/preview/{id}', ['CertificadoController', 'preview'], ['AuthMiddleware']);
 $router->get('/certificados/dados/{colaboradorId}', ['CertificadoController', 'dadosJson'], ['AuthMiddleware']);
+
+// --- Treinamentos em Massa ---
+$router->get('/treinamentos', ['TreinamentoController', 'index'], ['AuthMiddleware']);
+$router->get('/treinamentos/novo', ['TreinamentoController', 'create'], ['AuthMiddleware']);
+$router->get('/treinamentos/calendario', ['TreinamentoController', 'calendario'], ['AuthMiddleware']);
+$router->get('/treinamentos/colaboradores-json', ['TreinamentoController', 'colaboradoresJson'], ['AuthMiddleware']);
+$router->post('/treinamentos/salvar', ['TreinamentoController', 'store'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->get('/treinamentos/{id}/certificados', ['TreinamentoController', 'certificados'], ['AuthMiddleware']);
+$router->get('/treinamentos/{id}/lista-presenca', ['TreinamentoController', 'listaPresenca'], ['AuthMiddleware']);
+$router->get('/treinamentos/{id}', ['TreinamentoController', 'show'], ['AuthMiddleware']);
 
 // --- Documentos ---
 $router->get('/documentos', ['DocumentoController', 'index'], ['AuthMiddleware']);
@@ -87,7 +106,9 @@ $router->get('/documentos/{id}/assinar', ['DocumentoController', 'assinar'], ['A
 $router->post('/documentos/{id}/assinar', ['DocumentoController', 'registrarAssinatura'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/documentos/{id}/atualizar-emissao', ['DocumentoController', 'atualizarEmissao'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/documentos/{id}/excluir', ['DocumentoController', 'destroy'], ['AuthMiddleware', 'CsrfMiddleware']);
-$router->post('/documentos/excluir-lote', ['DocumentoController', 'destroyBatch'], ['AuthMiddleware']);
+$router->post('/documentos/excluir-lote', ['DocumentoController', 'destroyBatch'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/documentos/{id}/aprovar', ['DocumentoController', 'aprovar'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/documentos/ocr-analise', ['DocumentoController', 'ocrAnalise'], ['AuthMiddleware']);
 
 // --- Lixeira ---
 $router->get('/lixeira', ['LixeiraController', 'index'], ['AuthMiddleware']);
@@ -161,34 +182,34 @@ $router->post('/configuracoes/tipo-cert', ['ConfigController', 'salvarTipoCert']
 $router->post('/configuracoes/ministrante', ['ConfigController', 'salvarMinistrante'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/configuracoes/ministrante/{id}/excluir', ['ConfigController', 'excluirMinistrante'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/configuracoes/smtp', ['ConfigController', 'salvarSmtp'], ['AuthMiddleware', 'CsrfMiddleware']);
-$router->post('/configuracoes/smtp/testar', ['ConfigController', 'testarSmtp'], ['AuthMiddleware']);
+$router->post('/configuracoes/smtp/testar', ['ConfigController', 'testarSmtp'], ['AuthMiddleware', 'CsrfMiddleware']);
 
 // --- Notificacoes ---
 $router->get('/notificacoes', ['NotificacaoController', 'index'], ['AuthMiddleware']);
 $router->get('/notificacoes/json', ['NotificacaoController', 'jsonData'], ['AuthMiddleware']);
-$router->post('/notificacoes/marcar-todas', ['NotificacaoController', 'marcarTodasLidas'], ['AuthMiddleware']);
-$router->post('/notificacoes/{id}/lida', ['NotificacaoController', 'marcarLida'], ['AuthMiddleware']);
+$router->post('/notificacoes/marcar-todas', ['NotificacaoController', 'marcarTodasLidas'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/notificacoes/{id}/lida', ['NotificacaoController', 'marcarLida'], ['AuthMiddleware', 'CsrfMiddleware']);
 
 // --- Busca Global ---
 $router->get('/busca', ['BuscaController', 'index'], ['AuthMiddleware']);
 $router->get('/busca/json', ['BuscaController', 'jsonSearch'], ['AuthMiddleware']);
 
 // --- Tema ---
-$router->post('/usuarios/tema', ['UsuarioController', 'salvarTema'], ['AuthMiddleware']);
+$router->post('/usuarios/tema', ['UsuarioController', 'salvarTema'], ['AuthMiddleware', 'CsrfMiddleware']);
 
 // --- API (teste) ---
-$router->get('/api/tipos-certificado', ['CertificadoController', 'tiposJson']);
+$router->get('/api/tipos-certificado', ['CertificadoController', 'tiposJson'], ['AuthMiddleware']);
 
-// --- API v1 (autenticacao via token, sem sessao) ---
-$router->get('/api/v1/colaboradores', ['ApiController', 'colaboradores']);
-$router->get('/api/v1/colaboradores/{id}', ['ApiController', 'colaborador']);
-$router->get('/api/v1/documentos', ['ApiController', 'documentos']);
-$router->get('/api/v1/documentos/{id}', ['ApiController', 'documento']);
-$router->get('/api/v1/certificados', ['ApiController', 'certificados']);
-$router->get('/api/v1/certificados/{id}', ['ApiController', 'certificado']);
-$router->get('/api/v1/clientes', ['ApiController', 'clientes']);
-$router->get('/api/v1/obras', ['ApiController', 'obras']);
-$router->get('/api/v1/stats', ['ApiController', 'stats']);
+// --- API v1 (autenticacao via token) ---
+$router->get('/api/v1/colaboradores', ['ApiController', 'colaboradores'], ['ApiAuthMiddleware']);
+$router->get('/api/v1/colaboradores/{id}', ['ApiController', 'colaborador'], ['ApiAuthMiddleware']);
+$router->get('/api/v1/documentos', ['ApiController', 'documentos'], ['ApiAuthMiddleware']);
+$router->get('/api/v1/documentos/{id}', ['ApiController', 'documento'], ['ApiAuthMiddleware']);
+$router->get('/api/v1/certificados', ['ApiController', 'certificados'], ['ApiAuthMiddleware']);
+$router->get('/api/v1/certificados/{id}', ['ApiController', 'certificado'], ['ApiAuthMiddleware']);
+$router->get('/api/v1/clientes', ['ApiController', 'clientes'], ['ApiAuthMiddleware']);
+$router->get('/api/v1/obras', ['ApiController', 'obras'], ['ApiAuthMiddleware']);
+$router->get('/api/v1/stats', ['ApiController', 'stats'], ['ApiAuthMiddleware']);
 
 // --- Tokens de API (web interface) ---
 $router->get('/usuarios/api-tokens', ['UsuarioController', 'apiTokens'], ['AuthMiddleware']);

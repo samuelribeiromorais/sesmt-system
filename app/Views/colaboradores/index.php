@@ -38,6 +38,7 @@
     <table>
         <thead>
             <tr>
+                <th style="width:30px;"><input type="checkbox" id="selectAllColab" title="Selecionar todos"></th>
                 <th>Nome</th>
                 <th>Cargo</th>
                 <th>Setor</th>
@@ -48,10 +49,11 @@
         </thead>
         <tbody>
             <?php if (empty($colaboradores)): ?>
-            <tr><td colspan="6" style="text-align:center;color:var(--c-gray);padding:32px;">Nenhum colaborador encontrado.</td></tr>
+            <tr><td colspan="7" style="text-align:center;color:var(--c-gray);padding:32px;">Nenhum colaborador encontrado.</td></tr>
             <?php else: ?>
             <?php foreach ($colaboradores as $c): ?>
             <tr>
+                <td><input type="checkbox" class="colab-bulk-check" value="<?= $c['id'] ?>"></td>
                 <td><a href="/colaboradores/<?= $c['id'] ?>" style="color:var(--c-primary);font-weight:600;"><?= htmlspecialchars($c['nome_completo']) ?></a></td>
                 <td style="font-size:13px;"><?= htmlspecialchars($c['cargo'] ?? $c['funcao'] ?? '-') ?></td>
                 <td style="font-size:13px;"><?= htmlspecialchars($c['setor'] ?? '-') ?></td>
@@ -104,6 +106,26 @@
         <span style="color:#999; font-size:12px; margin-left:12px;">Pagina <?= $page ?> de <?= $totalPages ?></span>
     </div>
     <?php endif; ?>
+</div>
+
+<!-- Bulk Update Bar -->
+<div id="bulkBar" style="display:none; position:fixed; bottom:0; left:0; right:0; background:#005e4e; color:white; padding:12px 24px; z-index:100; box-shadow:0 -2px 10px rgba(0,0,0,0.3);">
+    <form method="POST" action="/colaboradores/bulk-update" id="bulkForm" style="display:flex; align-items:center; gap:12px; max-width:1200px; margin:0 auto;">
+        <?= \App\Core\View::csrfField() ?>
+        <div id="bulkIds"></div>
+        <span id="bulkCount" style="font-weight:600; min-width:120px;">0 selecionados</span>
+        <select name="campo" id="bulkCampo" style="padding:6px 10px; border-radius:4px; border:none; font-size:13px;" required>
+            <option value="">-- Campo --</option>
+            <option value="cargo">Cargo</option>
+            <option value="funcao">Funcao</option>
+            <option value="setor">Setor</option>
+            <option value="status">Status</option>
+            <option value="unidade">Unidade</option>
+        </select>
+        <input type="text" name="valor" id="bulkValor" placeholder="Novo valor..." style="padding:6px 10px; border-radius:4px; border:none; font-size:13px; flex:1; max-width:300px;" required>
+        <button type="submit" class="btn btn-sm" style="background:#afd85a; color:#001e21; font-weight:600;">Aplicar</button>
+        <button type="button" class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:white;" onclick="limparBulk()">Cancelar</button>
+    </form>
 </div>
 
 <script>
@@ -222,4 +244,49 @@
         return div.innerHTML;
     }
 })();
+
+// Bulk update logic
+document.getElementById('selectAllColab').addEventListener('change', function() {
+    document.querySelectorAll('.colab-bulk-check').forEach(cb => cb.checked = this.checked);
+    atualizarBulkBar();
+});
+document.querySelectorAll('.colab-bulk-check').forEach(cb => cb.addEventListener('change', atualizarBulkBar));
+
+function atualizarBulkBar() {
+    const checked = document.querySelectorAll('.colab-bulk-check:checked');
+    const bar = document.getElementById('bulkBar');
+    const idsDiv = document.getElementById('bulkIds');
+    bar.style.display = checked.length > 0 ? 'block' : 'none';
+    document.getElementById('bulkCount').textContent = checked.length + ' selecionado' + (checked.length !== 1 ? 's' : '');
+    idsDiv.innerHTML = '';
+    checked.forEach(cb => {
+        const input = document.createElement('input');
+        input.type = 'hidden'; input.name = 'colaborador_ids[]'; input.value = cb.value;
+        idsDiv.appendChild(input);
+    });
+}
+
+function limparBulk() {
+    document.querySelectorAll('.colab-bulk-check').forEach(cb => cb.checked = false);
+    document.getElementById('selectAllColab').checked = false;
+    atualizarBulkBar();
+}
+
+// When status is selected, show preset options
+document.getElementById('bulkCampo').addEventListener('change', function() {
+    const valorInput = document.getElementById('bulkValor');
+    if (this.value === 'status') {
+        valorInput.outerHTML = '<select name="valor" id="bulkValor" style="padding:6px 10px;border-radius:4px;border:none;font-size:13px;flex:1;max-width:300px;" required><option value="ativo">Ativo</option><option value="inativo">Inativo</option><option value="afastado">Afastado</option></select>';
+    } else {
+        const el = document.getElementById('bulkValor');
+        if (el.tagName === 'SELECT') {
+            el.outerHTML = '<input type="text" name="valor" id="bulkValor" placeholder="Novo valor..." style="padding:6px 10px;border-radius:4px;border:none;font-size:13px;flex:1;max-width:300px;" required>';
+        }
+    }
+});
+
+document.getElementById('bulkForm').addEventListener('submit', function(e) {
+    const count = document.querySelectorAll('.colab-bulk-check:checked').length;
+    if (!confirm('Atualizar ' + count + ' colaboradores?')) e.preventDefault();
+});
 </script>

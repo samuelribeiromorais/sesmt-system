@@ -95,6 +95,12 @@ $categoriaNomes = [
         <div class="card-stat-label">Colaboradores ativos sem categorias obrigatorias</div>
     </a>
     <?php endif; ?>
+    <?php $totalPendentes = $total_aprovacoes_pendentes ?? 0; if ($totalPendentes > 0): ?>
+    <a href="#aprovacoes-pendentes" class="card-stat stat-card-clickable" style="flex: 0 0 auto; padding: 16px 32px; text-decoration:none; color:inherit; border-left: 4px solid #8b5cf6;" onclick="document.getElementById('aprovacoes-pendentes').scrollIntoView({behavior:'smooth'}); return false;">
+        <div class="card-stat-value" style="color:#8b5cf6;"><?= number_format($totalPendentes, 0, ',', '.') ?></div>
+        <div class="card-stat-label">Aprovacoes pendentes</div>
+    </a>
+    <?php endif; ?>
 </div>
 
 <!-- ============ CHARTS (Pizza + Barras) ============ -->
@@ -203,6 +209,105 @@ $jsonVencData = json_encode($vencData);
                 <td><?= htmlspecialchars($cs['cliente_nome'] ?? '—') ?></td>
                 <td>
                     <a href="/colaboradores/<?= $cs['id'] ?>" class="btn btn-primary btn-sm">Enviar Docs</a>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+<?php endif; ?>
+
+<!-- ============ APROVACOES PENDENTES ============ -->
+<?php if (!empty($aprovacoes_pendentes)): ?>
+<div id="aprovacoes-pendentes" class="table-container" style="margin-top:24px; border-left: 4px solid #8b5cf6;">
+    <div class="table-header">
+        <span class="table-title" style="color:#8b5cf6;">Aprovacoes Pendentes (<?= number_format($total_aprovacoes_pendentes ?? 0, 0, ',', '.') ?> total - mostrando 20 mais recentes)</span>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Colaborador</th>
+                <th>Documento</th>
+                <th>Emissao</th>
+                <th>Enviado em</th>
+                <th style="text-align:center;">Acao</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($aprovacoes_pendentes as $ap): ?>
+            <tr>
+                <td><a href="/colaboradores/<?= $ap['colaborador_id'] ?>" style="color:var(--c-accent);"><?= htmlspecialchars($ap['nome_completo']) ?></a></td>
+                <td style="font-size:13px;"><?= htmlspecialchars($ap['tipo_nome']) ?></td>
+                <td style="font-size:13px;"><?= $ap['data_emissao'] ? date('d/m/Y', strtotime($ap['data_emissao'])) : '-' ?></td>
+                <td style="font-size:13px;"><?= date('d/m/Y', strtotime($ap['criado_em'])) ?></td>
+                <td style="text-align:center;">
+                    <form method="POST" action="/documentos/<?= $ap['id'] ?>/aprovar" style="display:inline-flex; gap:4px;">
+                        <?= \App\Core\View::csrfField() ?>
+                        <input type="hidden" name="decisao" value="aprovado">
+                        <button type="submit" class="btn btn-sm" style="padding:2px 10px; font-size:11px; background:#059669; color:white;">Aprovar</button>
+                    </form>
+                    <button type="button" class="btn btn-sm" style="padding:2px 10px; font-size:11px; background:#dc2626; color:white;"
+                            onclick="rejeitarDoc(<?= $ap['id'] ?>)">Rejeitar</button>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal de rejeicao -->
+<div id="rejeitar-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; border-radius:8px; padding:24px; width:400px; max-width:90vw;">
+        <h3 style="margin-bottom:12px; color:#dc2626;">Rejeitar Documento</h3>
+        <form method="POST" id="rejeitar-form">
+            <?= \App\Core\View::csrfField() ?>
+            <input type="hidden" name="decisao" value="rejeitado">
+            <label style="font-size:13px; font-weight:600;">Motivo da rejeicao:</label>
+            <textarea name="aprovacao_obs" rows="3" style="width:100%; margin-top:6px; padding:8px; border:1px solid #ddd; border-radius:4px; font-size:13px;" placeholder="Ex: Documento ilegivel, data incorreta..." required></textarea>
+            <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:16px;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('rejeitar-modal').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn btn-sm" style="background:#dc2626; color:white;">Confirmar Rejeicao</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+function rejeitarDoc(docId) {
+    const modal = document.getElementById('rejeitar-modal');
+    const form = document.getElementById('rejeitar-form');
+    form.action = '/documentos/' + docId + '/aprovar';
+    modal.style.display = 'flex';
+}
+</script>
+<?php endif; ?>
+
+<!-- ============ VENCENDO ESTA SEMANA ============ -->
+<?php if (!empty($vencendo_esta_semana)): ?>
+<div class="table-container" style="margin-top:24px; border-left: 4px solid #f39c12;">
+    <div class="table-header">
+        <span class="table-title" style="color:#f39c12;">Vencendo esta semana (<?= count($vencendo_esta_semana) ?>)</span>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Colaborador</th>
+                <th>Tipo</th>
+                <th>Item</th>
+                <th style="text-align:center;">Vence em</th>
+                <th style="text-align:center;">Dias</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($vencendo_esta_semana as $item): ?>
+            <tr>
+                <td><a href="/colaboradores/<?= $item['colaborador_id'] ?>" style="color:var(--c-accent);"><?= htmlspecialchars($item['nome_completo']) ?></a></td>
+                <td><span class="badge badge-<?= $item['tipo'] === 'documento' ? 'vigente' : 'proximo_vencimento' ?>"><?= $item['tipo'] === 'documento' ? 'Doc' : 'Cert' ?></span></td>
+                <td style="font-size:13px;"><?= htmlspecialchars($item['item_nome']) ?></td>
+                <td style="text-align:center; font-size:13px;"><?= date('d/m/Y', strtotime($item['data_validade'])) ?></td>
+                <td style="text-align:center;">
+                    <span style="font-weight:600; color:<?= $item['dias_restantes'] <= 2 ? '#e74c3c' : '#f39c12' ?>;">
+                        <?= $item['dias_restantes'] ?> dia<?= $item['dias_restantes'] != 1 ? 's' : '' ?>
+                    </span>
                 </td>
             </tr>
             <?php endforeach; ?>

@@ -115,15 +115,31 @@ class UploadLinkController extends Controller
         try {
             if (preg_match('#^https?://#i', $linkArquivo)) {
                 // URL HTTP/HTTPS — download via cURL
+                // SSRF Protection: bloquear IPs internos/privados
+                $parsedUrl = parse_url($linkArquivo);
+                $host = $parsedUrl['host'] ?? '';
+                $hostIp = gethostbyname($host);
+                $blockedRanges = ['127.', '10.', '192.168.', '172.16.', '172.17.', '172.18.',
+                    '172.19.', '172.20.', '172.21.', '172.22.', '172.23.', '172.24.',
+                    '172.25.', '172.26.', '172.27.', '172.28.', '172.29.', '172.30.', '172.31.',
+                    '0.', '169.254.', '::1', 'localhost'];
+                foreach ($blockedRanges as $range) {
+                    if (str_starts_with($hostIp, $range) || str_starts_with($host, $range)) {
+                        throw new \Exception("URL bloqueada: enderecos internos nao sao permitidos.");
+                    }
+                }
+
                 $tempFile = tempnam(sys_get_temp_dir(), 'sesmt_import_');
                 $ch = curl_init($linkArquivo);
                 $fp = fopen($tempFile, 'w');
                 curl_setopt_array($ch, [
                     CURLOPT_FILE => $fp,
                     CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_MAXREDIRS => 3,
                     CURLOPT_TIMEOUT => 60,
-                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_SSL_VERIFYPEER => true,
                     CURLOPT_USERAGENT => 'SESMT-System/1.0',
+                    CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
                 ]);
                 $success = curl_exec($ch);
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

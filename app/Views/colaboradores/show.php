@@ -96,10 +96,10 @@ function statusSemaforo($status) {
             <?php endif; ?>
         </div>
         <table>
-            <thead><tr><th>Tipo</th><th>Emissao</th><th>Validade</th><th>Acoes</th></tr></thead>
+            <thead><tr><th>Tipo</th><th>Emissao</th><th>Validade</th><th style="text-align:center;">Aprovacao</th><th>Acoes</th></tr></thead>
             <tbody>
                 <?php if (empty($documentos)): ?>
-                <tr><td colspan="4" style="text-align:center;color:var(--c-gray);">Nenhum documento</td></tr>
+                <tr><td colspan="5" style="text-align:center;color:var(--c-gray);">Nenhum documento</td></tr>
                 <?php else: ?>
                 <?php foreach ($documentos as $doc): ?>
                 <tr>
@@ -133,6 +133,27 @@ function statusSemaforo($status) {
                             <span style="color:#6b7280; font-size:11px;" title="Atualizado em <?= date('d/m/Y', strtotime($doc['data_emissao'])) ?>">N/A</span>
                         <?php else: ?>
                             N/A
+                        <?php endif; ?>
+                    </td>
+                    <td style="text-align:center; font-size:12px;">
+                        <?php
+                        $apStatus = $doc['aprovacao_status'] ?? null;
+                        if ($apStatus === 'aprovado'): ?>
+                            <span class="badge badge-vigente" title="Aprovado em <?= !empty($doc['aprovado_em']) ? date('d/m/Y', strtotime($doc['aprovado_em'])) : '' ?>">Aprovado</span>
+                        <?php elseif ($apStatus === 'rejeitado'): ?>
+                            <span class="badge badge-vencido" title="<?= htmlspecialchars($doc['aprovacao_obs'] ?? '') ?>">Rejeitado</span>
+                        <?php elseif ($apStatus === 'pendente'): ?>
+                            <span class="badge badge-proximo_vencimento">Pendente</span>
+                        <?php else: ?>
+                            <?php if (!$isReadOnly): ?>
+                            <form method="POST" action="/documentos/<?= $doc['id'] ?>/aprovar" style="display:inline-flex; gap:2px;">
+                                <?= \App\Core\View::csrfField() ?>
+                                <input type="hidden" name="decisao" value="aprovado">
+                                <button type="submit" class="btn btn-sm" style="padding:1px 6px; font-size:10px; background:#059669; color:white;" title="Aprovar">&#10003;</button>
+                            </form>
+                            <?php else: ?>
+                            <span style="color:#999;">-</span>
+                            <?php endif; ?>
                         <?php endif; ?>
                     </td>
                     <td style="white-space:nowrap;">

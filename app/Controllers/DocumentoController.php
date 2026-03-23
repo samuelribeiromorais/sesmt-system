@@ -101,10 +101,15 @@ class DocumentoController extends Controller
         $totalItems = (int)($totalResult[0]['total'] ?? 0);
         $totalPages = max(1, ceil($totalItems / $perPage));
 
-        $perPage = (int)$perPage;
-        $offset = (int)$offset;
-        $sql .= " ORDER BY c.nome_completo ASC, td.nome ASC LIMIT {$perPage} OFFSET {$offset}";
-        $documentos = $model->query($sql, $params);
+        $sql .= " ORDER BY c.nome_completo ASC, td.nome ASC LIMIT :_limit OFFSET :_offset";
+        $stmt = \App\Core\Database::getInstance()->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->bindValue(':_limit', (int)$perPage, \PDO::PARAM_INT);
+        $stmt->bindValue(':_offset', (int)$offset, \PDO::PARAM_INT);
+        $stmt->execute();
+        $documentos = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         // JSON response for lazy loading
         $format = $this->input('format', '');
@@ -244,14 +249,18 @@ class DocumentoController extends Controller
             elseif ($daysLeft <= 30) $status = 'proximo_vencimento';
         }
 
-        // Create upload directory
-        $uploadDir = $config['upload']['path'] . '/' . $colaboradorId;
+        $colabModel = new Colaborador();
+        $colab = $colabModel->find($colaboradorId);
+        $nomeColaborador = $colab['nome_completo'] ?? '';
+
+        // Create upload directory with readable name
+        $fileService = new \App\Services\FileService();
+        $pastaNome = $fileService->getDiretorioColaborador($colaboradorId, $nomeColaborador);
+        $uploadDir = $config['upload']['path'] . '/' . $pastaNome;
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0750, true);
         }
 
-        $colabModel = new Colaborador();
-        $colab = $colabModel->find($colaboradorId);
         $uploadedCount = 0;
         $movedFiles = [];
 
@@ -269,7 +278,21 @@ class DocumentoController extends Controller
 
                 $fileHash = hash_file('sha256', $files['tmp_name'][$i]);
                 $ext = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
-                $safeName = $fileHash . '.' . strtolower($ext);
+
+                // Generate readable filename
+                $tipoNome = $tipo['nome'] ?? 'Documento';
+                $safeName = $fileService->gerarNomeArquivo($nomeColaborador, $tipoNome, $dataEmissao, strtolower($ext));
+
+                // Handle duplicates
+                if (file_exists($uploadDir . '/' . $safeName)) {
+                    $base = pathinfo($safeName, PATHINFO_FILENAME);
+                    $counter = 2;
+                    while (file_exists($uploadDir . '/' . $base . ' (' . $counter . ').' . strtolower($ext))) {
+                        $counter++;
+                    }
+                    $safeName = $base . ' (' . $counter . ').' . strtolower($ext);
+                }
+
                 $destPath = $uploadDir . '/' . $safeName;
 
                 if (!move_uploaded_file($files['tmp_name'][$i], $destPath)) {
@@ -281,7 +304,7 @@ class DocumentoController extends Controller
                     'colaborador_id'    => $colaboradorId,
                     'tipo_documento_id' => $tipoDocumentoId,
                     'arquivo_nome'      => $files['name'][$i],
-                    'arquivo_path'      => $colaboradorId . '/' . $safeName,
+                    'arquivo_path'      => $pastaNome . '/' . $safeName,
                     'arquivo_hash'      => $fileHash,
                     'arquivo_tamanho'   => $files['size'][$i],
                     'data_emissao'      => $dataEmissao,
@@ -616,5 +639,92 @@ class DocumentoController extends Controller
             'message' => "{$count} documento(s) movido(s) para a lixeira.",
             'count' => $count,
         ]);
+    }
+
+    /**
+     * Aprovar ou rejeitar documento (SESMT/Admin).
+     */
+    public function aprovar(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+        $this->requirePost();
+
+        $docModel = new Documento();
+        $doc = $docModel->find((int)$id);
+        if (!$doc) {
+            $this->flash('error', 'Documento nao encontrado.');
+            $this->redirect('/documentos');
+            return;
+        }
+
+        $decisao = $this->input('decisao'); // 'aprovado' ou 'rejeitado'
+        $obs = trim($this->input('aprovacao_obs', ''));
+
+        if (!in_array($decisao, ['aprovado', 'rejeitado'])) {
+            $this->flash('error', 'Decisao invalida.');
+            $this->redirect("/colaboradores/{$doc['colaborador_id']}");
+            return;
+        }
+
+        $before = $doc;
+        $docModel->update((int)$id, [
+            'aprovacao_status' => $decisao,
+            'aprovado_por' => Session::get('user_id'),
+            'aprovado_em' => date('Y-m-d H:i:s'),
+            'aprovacao_obs' => $obs ?: null,
+        ]);
+
+        \App\Services\AuditService::registrarAlteracao('documentos', (int)$id, $before, [
+            'aprovacao_status' => $decisao,
+            'aprovacao_obs' => $obs,
+        ]);
+
+        LoggerMiddleware::log('editar', "Documento {$decisao}: ID {$id} (" . ($doc['arquivo_nome'] ?? '') . ")");
+        $this->flash('success', "Documento {$decisao} com sucesso.");
+
+        // Voltar para a pagina de origem
+        $referer = $_SERVER['HTTP_REFERER'] ?? '';
+        if (str_contains($referer, '/dashboard')) {
+            $this->redirect('/dashboard');
+        } else {
+            $this->redirect("/colaboradores/{$doc['colaborador_id']}");
+        }
+    }
+
+    /**
+     * OCR: analisar PDF via upload AJAX e retornar dados extraídos.
+     */
+    public function ocrAnalise(): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        if (empty($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== UPLOAD_ERR_OK) {
+            $this->json(['error' => 'Nenhum arquivo enviado.']);
+            return;
+        }
+
+        $tmpPath = $_FILES['arquivo']['tmp_name'];
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        if ($finfo->file($tmpPath) !== 'application/pdf') {
+            $this->json(['error' => 'Apenas PDF.']);
+            return;
+        }
+
+        try {
+            $texto = \App\Services\OcrService::extrairTexto($tmpPath, 2);
+            $dataEmissao = \App\Services\OcrService::extrairDataEmissao($texto);
+            $dadosASO = \App\Services\OcrService::extrairDadosASO($texto);
+
+            $this->json([
+                'success' => true,
+                'data_emissao' => $dataEmissao,
+                'tipo_aso' => $dadosASO['tipo_aso'],
+                'medico' => $dadosASO['medico'],
+                'apto' => $dadosASO['apto'],
+                'texto_preview' => mb_substr($texto, 0, 500),
+            ]);
+        } catch (\Exception $e) {
+            $this->json(['error' => 'Erro no OCR: ' . $e->getMessage()]);
+        }
     }
 }

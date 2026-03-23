@@ -268,7 +268,11 @@ class ColaboradorController extends Controller
         }
 
         $model = new Colaborador();
+        $before = $model->find((int)$id);
         $model->update((int)$id, $data);
+
+        // Audit diff
+        \App\Services\AuditService::registrarAlteracao('colaboradores', (int)$id, $before, $data);
 
         LoggerMiddleware::log('editar', "Colaborador atualizado: {$data['nome_completo']} (ID: {$id})");
         $this->flash('success', 'Colaborador atualizado com sucesso.');
@@ -350,6 +354,52 @@ class ColaboradorController extends Controller
         readfile($tmpFile);
         unlink($tmpFile);
         exit;
+    }
+
+    /**
+     * Bulk update de setor, cargo, funcao, cliente ou obra para multiplos colaboradores.
+     */
+    public function bulkUpdate(): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+        $this->requirePost();
+
+        $ids = $this->input('colaborador_ids');
+        $campo = $this->input('campo');
+        $valor = trim($this->input('valor', ''));
+
+        if (empty($ids) || !is_array($ids) || empty($campo)) {
+            $this->flash('error', 'Selecione colaboradores e o campo a atualizar.');
+            $this->redirect('/colaboradores');
+            return;
+        }
+
+        $camposPermitidos = ['cargo', 'funcao', 'setor', 'status', 'cliente_id', 'obra_id', 'unidade'];
+        if (!in_array($campo, $camposPermitidos)) {
+            $this->flash('error', 'Campo invalido.');
+            $this->redirect('/colaboradores');
+            return;
+        }
+
+        $model = new Colaborador();
+        $db = \App\Core\Database::getInstance();
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+        $params = [$valor];
+        foreach ($ids as $id) {
+            $params[] = (int)$id;
+        }
+
+        $stmt = $db->prepare(
+            "UPDATE colaboradores SET {$campo} = ? WHERE id IN ({$placeholders}) AND excluido_em IS NULL"
+        );
+        $stmt->execute($params);
+        $affected = $stmt->rowCount();
+
+        LoggerMiddleware::log('editar', "Bulk update: {$campo} = '{$valor}' para {$affected} colaboradores");
+
+        $this->flash('success', "{$affected} colaboradores atualizados ({$campo}).");
+        $this->redirect('/colaboradores');
     }
 
     public function destroy(string $id): void

@@ -23,6 +23,24 @@ abstract class Model
         return $result ?: null;
     }
 
+    /**
+     * Sanitiza ORDER BY para prevenir SQL injection.
+     * Aceita apenas: coluna ASC/DESC separados por vírgula.
+     */
+    protected function sanitizeOrderBy(string $orderBy): string
+    {
+        $parts = explode(',', $orderBy);
+        $safe = [];
+        foreach ($parts as $part) {
+            $part = trim($part);
+            // Aceitar apenas: "coluna", "coluna ASC", "coluna DESC", "tabela.coluna ASC"
+            if (preg_match('/^[a-zA-Z_][a-zA-Z0-9_.]*(\s+(ASC|DESC))?$/i', $part)) {
+                $safe[] = $part;
+            }
+        }
+        return !empty($safe) ? implode(', ', $safe) : 'id DESC';
+    }
+
     public function all(array $conditions = [], string $orderBy = 'id DESC', int $limit = 0, int $offset = 0): array
     {
         $sql = "SELECT * FROM {$this->table}";
@@ -37,12 +55,10 @@ abstract class Model
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
 
-        $sql .= " ORDER BY {$orderBy}";
+        $sql .= " ORDER BY " . $this->sanitizeOrderBy($orderBy);
 
         if ($limit > 0) {
-            $limit = (int)$limit;
-            $offset = (int)$offset;
-            $sql .= " LIMIT {$limit} OFFSET {$offset}";
+            $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
         }
 
         $stmt = $this->db->prepare($sql);
