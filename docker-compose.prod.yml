@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sesmt-web
+    restart: always
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      - sesmt-storage:/var/www/html/storage
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sesmt-net
+
+  db:
+    image: mariadb:10.11
+    container_name: sesmt-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: sesmt_tse
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - sesmt-dbdata:/var/lib/mysql
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sesmt-net
+
+  backup:
+    image: mariadb:10.11
+    container_name: sesmt-backup
+    restart: always
+    environment:
+      MYSQL_HOST: db
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: sesmt_tse
+    volumes:
+      - sesmt-backups:/backups
+      - sesmt-storage:/storage:ro
+    entrypoint: /bin/bash
+    command: >
+      -c "
+      while true; do
+        TIMESTAMP=$$(date +%Y%m%d_%H%M%S);
+        echo \"[$$TIMESTAMP] Iniciando backup...\";
+        mariadb-dump -h db -u $$MYSQL_USER -p$$MYSQL_PASSWORD $$MYSQL_DATABASE | gzip > /backups/db_$$TIMESTAMP.sql.gz;
+        tar czf /backups/storage_$$TIMESTAMP.tar.gz -C /storage uploads/ 2>/dev/null;
+        find /backups -name 'db_*.sql.gz' -mtime +7 -delete;
+        find /backups -name 'storage_*.tar.gz' -mtime +7 -delete;
+        echo \"[$$TIMESTAMP] Backup concluido.\";
+        sleep 86400;
+      done
+      "
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sesmt-net
+
+volumes:
+  sesmt-storage:
+    driver: local
+  sesmt-dbdata:
+    driver: local
+  sesmt-backups:
+    driver: local
+
+networks:
+  sesmt-net:
+    driver: bridge
