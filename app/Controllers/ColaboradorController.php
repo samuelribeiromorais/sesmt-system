@@ -23,6 +23,8 @@ class ColaboradorController extends Controller
         $model = new Colaborador();
         $search = trim($this->input('q', ''));
         $status = $this->input('status', 'ativo');
+        $clienteId = $this->input('cliente_id', '');
+        $obraId = $this->input('obra_id', '');
         $format = $this->input('format', '');
         $page = max(1, (int)$this->input('page', 1));
         $perPage = 30;
@@ -31,21 +33,21 @@ class ColaboradorController extends Controller
         // 'todos' means no status filter
         $statusFilter = ($status && $status !== 'todos') ? $status : '';
 
+        // Build conditions
+        $conditions = [];
+        if ($statusFilter) $conditions['status'] = $statusFilter;
+        if ($clienteId) $conditions['cliente_id'] = (int)$clienteId;
+        if ($obraId) $conditions['obra_id'] = (int)$obraId;
+
         // JSON response for live search and lazy loading
         if ($format === 'json') {
-            // For lazy loading (page > 1), use pagination; for live search, limit to 10
             $jsonLimit = ($page > 1) ? $perPage : 10;
             $jsonOffset = ($page > 1) ? $offset : 0;
 
             if ($search) {
                 $results = $model->search($search, $statusFilter, $jsonLimit, $jsonOffset);
             } else {
-                $results = $model->allWithRelations(
-                    $statusFilter ? ['status' => $statusFilter] : [],
-                    'c.nome_completo ASC',
-                    $jsonLimit,
-                    $jsonOffset
-                );
+                $results = $model->allWithRelations($conditions, 'c.nome_completo ASC', $jsonLimit, $jsonOffset);
             }
 
             $this->json(array_map(fn($c) => [
@@ -64,19 +66,22 @@ class ColaboradorController extends Controller
             $colaboradores = $model->search($search, $statusFilter, $perPage, $offset);
             $total = $model->searchCount($search, $statusFilter);
         } else {
-            $colaboradores = $model->allWithRelations(
-                $statusFilter ? ['status' => $statusFilter] : [],
-                'c.nome_completo ASC',
-                $perPage,
-                $offset
-            );
-            $total = $model->count($statusFilter ? ['status' => $statusFilter] : []);
+            $colaboradores = $model->allWithRelations($conditions, 'c.nome_completo ASC', $perPage, $offset);
+            $total = $model->count($conditions);
         }
+
+        // Buscar clientes e obras para os selects de filtro
+        $clienteModel = new Cliente();
+        $obraModel = new Obra();
 
         $this->view('colaboradores/index', [
             'colaboradores' => $colaboradores,
             'search'        => $search,
             'status'        => $status,
+            'clienteId'     => $clienteId,
+            'obraId'        => $obraId,
+            'clientes'      => $clienteModel->all(['ativo' => 1], 'nome_fantasia ASC'),
+            'obras'         => $obraModel->all(['status' => 'ativa'], 'nome ASC'),
             'page'          => $page,
             'totalPages'    => max(1, ceil($total / $perPage)),
             'total'         => $total,

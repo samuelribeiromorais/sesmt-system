@@ -17,14 +17,26 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" name="q" class="form-control" placeholder="Buscar por nome, matricula ou cargo..." value="<?= htmlspecialchars($search) ?>" id="search-input" autocomplete="off">
             </div>
-            <select name="status" class="form-control" style="width:130px;" onchange="this.form.submit()">
+            <select name="status" class="form-control" style="width:120px;" onchange="this.form.submit()">
                 <option value="ativo" <?= $status === 'ativo' ? 'selected' : '' ?>>Ativos</option>
                 <option value="inativo" <?= $status === 'inativo' ? 'selected' : '' ?>>Inativos</option>
                 <option value="afastado" <?= $status === 'afastado' ? 'selected' : '' ?>>Afastados</option>
                 <option value="todos" <?= $status === 'todos' ? 'selected' : '' ?>>Todos</option>
             </select>
+            <select name="cliente_id" class="form-control" style="width:140px;" onchange="this.form.submit()">
+                <option value="">Todos Clientes</option>
+                <?php foreach ($clientes ?? [] as $cl): ?>
+                <option value="<?= $cl['id'] ?>" <?= ($clienteId ?? '') == $cl['id'] ? 'selected' : '' ?>><?= htmlspecialchars($cl['nome_fantasia']) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <select name="obra_id" class="form-control" style="width:160px;" onchange="this.form.submit()">
+                <option value="">Todas Obras</option>
+                <?php foreach ($obras ?? [] as $ob): ?>
+                <option value="<?= $ob['id'] ?>" <?= ($obraId ?? '') == $ob['id'] ? 'selected' : '' ?>><?= htmlspecialchars($ob['nome']) ?></option>
+                <?php endforeach; ?>
+            </select>
             <button type="submit" class="btn btn-secondary btn-sm">Buscar</button>
-            <?php if ($search || $status !== 'ativo'): ?>
+            <?php if ($search || $status !== 'ativo' || !empty($clienteId) || !empty($obraId)): ?>
             <a href="/colaboradores" class="btn btn-outline btn-sm">Limpar</a>
             <?php endif; ?>
         </form>
