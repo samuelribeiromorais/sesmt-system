@@ -1,20 +1,15 @@
-version: '3.8'
-
 services:
   web:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: sesmt-web
     restart: always
     ports:
       - "8080:80"
     volumes:
       - .:/var/www/html
-      - sesmt-storage:/var/www/html/storage
-    environment:
-      - APP_ENV=production
-      - APP_DEBUG=false
+      - ./storage:/var/www/html/storage
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
@@ -25,19 +20,16 @@ services:
     image: mariadb:10.11
     container_name: sesmt-db
     restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: sesmt_tse
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+    env_file:
+      - .env
     volumes:
       - sesmt-dbdata:/var/lib/mysql
-      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
     networks:
       - sesmt-net
 
@@ -45,22 +37,19 @@ services:
     image: mariadb:10.11
     container_name: sesmt-backup
     restart: always
-    environment:
-      MYSQL_HOST: db
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: sesmt_tse
+    env_file:
+      - .env
     volumes:
       - sesmt-backups:/backups
-      - sesmt-storage:/storage:ro
+      - ./storage:/storage:ro
     entrypoint: /bin/bash
     command: >
       -c "
       while true; do
         TIMESTAMP=$$(date +%Y%m%d_%H%M%S);
         echo \"[$$TIMESTAMP] Iniciando backup...\";
-        mariadb-dump -h db -u $$MYSQL_USER -p$$MYSQL_PASSWORD $$MYSQL_DATABASE | gzip > /backups/db_$$TIMESTAMP.sql.gz;
-        tar czf /backups/storage_$$TIMESTAMP.tar.gz -C /storage uploads/ 2>/dev/null;
+        mariadb-dump -h db -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE | gzip > /backups/db_$$TIMESTAMP.sql.gz;
+        tar czf /backups/storage_$$TIMESTAMP.tar.gz -C /storage uploads/ 2>/dev/null || true;
         find /backups -name 'db_*.sql.gz' -mtime +7 -delete;
         find /backups -name 'storage_*.tar.gz' -mtime +7 -delete;
         echo \"[$$TIMESTAMP] Backup concluido.\";
@@ -74,8 +63,6 @@ services:
       - sesmt-net
 
 volumes:
-  sesmt-storage:
-    driver: local
   sesmt-dbdata:
     driver: local
   sesmt-backups:
