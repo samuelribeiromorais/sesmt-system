@@ -218,3 +218,137 @@ CREATE TABLE IF NOT EXISTS logs_acesso (
     INDEX idx_acao (acao),
     INDEX idx_criado (criado_em)
 ) ENGINE=InnoDB;
+
+-- Sessoes ativas
+CREATE TABLE IF NOT EXISTS sessoes_ativas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    session_id VARCHAR(128) NOT NULL,
+    ip_address VARCHAR(45) NULL,
+    user_agent TEXT NULL,
+    ultimo_acesso DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_session (session_id),
+    INDEX idx_usuario (usuario_id),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+) ENGINE=InnoDB;
+
+-- API Tokens
+CREATE TABLE IF NOT EXISTS api_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    nome VARCHAR(100) NOT NULL,
+    token_hash VARCHAR(64) NOT NULL UNIQUE,
+    ultimo_uso DATETIME NULL,
+    ativo TINYINT(1) NOT NULL DEFAULT 1,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+) ENGINE=InnoDB;
+
+-- 2FA (TOTP)
+CREATE TABLE IF NOT EXISTS totp_secrets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL UNIQUE,
+    secret VARCHAR(64) NOT NULL,
+    ativo TINYINT(1) NOT NULL DEFAULT 0,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+) ENGINE=InnoDB;
+
+-- Upload Links (links externos)
+CREATE TABLE IF NOT EXISTS upload_links (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    colaborador_id INT NOT NULL,
+    token VARCHAR(64) NOT NULL UNIQUE,
+    tipo_documento_id INT NULL,
+    descricao VARCHAR(200) NULL,
+    expira_em DATETIME NOT NULL,
+    usado_em DATETIME NULL,
+    criado_por INT NULL,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (colaborador_id) REFERENCES colaboradores(id),
+    FOREIGN KEY (tipo_documento_id) REFERENCES tipos_documento(id)
+) ENGINE=InnoDB;
+
+-- Treinamentos em massa
+CREATE TABLE IF NOT EXISTS treinamentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tipo_certificado_id INT NOT NULL,
+    ministrante_id INT NULL,
+    data_realizacao DATE NOT NULL,
+    data_realizacao_fim DATE NULL,
+    observacoes TEXT NULL,
+    total_participantes INT NOT NULL DEFAULT 0,
+    criado_por INT NULL,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tipo_certificado_id) REFERENCES tipos_certificado(id),
+    FOREIGN KEY (ministrante_id) REFERENCES ministrantes(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS treinamento_participantes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    treinamento_id INT NOT NULL,
+    colaborador_id INT NOT NULL,
+    certificado_id INT NULL,
+    FOREIGN KEY (treinamento_id) REFERENCES treinamentos(id),
+    FOREIGN KEY (colaborador_id) REFERENCES colaboradores(id),
+    FOREIGN KEY (certificado_id) REFERENCES certificados(id)
+) ENGINE=InnoDB;
+
+-- Vinculacao tipo_certificado -> ministrante padrao
+CREATE TABLE IF NOT EXISTS tipo_certificado_ministrante (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tipo_certificado_id INT NOT NULL,
+    ministrante_id INT NOT NULL,
+    papel ENUM('instrutor', 'responsavel_tecnico') DEFAULT 'instrutor',
+    UNIQUE KEY uk_tipo_ministrante (tipo_certificado_id, ministrante_id),
+    FOREIGN KEY (tipo_certificado_id) REFERENCES tipos_certificado(id),
+    FOREIGN KEY (ministrante_id) REFERENCES ministrantes(id)
+) ENGINE=InnoDB;
+
+-- Audit log (diff antes/depois)
+CREATE TABLE IF NOT EXISTS audit_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tabela VARCHAR(100) NOT NULL,
+    registro_id INT NOT NULL,
+    acao ENUM('criar', 'editar', 'excluir') NOT NULL,
+    campo VARCHAR(100) NULL,
+    valor_anterior TEXT NULL,
+    valor_novo TEXT NULL,
+    usuario_id INT NULL,
+    usuario_nome VARCHAR(150) NULL,
+    ip_address VARCHAR(45) NULL,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_tabela_registro (tabela, registro_id),
+    INDEX idx_criado_em (criado_em)
+) ENGINE=InnoDB;
+
+-- Kit PJ
+CREATE TABLE IF NOT EXISTS kits_pj (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    colaborador_id INT NOT NULL,
+    razao_social VARCHAR(250) NOT NULL,
+    cnpj VARCHAR(20) NOT NULL,
+    endereco TEXT NULL,
+    tipo_aso ENUM('admissional','periodico','demissional','retorno','mudanca_risco') NOT NULL DEFAULT 'periodico',
+    riscos_fisicos TEXT NULL,
+    riscos_quimicos TEXT NULL,
+    riscos_biologicos TEXT NULL,
+    riscos_ergonomicos TEXT NULL,
+    riscos_acidentes TEXT NULL,
+    exames JSON NULL,
+    aptidoes JSON NULL,
+    medico_nome VARCHAR(200) NULL DEFAULT 'Dr. Haroldo Aquino Noleto',
+    medico_crm VARCHAR(50) NULL DEFAULT 'CRM: 2678',
+    medico_uf VARCHAR(5) NULL DEFAULT 'GO',
+    gerado_por INT NULL,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (colaborador_id) REFERENCES colaboradores(id)
+) ENGINE=InnoDB;
+
+-- Colunas extras em tabelas existentes (ALTER TABLE)
+ALTER TABLE obras ADD COLUMN IF NOT EXISTS epi_validade_meses INT NULL DEFAULT NULL;
+ALTER TABLE documentos ADD COLUMN IF NOT EXISTS aprovacao_status ENUM('pendente', 'aprovado', 'rejeitado') NULL DEFAULT NULL;
+ALTER TABLE documentos ADD COLUMN IF NOT EXISTS aprovado_por INT NULL;
+ALTER TABLE documentos ADD COLUMN IF NOT EXISTS aprovado_em DATETIME NULL;
+ALTER TABLE documentos ADD COLUMN IF NOT EXISTS aprovacao_obs TEXT NULL;

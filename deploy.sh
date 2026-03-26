@@ -50,7 +50,7 @@ fi
 # --- 1. INSTALAR DEPENDENCIAS ---
 log "[1/8] Instalando dependencias..."
 apt-get update -qq
-apt-get install -y -qq docker.io docker-compose git certbot python3-certbot-apache ufw curl
+apt-get install -y -qq docker.io docker-compose git curl
 systemctl enable docker
 systemctl start docker
 log "Dependencias instaladas."
@@ -186,16 +186,13 @@ systemctl reload apache2
 log "Apache configurado."
 
 # --- 7. SSL ---
-log "[7/8] Configurando SSL com Let's Encrypt..."
-certbot --apache -d ${DOMAIN} --non-interactive --agree-tos --email samuel.morais@tsea.com.br 2>/dev/null || warn "Certbot falhou. Configure SSL manualmente depois."
+log "[7/8] SSL..."
+log "Certificado SSL ja existente no servidor. Nenhuma acao necessaria."
+log "Se precisar renovar, configure manualmente no Apache."
 
 # --- 8. FIREWALL ---
-log "[8/8] Configurando firewall..."
-ufw allow 22/tcp
-ufw allow 80/tcp
-ufw allow 443/tcp
-ufw --force enable 2>/dev/null
-log "Firewall configurado."
+log "[8/8] Firewall..."
+log "Firewall gerenciado pelo servidor. Nenhuma acao necessaria."
 
 # --- VERIFICACAO FINAL ---
 sleep 3
