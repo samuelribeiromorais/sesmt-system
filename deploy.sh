@@ -1,27 +1,18 @@
 #!/bin/bash
 # ===========================================
 # SESMT TSE - Script de Deploy para Producao
-# Servidor: Debian com Apache + Docker
 # ===========================================
 #
-# COMO USAR:
-#   chmod +x deploy.sh
-#   sudo ./deploy.sh
-#
-# O script faz TUDO sozinho:
-#   1. Instala Docker, Git, Apache, Certbot
-#   2. Clona o repositorio do GitHub
-#   3. Gera .env com senhas seguras
-#   4. Sobe os containers
-#   5. Configura Apache como reverse proxy
-#   6. Configura SSL (HTTPS)
-#   7. Configura firewall
+# USO:
+#   PRIMEIRA INSTALACAO:  sudo ./deploy.sh instalar
+#   ATUALIZAR CODIGO:     sudo ./deploy.sh atualizar
+#   IMPORTAR DUMP:        sudo ./deploy.sh importar dump_sesmt.sql
+#   STATUS:               sudo ./deploy.sh status
 #
 # ===========================================
 
 set -e
 
-# Cores para output
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
@@ -33,78 +24,78 @@ err() { echo -e "${RED}[ERRO]${NC} $1"; }
 
 DEPLOY_DIR="/opt/sesmt-system"
 DOMAIN="sesmt.tsea.com.br"
+COMPOSE_FILE="docker-compose.prod.yml"
+ACAO="${1:-}"
 
-echo ""
-echo "=========================================="
-echo " SESMT TSE - Deploy de Producao"
-echo " Dominio: $DOMAIN"
-echo "=========================================="
-echo ""
+# ---- FUNCOES ----
 
-# Verificar root
-if [ "$EUID" -ne 0 ]; then
-    err "Execute como root: sudo ./deploy.sh"
-    exit 1
-fi
+instalar() {
+    echo ""
+    echo "=========================================="
+    echo " SESMT TSE - Instalacao Completa"
+    echo " Dominio: $DOMAIN"
+    echo "=========================================="
+    echo ""
 
-# --- 1. INSTALAR DEPENDENCIAS ---
-log "[1/8] Instalando dependencias..."
-apt-get update -qq
-apt-get install -y -qq docker.io docker-compose git curl
-systemctl enable docker
-systemctl start docker
-log "Dependencias instaladas."
+    if [ "$EUID" -ne 0 ]; then
+        err "Execute como root: sudo ./deploy.sh instalar"
+        exit 1
+    fi
 
-# --- 2. CLONAR REPOSITORIO ---
-log "[2/8] Clonando repositorio..."
-if [ -d "$DEPLOY_DIR" ]; then
-    cd "$DEPLOY_DIR"
-    git pull origin master
-    log "Repositorio atualizado."
-else
-    git clone https://github.com/samuelribeiromorais/sesmt-system.git "$DEPLOY_DIR"
-    cd "$DEPLOY_DIR"
-    log "Repositorio clonado."
-fi
+    # 1. Instalar dependencias
+    log "[1/7] Instalando dependencias..."
+    apt-get update -qq
+    apt-get install -y -qq docker.io docker-compose git curl apache2
+    systemctl enable docker
+    systemctl start docker
+    a2enmod proxy proxy_http rewrite ssl headers 2>/dev/null || true
+    log "Dependencias instaladas."
 
-# --- 3. GERAR .ENV ---
-log "[3/8] Configurando variaveis de ambiente..."
+    # 2. Clonar repositorio
+    log "[2/7] Clonando repositorio..."
+    if [ -d "$DEPLOY_DIR/.git" ]; then
+        cd "$DEPLOY_DIR"
+        git pull origin master
+        log "Repositorio atualizado."
+    else
+        git clone https://github.com/samuelribeiromorais/sesmt-system.git "$DEPLOY_DIR"
+        cd "$DEPLOY_DIR"
+        log "Repositorio clonado."
+    fi
 
-# Gerar senhas aleatorias FIXAS (mesmo valor para DB e app)
-DB_PASS="SesmtTSE$(openssl rand -hex 6)"
-DB_ROOT_PASS="Root$(openssl rand -hex 8)"
-AES="$(openssl rand -hex 32)"
+    # 3. Gerar .env (somente se nao existir)
+    if [ -f "$DEPLOY_DIR/.env" ]; then
+        log "[3/7] .env ja existe, mantendo configuracao atual."
+        # Carregar senha existente
+        DB_PASS=$(grep "^DB_PASS=" "$DEPLOY_DIR/.env" | cut -d'=' -f2)
+    else
+        log "[3/7] Gerando .env..."
+        DB_PASS="SesmtTSE$(openssl rand -hex 6)"
+        DB_ROOT_PASS="Root$(openssl rand -hex 8)"
+        AES_KEY="$(openssl rand -hex 32)"
 
-# SEMPRE regravar o .env para evitar inconsistencias de senha
-cat > "$DEPLOY_DIR/.env" << EOF
-# =============================================
-# SESMT TSE - Configuracao de Producao
-# Gerado automaticamente em $(date '+%Y-%m-%d %H:%M:%S')
-# =============================================
+        cat > "$DEPLOY_DIR/.env" << ENVEOF
+# SESMT TSE - Producao
+# Gerado em $(date '+%Y-%m-%d %H:%M:%S')
 
-# App
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://${DOMAIN}
 APP_TIMEZONE=America/Sao_Paulo
 
-# Banco de dados - USADAS PELO PHP (app/Core/Database.php)
 DB_HOST=db
 DB_PORT=3306
 DB_NAME=sesmt_tse
 DB_USER=sesmt
 DB_PASS=${DB_PASS}
 
-# Banco de dados - USADAS PELO MARIADB (container db)
 MARIADB_ROOT_PASSWORD=${DB_ROOT_PASS}
 MARIADB_DATABASE=sesmt_tse
 MARIADB_USER=sesmt
 MARIADB_PASSWORD=${DB_PASS}
 
-# Criptografia AES-256
-AES_KEY=${AES}
+AES_KEY=${AES_KEY}
 
-# SMTP (configurar com dados reais depois)
 SMTP_HOST=
 SMTP_PORT=587
 SMTP_USER=
@@ -112,121 +103,196 @@ SMTP_PASS=
 SMTP_FROM_NAME=SESMT TSE
 SMTP_FROM_EMAIL=
 
-# Upload
 UPLOAD_MAX_SIZE=10485760
 UPLOAD_ALLOWED_TYPES=application/pdf
-EOF
+ENVEOF
 
-log ".env gerado com sucesso."
-log "  DB_USER: sesmt"
-log "  DB_PASS: ${DB_PASS}"
-warn "ANOTE A SENHA ACIMA! Ela nao sera exibida novamente."
-echo ""
-
-# --- 4. CRIAR DIRETORIOS ---
-log "[4/8] Criando diretorios..."
-mkdir -p "$DEPLOY_DIR/storage/uploads"
-mkdir -p "$DEPLOY_DIR/storage/backups"
-mkdir -p "$DEPLOY_DIR/storage/logs"
-mkdir -p "$DEPLOY_DIR/storage/cache"
-mkdir -p "$DEPLOY_DIR/storage/reports"
-chown -R www-data:www-data "$DEPLOY_DIR/storage" 2>/dev/null || true
-chmod -R 750 "$DEPLOY_DIR/storage"
-log "Diretorios criados."
-
-# --- 5. SUBIR CONTAINERS ---
-log "[5/8] Subindo containers Docker..."
-
-# Parar containers antigos se existirem
-docker-compose -f docker-compose.prod.yml down 2>/dev/null || true
-
-# Remover volumes antigos do banco (para recriar com novas senhas)
-docker volume rm sesmt-system_sesmt-dbdata 2>/dev/null || true
-
-# Subir
-docker-compose -f docker-compose.prod.yml up -d --build
-
-# Aguardar banco ficar pronto
-log "Aguardando banco de dados inicializar..."
-for i in $(seq 1 30); do
-    if docker exec sesmt-db mariadb -u sesmt -p"${DB_PASS}" -e "SELECT 1" sesmt_tse &>/dev/null; then
-        log "Banco de dados pronto!"
-        break
+        log ".env gerado."
+        log "  DB_PASS: ${DB_PASS}"
+        warn "ANOTE A SENHA ACIMA!"
     fi
-    sleep 2
-    echo -n "."
-done
-echo ""
 
-# Verificar conexao
-if ! docker exec sesmt-db mariadb -u sesmt -p"${DB_PASS}" -e "SELECT 1" sesmt_tse &>/dev/null; then
-    err "Banco de dados NAO respondeu. Verifique com: docker logs sesmt-db"
-    exit 1
-fi
+    # 4. Criar diretorios
+    log "[4/7] Criando diretorios..."
+    mkdir -p "$DEPLOY_DIR/storage"/{uploads,backups,logs,cache,reports}
+    chown -R www-data:www-data "$DEPLOY_DIR/storage" 2>/dev/null || true
+    chmod -R 750 "$DEPLOY_DIR/storage"
 
-# --- 6. CONFIGURAR APACHE ---
-log "[6/8] Configurando Apache..."
-a2enmod proxy proxy_http rewrite ssl headers 2>/dev/null
+    # 5. Subir containers
+    log "[5/7] Subindo containers..."
+    cd "$DEPLOY_DIR"
+    docker-compose -f "$COMPOSE_FILE" down 2>/dev/null || true
+    docker-compose -f "$COMPOSE_FILE" up -d --build
 
-cat > /etc/apache2/sites-available/sesmt.conf << APACHEEOF
+    # Aguardar banco
+    log "Aguardando banco de dados..."
+    DB_PASS=$(grep "^DB_PASS=" "$DEPLOY_DIR/.env" | cut -d'=' -f2)
+    for i in $(seq 1 30); do
+        if docker exec sesmt-db mariadb -u sesmt -p"${DB_PASS}" -e "SELECT 1" sesmt_tse &>/dev/null; then
+            log "Banco pronto!"
+            break
+        fi
+        sleep 2
+        echo -n "."
+    done
+    echo ""
+
+    # Verificar se tabelas existem
+    TABELAS=$(docker exec sesmt-db mariadb -u sesmt -p"${DB_PASS}" sesmt_tse -e "SHOW TABLES" 2>/dev/null | wc -l)
+    if [ "$TABELAS" -lt 5 ]; then
+        warn "Banco vazio. Importando schema..."
+        docker exec -i sesmt-db mariadb -u sesmt -p"${DB_PASS}" sesmt_tse < "$DEPLOY_DIR/docker/init/01-schema.sql"
+        docker exec -i sesmt-db mariadb -u sesmt -p"${DB_PASS}" sesmt_tse < "$DEPLOY_DIR/docker/init/02-seed.sql" 2>/dev/null || true
+        log "Schema importado."
+    fi
+
+    # Verificar se tem dados
+    COLAB_COUNT=$(docker exec sesmt-db mariadb -u sesmt -p"${DB_PASS}" sesmt_tse -e "SELECT COUNT(*) FROM colaboradores" -N 2>/dev/null || echo "0")
+    if [ "$COLAB_COUNT" -lt 10 ]; then
+        # Tentar importar dump de producao se existir
+        if [ -f "$DEPLOY_DIR/database/dump_producao.sql" ]; then
+            log "Importando dump de producao (${COLAB_COUNT} colaboradores encontrados)..."
+            docker exec -i sesmt-db mariadb -u sesmt -p"${DB_PASS}" sesmt_tse < "$DEPLOY_DIR/database/dump_producao.sql"
+            log "Dump importado."
+        else
+            warn "Banco com poucos dados (${COLAB_COUNT} colaboradores)."
+            warn "Use: sudo ./deploy.sh importar dump_sesmt.sql"
+        fi
+    else
+        log "Banco ja contem ${COLAB_COUNT} colaboradores."
+    fi
+
+    # 6. Apache
+    log "[6/7] Configurando Apache..."
+    cat > /etc/apache2/sites-available/sesmt.conf << APACHEEOF
 <VirtualHost *:80>
     ServerName ${DOMAIN}
-
     ProxyPreserveHost On
     ProxyPass / http://127.0.0.1:8080/
     ProxyPassReverse / http://127.0.0.1:8080/
-
     ErrorLog \${APACHE_LOG_DIR}/sesmt-error.log
     CustomLog \${APACHE_LOG_DIR}/sesmt-access.log combined
 </VirtualHost>
 APACHEEOF
 
-a2ensite sesmt.conf 2>/dev/null
-systemctl reload apache2
-log "Apache configurado."
+    a2ensite sesmt.conf 2>/dev/null || true
+    systemctl reload apache2
+    log "Apache configurado."
 
-# --- 7. SSL ---
-log "[7/8] SSL..."
-log "Certificado SSL ja existente no servidor. Nenhuma acao necessaria."
-log "Se precisar renovar, configure manualmente no Apache."
+    # 7. Verificacao final
+    log "[7/7] Verificacao final..."
+    sleep 3
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ 2>/dev/null)
 
-# --- 8. FIREWALL ---
-log "[8/8] Firewall..."
-log "Firewall gerenciado pelo servidor. Nenhuma acao necessaria."
-
-# --- VERIFICACAO FINAL ---
-sleep 3
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ 2>/dev/null)
-
-echo ""
-echo "=========================================="
-if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "302" ]; then
-    echo -e " ${GREEN}DEPLOY CONCLUIDO COM SUCESSO!${NC}"
+    echo ""
     echo "=========================================="
-    echo ""
-    echo " URL: https://${DOMAIN}"
-    echo " Login: samuel.morais@tsea.com.br"
-    echo " Senha: TseAdmin@2026"
-    echo ""
-    echo " PROXIMOS PASSOS:"
-    echo " 1. Acesse ${DOMAIN} e teste o login"
-    echo " 2. Altere a senha no primeiro acesso"
-    echo " 3. Transfira os documentos (storage/uploads/)"
-    echo "    Descompacte o ZIP em: ${DEPLOY_DIR}/storage/uploads/"
-    echo "    Depois: chown -R www-data:www-data ${DEPLOY_DIR}/storage/uploads/"
-    echo " 4. Configure SMTP no .env: nano ${DEPLOY_DIR}/.env"
-    echo " 5. Backup diario automatico ja esta ativo"
-    echo ""
-    echo " CREDENCIAIS DO BANCO (salve em local seguro):"
-    echo " DB_USER: sesmt"
-    echo " DB_PASS: ${DB_PASS}"
-    echo " DB_ROOT: ${DB_ROOT_PASS}"
-    echo ""
-else
-    echo -e " ${RED}ERRO: Servidor nao respondeu (HTTP ${HTTP_CODE})${NC}"
+    if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "302" ]; then
+        echo -e " ${GREEN}INSTALACAO CONCLUIDA!${NC}"
+        echo "=========================================="
+        echo ""
+        echo " URL: https://${DOMAIN}"
+        echo " Login: samuel.morais@tsea.com.br"
+        echo " Senha: TseAdmin@2026"
+        echo ""
+        echo " PROXIMO PASSO:"
+        echo " - Copie os PDFs para: ${DEPLOY_DIR}/storage/uploads/"
+        echo " - Depois: chown -R www-data:www-data ${DEPLOY_DIR}/storage/uploads/"
+        echo ""
+    else
+        echo -e " ${RED}ERRO: HTTP ${HTTP_CODE}${NC}"
+        echo " Verifique: docker logs sesmt-web"
+        echo "            docker logs sesmt-db"
+    fi
     echo "=========================================="
-    echo " Verifique os logs:"
-    echo "   docker logs sesmt-web"
-    echo "   docker logs sesmt-db"
-fi
-echo "=========================================="
+}
+
+atualizar() {
+    log "Atualizando sistema..."
+    cd "$DEPLOY_DIR"
+    git pull origin master
+    docker-compose -f "$COMPOSE_FILE" up -d --build
+    log "Atualizado! Banco NAO foi alterado."
+}
+
+importar_dump() {
+    DUMP_FILE="${2:-}"
+    if [ -z "$DUMP_FILE" ] || [ ! -f "$DUMP_FILE" ]; then
+        err "Uso: sudo ./deploy.sh importar <arquivo.sql>"
+        err "Exemplo: sudo ./deploy.sh importar /tmp/dump_sesmt.sql"
+        exit 1
+    fi
+
+    DB_PASS=$(grep "^DB_PASS=" "$DEPLOY_DIR/.env" | cut -d'=' -f2)
+    log "Importando $DUMP_FILE..."
+    docker exec -i sesmt-db mariadb -u sesmt -p"${DB_PASS}" sesmt_tse < "$DUMP_FILE"
+
+    COLAB_COUNT=$(docker exec sesmt-db mariadb -u sesmt -p"${DB_PASS}" sesmt_tse -e "SELECT COUNT(*) FROM colaboradores WHERE excluido_em IS NULL" -N 2>/dev/null)
+    log "Importado! ${COLAB_COUNT} colaboradores no banco."
+
+    # Corrigir permissoes do storage
+    chown -R www-data:www-data "$DEPLOY_DIR/storage" 2>/dev/null || true
+    chmod -R 750 "$DEPLOY_DIR/storage"
+    log "Permissoes corrigidas."
+}
+
+status_sistema() {
+    echo ""
+    echo "=== SESMT TSE - Status ==="
+    echo ""
+
+    # Containers
+    echo "Containers:"
+    docker ps --format "  {{.Names}}: {{.Status}}" --filter "name=sesmt" 2>/dev/null || echo "  Docker nao esta rodando"
+    echo ""
+
+    # Banco
+    if [ -f "$DEPLOY_DIR/.env" ]; then
+        DB_PASS=$(grep "^DB_PASS=" "$DEPLOY_DIR/.env" | cut -d'=' -f2)
+        COLAB=$(docker exec sesmt-db mariadb -u sesmt -p"${DB_PASS}" sesmt_tse -e "SELECT COUNT(*) FROM colaboradores WHERE excluido_em IS NULL" -N 2>/dev/null || echo "ERRO")
+        DOCS=$(docker exec sesmt-db mariadb -u sesmt -p"${DB_PASS}" sesmt_tse -e "SELECT COUNT(*) FROM documentos WHERE excluido_em IS NULL" -N 2>/dev/null || echo "ERRO")
+        CERTS=$(docker exec sesmt-db mariadb -u sesmt -p"${DB_PASS}" sesmt_tse -e "SELECT COUNT(*) FROM certificados WHERE excluido_em IS NULL" -N 2>/dev/null || echo "ERRO")
+        echo "Banco de dados:"
+        echo "  Colaboradores: $COLAB"
+        echo "  Documentos: $DOCS"
+        echo "  Certificados: $CERTS"
+    fi
+    echo ""
+
+    # Web
+    HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ 2>/dev/null)
+    echo "Web: HTTP $HTTP"
+
+    # Storage
+    UPLOADS=$(find "$DEPLOY_DIR/storage/uploads" -name "*.pdf" 2>/dev/null | wc -l)
+    echo "PDFs no storage: $UPLOADS"
+    echo ""
+}
+
+# ---- MAIN ----
+case "$ACAO" in
+    instalar)
+        instalar
+        ;;
+    atualizar)
+        atualizar
+        ;;
+    importar)
+        importar_dump "$@"
+        ;;
+    status)
+        status_sistema
+        ;;
+    *)
+        echo ""
+        echo "SESMT TSE - Script de Deploy"
+        echo ""
+        echo "Uso: sudo ./deploy.sh <comando>"
+        echo ""
+        echo "Comandos:"
+        echo "  instalar    Instalacao completa (primeira vez)"
+        echo "  atualizar   Atualiza codigo sem tocar no banco"
+        echo "  importar    Importa dump SQL: ./deploy.sh importar arquivo.sql"
+        echo "  status      Mostra status do sistema"
+        echo ""
+        ;;
+esac
