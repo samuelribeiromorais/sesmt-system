@@ -75,7 +75,7 @@ DB_PASS="SesmtTSE$(openssl rand -hex 6)"
 DB_ROOT_PASS="Root$(openssl rand -hex 8)"
 AES="$(openssl rand -hex 32)"
 
-# SEMPRE regravar o .env para evitar inconsistencias
+# SEMPRE regravar o .env para evitar inconsistencias de senha
 cat > "$DEPLOY_DIR/.env" << EOF
 # =============================================
 # SESMT TSE - Configuracao de Producao

@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS colaboradores (
     data_demissao DATE NULL,
     status ENUM('ativo','inativo','afastado') NOT NULL DEFAULT 'ativo',
     unidade VARCHAR(100) NULL,
+    excluido_em DATETIME NULL,
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL,
@@ -80,7 +81,8 @@ CREATE TABLE IF NOT EXISTS colaboradores (
     INDEX idx_status (status),
     INDEX idx_cliente (cliente_id),
     INDEX idx_obra (obra_id),
-    INDEX idx_cpf_hash (cpf_hash)
+    INDEX idx_cpf_hash (cpf_hash),
+    INDEX idx_excluido (excluido_em)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS ministrantes (
@@ -123,6 +125,7 @@ CREATE TABLE IF NOT EXISTS certificados (
     status ENUM('vigente','vencido','proximo_vencimento') NOT NULL DEFAULT 'vigente',
     ministrante_id INT NULL,
     criado_por INT NULL,
+    excluido_em DATETIME NULL,
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (colaborador_id) REFERENCES colaboradores(id) ON DELETE CASCADE,
@@ -132,7 +135,8 @@ CREATE TABLE IF NOT EXISTS certificados (
     INDEX idx_colaborador (colaborador_id),
     INDEX idx_tipo (tipo_certificado_id),
     INDEX idx_validade (data_validade),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+    INDEX idx_excluido (excluido_em)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS tipos_documento (
@@ -160,6 +164,12 @@ CREATE TABLE IF NOT EXISTS documentos (
     status ENUM('vigente','vencido','proximo_vencimento','obsoleto') NOT NULL DEFAULT 'vigente',
     observacoes TEXT NULL,
     enviado_por INT NULL,
+    versao INT NOT NULL DEFAULT 1,
+    documento_pai_id INT NULL,
+    assinatura_digital VARCHAR(64) NULL,
+    assinado_por VARCHAR(150) NULL,
+    assinado_em DATETIME NULL,
+    excluido_em DATETIME NULL,
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (colaborador_id) REFERENCES colaboradores(id) ON DELETE CASCADE,
@@ -168,7 +178,8 @@ CREATE TABLE IF NOT EXISTS documentos (
     INDEX idx_colaborador (colaborador_id),
     INDEX idx_tipo (tipo_documento_id),
     INDEX idx_validade (data_validade),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+    INDEX idx_excluido (excluido_em)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS config_cliente_docs (
@@ -212,6 +223,7 @@ CREATE TABLE IF NOT EXISTS logs_acesso (
     descricao TEXT NULL,
     ip_address VARCHAR(45) NULL,
     user_agent VARCHAR(500) NULL,
+    contexto TEXT NULL,
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL,
     INDEX idx_usuario (usuario_id),
@@ -264,10 +276,25 @@ CREATE TABLE IF NOT EXISTS upload_links (
     descricao VARCHAR(200) NULL,
     expira_em DATETIME NOT NULL,
     usado_em DATETIME NULL,
+    ativo TINYINT(1) NOT NULL DEFAULT 1,
     criado_por INT NULL,
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (colaborador_id) REFERENCES colaboradores(id),
     FOREIGN KEY (tipo_documento_id) REFERENCES tipos_documento(id)
+) ENGINE=InnoDB;
+
+-- Notificacoes
+CREATE TABLE IF NOT EXISTS notificacoes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NULL,
+    tipo VARCHAR(50) NOT NULL,
+    titulo VARCHAR(200) NOT NULL,
+    mensagem TEXT NULL,
+    lida TINYINT(1) NOT NULL DEFAULT 0,
+    link VARCHAR(500) NULL,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    INDEX idx_usuario_lida (usuario_id, lida)
 ) ENGINE=InnoDB;
 
 -- Treinamentos em massa
