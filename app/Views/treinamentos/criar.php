@@ -71,7 +71,7 @@
                     <div id="data-alertas" style="margin-bottom:8px;"></div>
 
                     <div class="form-group">
-                        <label>Data de Emissao</label>
+                        <label>Data de Emissão</label>
                         <input type="date" name="data_emissao" id="data-emissao" class="form-control" required value="<?= date('Y-m-d') ?>">
                     </div>
 
@@ -82,7 +82,7 @@
                 </div>
             </div>
 
-            <!-- Selecao de colaboradores -->
+            <!-- Seleção de colaboradores -->
             <div class="table-container" style="margin-top:16px;">
                 <div class="table-header">
                     <span class="table-title">Participantes (<span id="count-selecionados">0</span>)</span>
@@ -248,7 +248,7 @@ function atualizarPreview() {
     const colabData = {
         nome: nome,
         cpf: '***.***.***-**',
-        funcao: '',
+        função: '',
         cargo: '',
         data_admissao: '',
         data_realizacao: document.getElementById('data-realizacao').value,

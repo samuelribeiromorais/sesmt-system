@@ -8,7 +8,7 @@
 
 <!-- Configuração de backup automático -->
 <div class="table-container" style="margin-bottom:24px; padding:20px;">
-    <h3 style="margin:0 0 12px; color:var(--c-primary);">Backup Automatico Diario</h3>
+    <h3 style="margin:0 0 12px; color:var(--c-primary);">Backup Automático Diario</h3>
     <form method="POST" action="/backup/configurar-cron" style="display:flex; align-items:center; gap:16px;">
         <?= \App\Core\View::csrfField() ?>
         <div>
@@ -17,10 +17,10 @@
         <input type="time" name="horario" value="02:00" class="form-input" style="width:120px;">
         <button type="submit" class="btn btn-primary btn-sm">Configurar</button>
         <span style="font-size:13px; color:var(--c-gray);">
-            Status: <?= $cronAtivo ? '<span style="color:#4caf50; font-weight:600;">Ativo</span>' : '<span style="color:#999;">Nao configurado</span>' ?>
+            Status: <?= $cronAtivo ? '<span style="color:#4caf50; font-weight:600;">Ativo</span>' : '<span style="color:#999;">Não configurado</span>' ?>
         </span>
     </form>
-    <p style="font-size:12px; color:var(--c-gray); margin:8px 0 0;">O backup automatico gera uma copia do banco de dados todos os dias no horario definido. Backups com mais de 30 dias sao removidos automaticamente.</p>
+    <p style="font-size:12px; color:var(--c-gray); margin:8px 0 0;">O backup automático gera uma copia do banco de dados todos os dias no horario definido. Backups com mais de 30 dias sao removidos automaticamente.</p>
 </div>
 
 <!-- Lista de backups -->
@@ -61,5 +61,5 @@
 </div>
 
 <div style="margin-top:16px; padding:16px; background:#e3f2fd; border-left:5px solid #1976d2; border-radius:6px; font-size:13px;">
-    <strong>Informacao:</strong> Os backups sao armazenados em <code>storage/backups/</code> dentro do container. Como o storage esta sincronizado com o OneDrive, os backups ficam salvos automaticamente na nuvem.
+    <strong>Informação:</strong> Os backups sao armazenados em <code>storage/backups/</code> dentro do container. Como o storage esta sincronizado com o OneDrive, os backups ficam salvos automaticamente na nuvem.
 </div>

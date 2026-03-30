@@ -307,6 +307,53 @@ class DashboardService
         $stmt = $this->db->query("SELECT COUNT(*) FROM documentos WHERE (aprovacao_status = 'pendente' OR aprovacao_status IS NULL) AND status != 'obsoleto' AND excluido_em IS NULL");
         $data['total_aprovacoes_pendentes'] = (int)$stmt->fetchColumn();
 
+        // Contagem total docs mês (rápido)
+        $stmtCount = $this->db->query(
+            "SELECT COUNT(*) FROM documentos
+             WHERE MONTH(criado_em) = MONTH(CURDATE())
+               AND YEAR(criado_em) = YEAR(CURDATE())
+               AND excluido_em IS NULL"
+        );
+        $data['docs_mes_corrente_count'] = (int)$stmtCount->fetchColumn();
+
+        // Docs produzidos mês passado
+        $stmtPassado = $this->db->query(
+            "SELECT COUNT(*) FROM documentos
+             WHERE MONTH(criado_em) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))
+               AND YEAR(criado_em) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))
+               AND excluido_em IS NULL"
+        );
+        $data['docs_mes_passado_count'] = (int)$stmtPassado->fetchColumn();
+
+        // Docs que vencem no próximo mês (precisam ser renovados)
+        $stmtProximo = $this->db->query(
+            "SELECT COUNT(*) FROM documentos
+             WHERE data_validade >= DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL 1 MONTH), '%Y-%m-01')
+               AND data_validade < DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL 2 MONTH), '%Y-%m-01')
+               AND excluido_em IS NULL"
+        );
+        $data['docs_vencendo_proximo_mes_count'] = (int)$stmtProximo->fetchColumn();
+
+        // Preview: apenas 10 mais recentes para o dashboard
+        $data['docs_mes_corrente'] = $this->getDocsMesCorrente();
+
         return $data;
+    }
+
+    private function getDocsMesCorrente(): array
+    {
+        $stmt = $this->db->query(
+            "SELECT d.id, d.status, d.data_emissao, d.criado_em,
+                    c.nome_completo, td.nome as tipo_nome, td.categoria
+             FROM documentos d
+             JOIN colaboradores c ON d.colaborador_id = c.id
+             LEFT JOIN tipos_documento td ON d.tipo_documento_id = td.id
+             WHERE MONTH(d.criado_em) = MONTH(CURDATE())
+               AND YEAR(d.criado_em) = YEAR(CURDATE())
+               AND d.excluido_em IS NULL
+             ORDER BY d.criado_em DESC
+             LIMIT 10"
+        );
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 }

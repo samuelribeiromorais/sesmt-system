@@ -8,7 +8,7 @@
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
     <div>
         <h2><?= htmlspecialchars($colab['nome_completo']) ?></h2>
-        <span style="color:var(--c-gray);">Emissao de Certificados</span>
+        <span style="color:var(--c-gray);">Emissão de Certificados</span>
     </div>
     <a href="/colaboradores/<?= $colab['id'] ?>" class="btn btn-outline btn-sm">Voltar</a>
 </div>
@@ -72,7 +72,7 @@
                     <div id="data-alertas" style="margin-bottom:8px;"></div>
 
                     <div class="form-group">
-                        <label>Data de Emissao</label>
+                        <label>Data de Emissão</label>
                         <input type="date" name="data_emissao" id="data-emissao" class="form-control" required value="<?= date('Y-m-d') ?>">
                     </div>
 
@@ -134,7 +134,7 @@
 const COLAB_DATA = {
     nome: <?= json_encode($colab['nome_completo']) ?>,
     cpf: <?= json_encode($cpfFormatado ?? '***.***.***-**') ?>,
-    funcao: <?= json_encode($colab['funcao'] ?? $colab['cargo'] ?? '') ?>,
+    função: <?= json_encode($colab['funcao'] ?? $colab['cargo'] ?? '') ?>,
     cargo: <?= json_encode($colab['cargo'] ?? '') ?>,
     data_admissao: <?= json_encode($colab['data_admissao'] ?? '') ?>,
 };

@@ -9,7 +9,7 @@
         <h3 style="margin:0 0 8px;"><?= htmlspecialchars($colab['nome_completo']) ?></h3>
         <div style="display:flex;gap:24px;color:#475569;font-size:14px;">
             <span>Cargo: <strong><?= htmlspecialchars($colab['cargo'] ?? '-') ?></strong></span>
-            <span>Funcao: <strong><?= htmlspecialchars($colab['funcao'] ?? '-') ?></strong></span>
+            <span>Função: <strong><?= htmlspecialchars($colab['funcao'] ?? '-') ?></strong></span>
             <?php if (!empty($colab['cliente_nome'])): ?>
                 <span>Cliente: <strong><?= htmlspecialchars($colab['cliente_nome']) ?></strong></span>
             <?php endif; ?>
@@ -24,7 +24,7 @@
             <label>Tipo de Evento</label>
             <select name="tipo_evento" id="tipoEvento" class="form-control" required>
                 <option value="">Selecione o tipo...</option>
-                <option value="S-2210">S-2210 - CAT (Comunicacao de Acidente de Trabalho)</option>
+                <option value="S-2210">S-2210 - CAT (Comunicação de Acidente de Trabalho)</option>
                 <option value="S-2220">S-2220 - ASO (Monitoramento da Saude do Trabalhador)</option>
                 <option value="S-2240">S-2240 - Condicoes Ambientais (Exposicao a Agentes Nocivos)</option>
             </select>
@@ -33,7 +33,7 @@
         <!-- Campos S-2210 (CAT) -->
         <div id="campos-S-2210" class="campos-evento" style="display:none;">
             <h3 style="color:#dc2626;border-bottom:2px solid #dc2626;padding-bottom:8px;">
-                S-2210 - Comunicacao de Acidente de Trabalho
+                S-2210 - Comunicação de Acidente de Trabalho
             </h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
                 <div class="form-group">
@@ -56,7 +56,7 @@
                 <div class="form-group">
                     <label>Houve Obito?</label>
                     <select name="houve_obito" class="form-control">
-                        <option value="nao">Nao</option>
+                        <option value="não">Não</option>
                         <option value="sim">Sim</option>
                     </select>
                 </div>
@@ -74,7 +74,7 @@
                 <input type="text" name="agente_causador" class="form-control" placeholder="Ex: maquina, queda, produto quimico...">
             </div>
             <div class="form-group">
-                <label>Descricao do Acidente</label>
+                <label>Descrição do Acidente</label>
                 <textarea name="descricao" class="form-control" rows="4" placeholder="Descreva como ocorreu o acidente..."></textarea>
             </div>
         </div>
@@ -96,7 +96,7 @@
                         <option value="admissional">Admissional</option>
                         <option value="periodico">Periodico</option>
                         <option value="retorno">Retorno ao Trabalho</option>
-                        <option value="mudanca">Mudanca de Funcao</option>
+                        <option value="mudanca">Mudanca de Função</option>
                         <option value="demissional">Demissional</option>
                     </select>
                 </div>
@@ -112,11 +112,11 @@
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
                 <div class="form-group">
-                    <label>Nome do Medico</label>
+                    <label>Nome do Médico</label>
                     <input type="text" name="medico_nome" class="form-control">
                 </div>
                 <div class="form-group">
-                    <label>CRM do Medico</label>
+                    <label>CRM do Médico</label>
                     <input type="text" name="medico_crm" class="form-control">
                 </div>
             </div>
@@ -156,19 +156,19 @@
                     <label>EPC Eficaz?</label>
                     <select name="epc_eficaz" class="form-control">
                         <option value="sim">Sim</option>
-                        <option value="nao">Nao</option>
+                        <option value="não">Não</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>EPI Eficaz?</label>
                     <select name="epi_eficaz" class="form-control">
                         <option value="sim">Sim</option>
-                        <option value="nao">Nao</option>
+                        <option value="não">Não</option>
                     </select>
                 </div>
             </div>
             <div class="form-group">
-                <label>Descricao da Atividade</label>
+                <label>Descrição da Atividade</label>
                 <textarea name="descricao" class="form-control" rows="4" placeholder="Descreva a atividade exercida e a exposicao..."></textarea>
             </div>
         </div>

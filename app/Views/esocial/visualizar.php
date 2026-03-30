@@ -16,7 +16,7 @@
                 <td style="padding:6px 0;font-weight:600;">
                     <?php
                     $tipoLabels = [
-                        'S-2210' => 'CAT - Comunicacao de Acidente de Trabalho',
+                        'S-2210' => 'CAT - Comunicação de Acidente de Trabalho',
                         'S-2220' => 'ASO - Monitoramento da Saude',
                         'S-2240' => 'Condicoes Ambientais - Exposicao a Agentes',
                     ];
@@ -81,7 +81,7 @@
                 <td style="padding:6px 0;"><?= htmlspecialchars($evento['cargo'] ?? '-') ?></td>
             </tr>
             <tr>
-                <td style="padding:6px 0;color:#6b7280;">Funcao:</td>
+                <td style="padding:6px 0;color:#6b7280;">Função:</td>
                 <td style="padding:6px 0;"><?= htmlspecialchars($evento['funcao'] ?? '-') ?></td>
             </tr>
         </table>

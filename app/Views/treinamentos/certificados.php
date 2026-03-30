@@ -77,7 +77,7 @@
 
         PARTICIPANTES.forEach(p => {
             const colabData = {
-                nome: p.nome, cpf: p.cpf, funcao: p.funcao, cargo: p.cargo,
+                nome: p.nome, cpf: p.cpf, função: p.função, cargo: p.cargo,
                 data_admissao: p.data_admissao,
                 data_realizacao: TREINAMENTO.data_realizacao,
                 data_realizacao_fim: TREINAMENTO.data_realizacao_fim,

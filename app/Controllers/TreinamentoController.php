@@ -100,7 +100,7 @@ class TreinamentoController extends Controller
         $tipoModel = new TipoCertificado();
         $tipo = $tipoModel->find($tipoCertificadoId);
         if (!$tipo) {
-            $this->flash('error', 'Tipo de certificado invalido.');
+            $this->flash('error', 'Tipo de certificado inválido.');
             $this->redirect('/treinamentos/novo');
             return;
         }
@@ -169,7 +169,7 @@ class TreinamentoController extends Controller
         $treinamento = $treinModel->findWithDetails((int)$id);
 
         if (!$treinamento) {
-            $this->flash('error', 'Treinamento nao encontrado.');
+            $this->flash('error', 'Treinamento não encontrado.');
             $this->redirect('/treinamentos');
             return;
         }
@@ -225,7 +225,7 @@ class TreinamentoController extends Controller
         $treinamento = $treinModel->findWithDetails((int)$id);
 
         if (!$treinamento) {
-            $this->flash('error', 'Treinamento nao encontrado.');
+            $this->flash('error', 'Treinamento não encontrado.');
             $this->redirect('/treinamentos');
             return;
         }
@@ -312,7 +312,7 @@ class TreinamentoController extends Controller
         $treinamento = $treinModel->findWithDetails((int)$id);
 
         if (!$treinamento) {
-            $this->flash('error', 'Treinamento nao encontrado.');
+            $this->flash('error', 'Treinamento não encontrado.');
             $this->redirect('/treinamentos');
             return;
         }

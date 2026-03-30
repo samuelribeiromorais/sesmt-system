@@ -61,7 +61,7 @@
                 <tr>
                     <th style="width:30px;">N</th>
                     <th>Nome Completo</th>
-                    <th style="width:120px;">Cargo / Funcao</th>
+                    <th style="width:120px;">Cargo / Função</th>
                     <th style="width:80px;">Setor</th>
                     <th style="width:180px;">Assinatura</th>
                 </tr>

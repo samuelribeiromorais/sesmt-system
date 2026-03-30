@@ -23,7 +23,7 @@ $ultimaVerifData = $ultimaVerif['criado_em'] ?? null;
             <form method="POST" action="/alertas/enviar-emails" style="display:inline;">
                 <input type="hidden" name="_csrf_token" value="<?= $csrfToken ?>">
                 <button type="submit" class="btn btn-sm <?= $smtpOk ? 'btn-success' : 'btn-outline' ?>"
-                    <?= !$smtpOk ? 'disabled title="SMTP nao configurado. Va em Configuracoes > SMTP."' : 'title="Enviar resumo diario por email"' ?>>
+                    <?= !$smtpOk ? 'disabled title="SMTP não configurado. Va em Configurações > SMTP."' : 'title="Enviar resumo diario por email"' ?>>
                     Enviar Emails (<?= $pendentesEmail ?> pendentes)
                 </button>
             </form>
@@ -31,7 +31,7 @@ $ultimaVerifData = $ultimaVerif['criado_em'] ?? null;
     </div>
     <div style="padding: 16px; display: flex; gap: 24px; flex-wrap: wrap; font-size: 13px; color: #6b7280;">
         <div>
-            <strong>Ultima verificacao:</strong>
+            <strong>Ultima verificação:</strong>
             <?= $ultimaVerifData ? date('d/m/Y H:i', strtotime($ultimaVerifData)) : '<span style="color:#e74c3c;">Nunca executada</span>' ?>
         </div>
         <div>
@@ -49,7 +49,7 @@ $ultimaVerifData = $ultimaVerif['criado_em'] ?? null;
         </div>
         <?php if (!$smtpOk): ?>
         <div style="color: #e74c3c; font-weight: 600;">
-            SMTP nao configurado — <a href="/configuracoes" style="color: #e74c3c; text-decoration: underline;">Configurar</a>
+            SMTP não configurado — <a href="/configuracoes" style="color: #e74c3c; text-decoration: underline;">Configurar</a>
         </div>
         <?php endif; ?>
     </div>
@@ -175,10 +175,10 @@ $ultimaVerifData = $ultimaVerif['criado_em'] ?? null;
 <!-- ============ HISTORICO DE ALERTAS ENVIADOS ============ -->
 <div class="table-container" style="margin-top: 24px;">
     <div class="table-header" style="flex-wrap: wrap; gap: 8px;">
-        <span class="table-title">Historico de Alertas (ultimos 50)</span>
+        <span class="table-title">Histórico de Alertas (ultimos 50)</span>
         <?php if (!empty($historico) && $enviadosEmail > 50): ?>
         <form method="POST" action="/alertas/limpar-historico" style="display:inline;"
-              onsubmit="return confirm('Remover alertas com mais de 90 dias do historico?')">
+              onsubmit="return confirm('Remover alertas com mais de 90 dias do histórico?')">
             <input type="hidden" name="_csrf_token" value="<?= $csrfToken ?>">
             <button type="submit" class="btn btn-outline btn-sm" style="font-size: 12px;">Limpar &gt; 90 dias</button>
         </form>
@@ -260,11 +260,11 @@ $ultimaVerifData = $ultimaVerif['criado_em'] ?? null;
             <div># Enviar emails de alerta (diario 07:30)</div>
             <div style="color: #005e4e; font-weight: 600;">30 7 * * * php /var/www/html/cron/enviar_emails.php >> /var/www/html/storage/logs/cron.log 2>&1</div>
             <br>
-            <div># Relatorio mensal (1o dia do mes 07:00)</div>
+            <div># Relatório mensal (1o dia do mes 07:00)</div>
             <div style="color: #005e4e; font-weight: 600;">0 7 1 * * php /var/www/html/cron/relatorio_mensal.php >> /var/www/html/storage/logs/cron.log 2>&1</div>
         </div>
         <p style="margin: 16px 0 0; color: #6b7280;">
-            Enquanto os cron jobs nao estiverem configurados, use os botoes acima para executar manualmente.
+            Enquanto os cron jobs não estiverem configurados, use os botoes acima para executar manualmente.
         </p>
     </div>
 </div>

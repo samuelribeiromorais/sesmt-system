@@ -18,10 +18,10 @@
     </a>
 </div>
 
-<!-- Emissao de Certificados -->
+<!-- Emissão de Certificados -->
 <div class="table-container">
     <div class="table-header">
-        <span class="table-title">Emissao de Certificados</span>
+        <span class="table-title">Emissão de Certificados</span>
     </div>
     <div style="padding:24px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
@@ -80,7 +80,7 @@
                 <th>Colaborador</th>
                 <th>Certificado</th>
                 <th>Duracao</th>
-                <th>Emissao</th>
+                <th>Emissão</th>
                 <th>Validade</th>
                 <th>Status</th>
                 <th>Acoes</th>
@@ -169,7 +169,7 @@
 <div class="table-container" style="margin-top:24px;">
     <div class="table-header"><span class="table-title">Tipos de Certificado Disponiveis (<?= count($tipos) ?>)</span></div>
     <table>
-        <thead><tr><th>Codigo</th><th>Titulo</th><th>Duracao</th><th>Validade</th><th>Anuencia</th></tr></thead>
+        <thead><tr><th>Código</th><th>Título</th><th>Duracao</th><th>Validade</th><th>Anuencia</th></tr></thead>
         <tbody>
         <?php foreach ($tipos as $t): ?>
         <tr>

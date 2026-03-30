@@ -19,15 +19,30 @@ class RelatorioController extends Controller
     {
         RoleMiddleware::requireAdminOrSesmt();
 
+        $db = Database::getInstance();
         $colabModel = new Colaborador();
         $clienteModel = new Cliente();
         $obraModel = new Obra();
 
+        // Tipos de documento para filtro
+        $stmt = $db->query("SELECT id, nome, categoria FROM tipos_documento ORDER BY nome ASC");
+        $tiposDocumento = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        // Contagem docs mês corrente
+        $stmt = $db->query(
+            "SELECT COUNT(*) FROM documentos
+             WHERE MONTH(criado_em) = MONTH(CURDATE()) AND YEAR(criado_em) = YEAR(CURDATE())
+               AND excluido_em IS NULL"
+        );
+        $docsMesCount = (int)$stmt->fetchColumn();
+
         $this->view('relatorios/index', [
-            'colaboradores' => $colabModel->all(['status' => 'ativo'], 'nome_completo ASC'),
-            'clientes'      => $clienteModel->all(['ativo' => 1], 'nome_fantasia ASC'),
-            'obras'         => $obraModel->all([], 'nome ASC'),
-            'pageTitle'     => 'Relatorios',
+            'colaboradores'   => $colabModel->all(['status' => 'ativo'], 'nome_completo ASC'),
+            'clientes'        => $clienteModel->all(['ativo' => 1], 'nome_fantasia ASC'),
+            'obras'           => $obraModel->all([], 'nome ASC'),
+            'tiposDocumento'  => $tiposDocumento,
+            'docsMesCount'    => $docsMesCount,
+            'pageTitle'       => 'Relatórios',
         ]);
     }
 
@@ -55,7 +70,7 @@ class RelatorioController extends Controller
         $obra = $stmt->fetch();
 
         if (!$obra) {
-            $this->flash('error', 'Obra nao encontrada.');
+            $this->flash('error', 'Obra não encontrada.');
             $this->redirect('/relatorios');
         }
 
@@ -158,7 +173,7 @@ class RelatorioController extends Controller
             ? round($totalConformidade / count($colaboradores), 1)
             : 0;
 
-        LoggerMiddleware::log('relatorio', "Relatorio de obra ID: {$id} visualizado.");
+        LoggerMiddleware::log('relatório', "Relatório de obra ID: {$id} visualizado.");
 
         $this->view('relatorios/obra', [
             'obra'               => $obra,
@@ -166,7 +181,7 @@ class RelatorioController extends Controller
             'conformidadeGeral'  => $conformidadeGeral,
             'totalReqDocs'       => count($reqDocs),
             'totalReqCerts'      => count($reqCerts),
-            'pageTitle'          => 'Relatorio da Obra',
+            'pageTitle'          => 'Relatório da Obra',
         ]);
     }
 
@@ -174,29 +189,119 @@ class RelatorioController extends Controller
     {
         RoleMiddleware::requireAdminOrSesmt();
 
-        $dir = dirname(__DIR__, 2) . '/storage/relatorios';
-        $relatorios = [];
+        $db = Database::getInstance();
+        $mes = (int)($this->input('mes') ?: date('m'));
+        $ano = (int)($this->input('ano') ?: date('Y'));
+        $mes = max(1, min(12, $mes));
+        $ano = max(2020, min((int)date('Y'), $ano));
 
-        if (is_dir($dir)) {
-            $files = glob($dir . '/relatorio_mensal_*.html');
-            if ($files) {
-                rsort($files);
-                foreach ($files as $file) {
-                    $basename = basename($file);
-                    // Extract date from filename: relatorio_mensal_YYYY-MM-DD.html
-                    preg_match('/relatorio_mensal_(\d{4}-\d{2}-\d{2})/', $basename, $m);
-                    $relatorios[] = [
-                        'arquivo'  => $basename,
-                        'data'     => $m[1] ?? '-',
-                        'tamanho'  => filesize($file),
-                    ];
-                }
-            }
-        }
+        // Documentos criados no período
+        $stmt = $db->prepare(
+            "SELECT d.id, d.status, d.data_emissao, d.data_validade, d.criado_em,
+                    c.nome_completo, c.cargo, c.setor,
+                    td.nome as tipo_nome, td.categoria
+             FROM documentos d
+             JOIN colaboradores c ON d.colaborador_id = c.id
+             LEFT JOIN tipos_documento td ON d.tipo_documento_id = td.id
+             WHERE MONTH(d.criado_em) = :mes AND YEAR(d.criado_em) = :ano
+               AND d.excluido_em IS NULL
+             ORDER BY d.criado_em DESC
+             LIMIT 500"
+        );
+        $stmt->execute(['mes' => $mes, 'ano' => $ano]);
+        $documentos = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        // Certificados criados no período
+        $stmt = $db->prepare(
+            "SELECT cert.id, cert.status, cert.data_realizacao, cert.data_validade, cert.criado_em,
+                    c.nome_completo, c.cargo, c.setor,
+                    tc.codigo as tipo_codigo, tc.titulo as tipo_titulo
+             FROM certificados cert
+             JOIN colaboradores c ON cert.colaborador_id = c.id
+             LEFT JOIN tipos_certificado tc ON cert.tipo_certificado_id = tc.id
+             WHERE MONTH(cert.criado_em) = :mes AND YEAR(cert.criado_em) = :ano
+             ORDER BY cert.criado_em DESC"
+        );
+        $stmt->execute(['mes' => $mes, 'ano' => $ano]);
+        $certificados = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        // Resumo por categoria de documento
+        $stmt = $db->prepare(
+            "SELECT td.categoria, COUNT(*) as total
+             FROM documentos d
+             LEFT JOIN tipos_documento td ON d.tipo_documento_id = td.id
+             WHERE MONTH(d.criado_em) = :mes AND YEAR(d.criado_em) = :ano AND d.excluido_em IS NULL
+             GROUP BY td.categoria"
+        );
+        $stmt->execute(['mes' => $mes, 'ano' => $ano]);
+        $resumoCategoria = $stmt->fetchAll(\PDO::FETCH_KEY_PAIR);
+
+        LoggerMiddleware::log('relatório', "Relatório mensal {$mes}/{$ano} visualizado.");
 
         $this->view('relatorios/mensal', [
-            'relatorios' => $relatorios,
-            'pageTitle'  => 'Relatorios Mensais',
+            'documentos'      => $documentos,
+            'certificados'    => $certificados,
+            'resumoCategoria' => $resumoCategoria,
+            'mes'             => $mes,
+            'ano'             => $ano,
+            'pageTitle'       => 'Relatório Mensal',
+        ]);
+    }
+
+    public function porTipoDocumento(): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $db = Database::getInstance();
+        $tipoId  = (int)($this->input('tipo_documento_id') ?: 0);
+        $status  = $this->input('status', '');
+        $mes     = (int)($this->input('mes') ?: 0);
+        $ano     = (int)($this->input('ano') ?: 0);
+
+        // Tipos disponíveis
+        $stmt = $db->query("SELECT id, nome, categoria FROM tipos_documento ORDER BY nome ASC");
+        $tiposDocumento = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        $documentos = [];
+        $tipoSelecionado = null;
+
+        if ($tipoId) {
+            foreach ($tiposDocumento as $t) {
+                if ($t['id'] === $tipoId) { $tipoSelecionado = $t; break; }
+            }
+
+            $where = "WHERE d.tipo_documento_id = :tid AND d.excluido_em IS NULL";
+            $params = ['tid' => $tipoId];
+
+            if ($status) { $where .= " AND d.status = :status"; $params['status'] = $status; }
+            if ($mes && $ano) {
+                $where .= " AND MONTH(d.data_emissao) = :mes AND YEAR(d.data_emissao) = :ano";
+                $params['mes'] = $mes; $params['ano'] = $ano;
+            }
+
+            $stmt = $db->prepare(
+                "SELECT d.id, d.status, d.data_emissao, d.data_validade, d.criado_em,
+                        c.nome_completo, c.cargo, c.setor
+                 FROM documentos d
+                 JOIN colaboradores c ON d.colaborador_id = c.id
+                 {$where}
+                 ORDER BY c.nome_completo ASC, d.data_emissao DESC"
+            );
+            $stmt->execute($params);
+            $documentos = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            LoggerMiddleware::log('relatório', "Relatório por tipo documento ID: {$tipoId} gerado.");
+        }
+
+        $this->view('relatorios/tipo-documento', [
+            'tiposDocumento'  => $tiposDocumento,
+            'tipoSelecionado' => $tipoSelecionado,
+            'documentos'      => $documentos,
+            'tipoId'          => $tipoId,
+            'status'          => $status,
+            'mes'             => $mes,
+            'ano'             => $ano,
+            'pageTitle'       => 'Relatório por Tipo de Documento',
         ]);
     }
 
@@ -222,7 +327,7 @@ class RelatorioController extends Controller
             'colab'        => $colab,
             'certificados' => $certModel->getLatestByColaborador((int)$id),
             'documentos'   => $docModel->findByColaborador((int)$id),
-            'pageTitle'    => 'Relatorios',
+            'pageTitle'    => 'Relatórios',
         ]);
     }
 
@@ -237,7 +342,7 @@ class RelatorioController extends Controller
             $filePath = $service->excelCliente((int)$id);
             $fileName = basename($filePath);
 
-            LoggerMiddleware::log('relatorio', "Relatorio de conformidade gerado para cliente ID: {$id}");
+            LoggerMiddleware::log('relatório', "Relatório de conformidade gerado para cliente ID: {$id}");
 
             header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             header('Content-Disposition: attachment; filename="' . $fileName . '"');
@@ -247,7 +352,7 @@ class RelatorioController extends Controller
             unlink($filePath);
             exit;
         } catch (\Exception $e) {
-            $this->flash('error', 'Erro ao gerar relatorio: ' . $e->getMessage());
+            $this->flash('error', 'Erro ao gerar relatório: ' . $e->getMessage());
             $this->redirect('/relatorios');
         }
     }
@@ -259,7 +364,7 @@ class RelatorioController extends Controller
             $filePath = $service->excelObra($id);
             $fileName = basename($filePath);
 
-            LoggerMiddleware::log('relatorio', "Relatorio Excel de obra gerado para obra ID: {$id}");
+            LoggerMiddleware::log('relatório', "Relatório Excel de obra gerado para obra ID: {$id}");
 
             header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             header('Content-Disposition: attachment; filename="' . $fileName . '"');
@@ -269,7 +374,7 @@ class RelatorioController extends Controller
             unlink($filePath);
             exit;
         } catch (\Exception $e) {
-            $this->flash('error', 'Erro ao gerar relatorio: ' . $e->getMessage());
+            $this->flash('error', 'Erro ao gerar relatório: ' . $e->getMessage());
             $this->redirect('/relatorios');
         }
     }
@@ -281,7 +386,7 @@ class RelatorioController extends Controller
             $filePath = $service->excelColaborador($id);
             $fileName = basename($filePath);
 
-            LoggerMiddleware::log('relatorio', "Relatorio Excel gerado para colaborador ID: {$id}");
+            LoggerMiddleware::log('relatório', "Relatório Excel gerado para colaborador ID: {$id}");
 
             header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             header('Content-Disposition: attachment; filename="' . $fileName . '"');
@@ -291,7 +396,7 @@ class RelatorioController extends Controller
             unlink($filePath);
             exit;
         } catch (\Exception $e) {
-            $this->flash('error', 'Erro ao gerar relatorio: ' . $e->getMessage());
+            $this->flash('error', 'Erro ao gerar relatório: ' . $e->getMessage());
             $this->redirect('/relatorios');
         }
     }

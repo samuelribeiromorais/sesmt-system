@@ -51,7 +51,7 @@
         const colabData = {
             nome: certData.nome_completo,
             cpf: <?= json_encode($cpfFormatado ?? '***.***.***-**') ?>,
-            funcao: certData.funcao || certData.cargo || '',
+            função: certData.função || certData.cargo || '',
             cargo: certData.cargo || '',
             data_admissao: '',
             data_realizacao: certData.data_realizacao,

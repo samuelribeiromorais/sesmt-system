@@ -32,7 +32,7 @@ class AlertService
         $stmt->execute();
         $stats['docs_vencidos'] = $stmt->rowCount();
 
-        // Documentos proximo do vencimento (30 dias)
+        // Documentos próximo do vencimento (30 dias)
         $stmt = $this->db->prepare(
             "UPDATE documentos SET status = 'proximo_vencimento', atualizado_em = NOW()
              WHERE data_validade IS NOT NULL
@@ -52,7 +52,7 @@ class AlertService
         $stmt->execute();
         $stats['certs_vencidos'] = $stmt->rowCount();
 
-        // Certificados proximo do vencimento
+        // Certificados próximo do vencimento
         $stmt = $this->db->prepare(
             "UPDATE certificados SET status = 'proximo_vencimento', atualizado_em = NOW()
              WHERE data_validade >= CURDATE()

@@ -1,10 +1,10 @@
 <div class="card">
     <div class="card-header">
-        <h2>Sessoes Ativas</h2>
+        <h2>Sessões Ativas</h2>
     </div>
     <div class="card-body">
         <p style="margin-bottom:16px; font-size:13px; color:#666;">
-            Abaixo estao listadas todas as sessoes ativas da sua conta. Voce pode encerrar sessoes que nao reconhece.
+            Abaixo estao listadas todas as sessões ativas da sua conta. Voce pode encerrar sessões que não reconhece.
         </p>
 
         <div class="table-responsive">
@@ -21,7 +21,7 @@
                 <tbody>
                     <?php if (empty($sessoes)): ?>
                         <tr>
-                            <td colspan="5" style="text-align:center; color:#999;">Nenhuma sessao ativa encontrada.</td>
+                            <td colspan="5" style="text-align:center; color:#999;">Nenhuma sessão ativa encontrada.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($sessoes as $sessao): ?>
@@ -30,7 +30,7 @@
                                     <?= htmlspecialchars(mb_substr($sessao['user_agent'], 0, 80)) ?>
                                     <?php if ($sessao['session_id'] === session_id()): ?>
                                         <span style="background:#00b279; color:#fff; font-size:11px; padding:2px 6px; border-radius:4px; margin-left:4px;">
-                                            Sessao atual
+                                            Sessão atual
                                         </span>
                                     <?php endif; ?>
                                 </td>
@@ -42,7 +42,7 @@
                                         <form method="POST" action="/usuarios/sessoes/<?= $sessao['id'] ?>/encerrar" style="display:inline;">
                                             <?= \App\Core\View::csrfField() ?>
                                             <button type="submit" class="btn btn-sm btn-danger"
-                                                    onclick="return confirm('Encerrar esta sessao?')">
+                                                    onclick="return confirm('Encerrar esta sessão?')">
                                                 Encerrar
                                             </button>
                                         </form>

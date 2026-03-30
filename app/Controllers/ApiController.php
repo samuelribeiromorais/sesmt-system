@@ -57,7 +57,7 @@ class ApiController extends Controller
         $colab = $model->findWithRelations((int) $id);
 
         if (!$colab) {
-            $this->json(['error' => 'Colaborador nao encontrado.'], 404);
+            $this->json(['error' => 'Colaborador não encontrado.'], 404);
         }
 
         $certModel = new Certificado();
@@ -97,7 +97,7 @@ class ApiController extends Controller
         $doc   = $model->find((int) $id);
 
         if (!$doc) {
-            $this->json(['error' => 'Documento nao encontrado.'], 404);
+            $this->json(['error' => 'Documento não encontrado.'], 404);
         }
 
         $this->json(['data' => $doc]);
@@ -131,7 +131,7 @@ class ApiController extends Controller
         $cert  = $model->find((int) $id);
 
         if (!$cert) {
-            $this->json(['error' => 'Certificado nao encontrado.'], 404);
+            $this->json(['error' => 'Certificado não encontrado.'], 404);
         }
 
         $this->json(['data' => $cert]);

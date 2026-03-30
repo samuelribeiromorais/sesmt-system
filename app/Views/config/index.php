@@ -41,18 +41,18 @@ $categorias = [
 
 <div class="table-container">
     <div class="table-header">
-        <span class="table-title">Configuracoes do Sistema</span>
+        <span class="table-title">Configurações do Sistema</span>
     </div>
 
     <div style="padding:0 24px 24px;">
-        <p style="color:var(--c-gray); font-size:13px; margin:16px 0 20px;">Area de configuracoes avancadas. Somente administradores.</p>
+        <p style="color:var(--c-gray); font-size:13px; margin:16px 0 20px;">Area de configurações avancadas. Somente administradores.</p>
 
         <!-- Tabs -->
         <div class="config-tabs">
             <button class="config-tab active" data-tab="tipos-documento">Tipos de Documento</button>
             <button class="config-tab" data-tab="tipos-certificado">Tipos de Certificado</button>
             <button class="config-tab" data-tab="ministrantes">Ministrantes</button>
-            <button class="config-tab" data-tab="smtp">Configuracao SMTP</button>
+            <button class="config-tab" data-tab="smtp">Configuração SMTP</button>
         </div>
 
         <!-- ============================================================ -->
@@ -70,7 +70,7 @@ $categorias = [
                         <th>Nome</th>
                         <th>Categoria</th>
                         <th>Validade</th>
-                        <th>Obrigatorio</th>
+                        <th>Obrigatório</th>
                         <th>Status</th>
                         <th width="120">Acoes</th>
                     </tr>
@@ -86,7 +86,7 @@ $categorias = [
                         </td>
                         <td><span class="badge badge-info"><?= $categorias[$td['categoria']] ?? $td['categoria'] ?></span></td>
                         <td><?= $td['validade_meses'] ? $td['validade_meses'] . ' meses' : '<span style="color:var(--c-gray)">—</span>' ?></td>
-                        <td><?= $td['obrigatorio'] ? '<span style="color:var(--c-success); font-weight:600;">Sim</span>' : '<span style="color:var(--c-gray);">Nao</span>' ?></td>
+                        <td><?= $td['obrigatorio'] ? '<span style="color:var(--c-success); font-weight:600;">Sim</span>' : '<span style="color:var(--c-gray);">Não</span>' ?></td>
                         <td><span class="badge-status <?= $td['ativo'] ? 'badge-ativo' : 'badge-inativo' ?>"><?= $td['ativo'] ? 'Ativo' : 'Inativo' ?></span></td>
                         <td>
                             <button class="btn btn-outline btn-sm" onclick='editTipoDoc(<?= json_encode($td) ?>)'>Editar</button>
@@ -113,8 +113,8 @@ $categorias = [
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Codigo</th>
-                        <th>Titulo</th>
+                        <th>Código</th>
+                        <th>Título</th>
                         <th>Duracao</th>
                         <th>Validade</th>
                         <th>Ministrante</th>
@@ -183,7 +183,7 @@ $categorias = [
         <!-- TAB: SMTP                                                     -->
         <!-- ============================================================ -->
         <div class="config-panel" id="panel-smtp">
-            <p style="color:var(--c-gray); font-size:13px; margin:0 0 20px;">Configuracao do servidor de email para envio de alertas automaticos de vencimento.</p>
+            <p style="color:var(--c-gray); font-size:13px; margin:0 0 20px;">Configuração do servidor de email para envio de alertas automáticos de vencimento.</p>
 
             <form method="POST" action="/configuracoes/smtp" class="config-card" style="max-width:600px;">
                 <input type="hidden" name="csrf_token" value="<?= \App\Core\Session::get('csrf_token') ?>">
@@ -223,8 +223,8 @@ $categorias = [
                 </div>
 
                 <div style="display:flex; gap:12px; margin-top:8px;">
-                    <button type="submit" class="btn btn-primary">Salvar Configuracoes</button>
-                    <button type="button" class="btn btn-outline" onclick="testarSmtp()">Testar Conexao</button>
+                    <button type="submit" class="btn btn-primary">Salvar Configurações</button>
+                    <button type="button" class="btn btn-outline" onclick="testarSmtp()">Testar Conexão</button>
                 </div>
             </form>
 
@@ -266,10 +266,10 @@ $categorias = [
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Obrigatorio</label>
+                        <label>Obrigatório</label>
                         <select name="obrigatorio" id="tdObrigatorio" class="form-control">
                             <option value="1">Sim</option>
-                            <option value="0">Nao</option>
+                            <option value="0">Não</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -281,7 +281,7 @@ $categorias = [
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Descricao</label>
+                    <label>Descrição</label>
                     <textarea name="descricao" id="tdDescricao" class="form-control" rows="2"></textarea>
                 </div>
             </div>
@@ -308,7 +308,7 @@ $categorias = [
             <div class="modal-body">
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Codigo * <small>(ex: NR 10 BASICO)</small></label>
+                        <label>Código * <small>(ex: NR 10 BASICO)</small></label>
                         <input type="text" name="codigo" id="tcCodigo" class="form-control" required>
                     </div>
                     <div class="form-group">
@@ -320,7 +320,7 @@ $categorias = [
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Titulo Completo *</label>
+                    <label>Título Completo *</label>
                     <input type="text" name="titulo" id="tcTitulo" class="form-control" required>
                 </div>
                 <div class="form-row">
@@ -386,7 +386,7 @@ $categorias = [
                     <input type="text" name="nome" id="minNome" class="form-control" required placeholder="Ex: Mariana Toscano Rios">
                 </div>
                 <div class="form-group">
-                    <label>Cargo / Titulo *</label>
+                    <label>Cargo / Título *</label>
                     <input type="text" name="cargo_titulo" id="minCargo" class="form-control" required placeholder="Ex: Eng. de Seguranca do Trabalho">
                 </div>
                 <div class="form-row">
@@ -541,12 +541,12 @@ function editMinistrante(m) {
 // SMTP Test
 // ========================================================================
 function testarSmtp() {
-    const email = prompt('Digite um email para teste de conexao:', '');
+    const email = prompt('Digite um email para teste de conexão:', '');
     if (!email) return;
 
     const resultDiv = document.getElementById('smtpTestResult');
     resultDiv.style.display = 'block';
-    resultDiv.innerHTML = '<span style="color:var(--c-gray);">Testando conexao...</span>';
+    resultDiv.innerHTML = '<span style="color:var(--c-gray);">Testando conexão...</span>';
 
     fetch('/configuracoes/smtp/testar', {
         method: 'POST',
@@ -563,7 +563,7 @@ function testarSmtp() {
         }
     })
     .catch(() => {
-        resultDiv.innerHTML = '<span style="color:var(--c-danger);">Erro ao testar conexao.</span>';
+        resultDiv.innerHTML = '<span style="color:var(--c-danger);">Erro ao testar conexão.</span>';
     });
 }
 

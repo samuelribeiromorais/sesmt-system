@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Pagina nao encontrada</title>
+    <title>Página não encontrada</title>
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #f2f2ed; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #001e21; }
         .container { text-align: center; }
@@ -14,7 +14,7 @@
 <body>
     <div class="container">
         <h1>404</h1>
-        <p>Pagina nao encontrada.</p>
+        <p>Página não encontrada.</p>
         <a href="/dashboard">Voltar ao Dashboard</a>
     </div>
 </body>

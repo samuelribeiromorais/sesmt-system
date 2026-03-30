@@ -85,7 +85,7 @@
                 <th>Colaborador</th>
                 <th>Tipo</th>
                 <th>Categoria</th>
-                <th>Emissao</th>
+                <th>Emissão</th>
                 <th>Validade</th>
                 <th>Status</th>
                 <th>Acoes</th>

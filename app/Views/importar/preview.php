@@ -1,5 +1,5 @@
 <div class="page-header">
-    <h1>Preview da Importacao</h1>
+    <h1>Preview da Importação</h1>
     <a href="/importar/colaboradores" class="btn btn-outline btn-sm">Voltar</a>
 </div>
 
@@ -60,8 +60,8 @@
     <form method="POST" action="/importar/colaboradores/executar">
         <?= \App\Core\View::csrfField() ?>
         <button type="submit" class="btn btn-primary"
-                data-confirm="Confirma a importacao de <?= $totalRows ?> registro(s)? Linhas com erros serao ignoradas.">
-            Confirmar Importacao
+                data-confirm="Confirma a importação de <?= $totalRows ?> registro(s)? Linhas com erros serao ignoradas.">
+            Confirmar Importação
         </button>
     </form>
     <a href="/importar/colaboradores" class="btn btn-outline">Cancelar e Enviar Outro Arquivo</a>

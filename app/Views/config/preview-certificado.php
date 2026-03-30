@@ -31,7 +31,7 @@
     const colaboradorExemplo = {
         nome: 'COLABORADOR EXEMPLO DA SILVA',
         cpf: '000.000.000-00',
-        funcao: 'Eletricista Industrial',
+        função: 'Eletricista Industrial',
         cargo: 'Eletricista Industrial',
         data_admissao: '2024-01-15',
         data_emissao: new Date().toISOString().split('T')[0],

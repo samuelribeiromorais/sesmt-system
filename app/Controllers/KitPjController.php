@@ -76,7 +76,7 @@ class KitPjController extends Controller
         $colab = $model->find($colaboradorId);
 
         if (!$colab) {
-            $this->flash('error', 'Colaborador nao encontrado.');
+            $this->flash('error', 'Colaborador não encontrado.');
             $this->redirect('/kit-pj/novo');
             return;
         }
@@ -84,17 +84,23 @@ class KitPjController extends Controller
         $exames = $this->input('exames') ?: [];
         $aptidoes = $this->input('aptidoes') ?: [];
 
+        $riscosFisicos = $this->input('riscos_fisicos') ?: [];
+        $riscosQuimicos = $this->input('riscos_quimicos') ?: [];
+        $riscosBiologicos = $this->input('riscos_biologicos') ?: [];
+        $riscosErgonomicos = $this->input('riscos_ergonomicos') ?: [];
+        $riscosAcidentes = $this->input('riscos_acidentes') ?: [];
+
         $data = [
             'colaborador_id' => $colaboradorId,
             'razao_social' => trim($this->input('razao_social', '')),
             'cnpj' => trim($this->input('cnpj', '')),
             'endereco' => trim($this->input('endereco', '')),
             'tipo_aso' => $this->input('tipo_aso', 'periodico'),
-            'riscos_fisicos' => trim($this->input('riscos_fisicos', 'Ruído Contínuo ou Intermitente')),
-            'riscos_quimicos' => trim($this->input('riscos_quimicos', 'Ausência Risco Químico')),
-            'riscos_biologicos' => trim($this->input('riscos_biologicos', 'Ausência Risco Biológicos')),
-            'riscos_ergonomicos' => trim($this->input('riscos_ergonomicos', 'Posturas em pé/sentado por longos períodos.')),
-            'riscos_acidentes' => trim($this->input('riscos_acidentes', 'Queda de mesmo nível e/ou escada de acesso.')),
+            'riscos_fisicos' => is_array($riscosFisicos) ? implode(', ', $riscosFisicos) : $riscosFisicos,
+            'riscos_quimicos' => is_array($riscosQuimicos) ? implode(', ', $riscosQuimicos) : $riscosQuimicos,
+            'riscos_biologicos' => is_array($riscosBiologicos) ? implode(', ', $riscosBiologicos) : $riscosBiologicos,
+            'riscos_ergonomicos' => is_array($riscosErgonomicos) ? implode(', ', $riscosErgonomicos) : $riscosErgonomicos,
+            'riscos_acidentes' => is_array($riscosAcidentes) ? implode(', ', $riscosAcidentes) : $riscosAcidentes,
             'exames' => json_encode($exames),
             'aptidoes' => json_encode($aptidoes),
             'medico_nome' => trim($this->input('medico_nome', 'Dr. Haroldo Aquino Noleto')),
@@ -130,7 +136,7 @@ class KitPjController extends Controller
         $kit = $stmt->fetch(\PDO::FETCH_ASSOC);
 
         if (!$kit) {
-            $this->flash('error', 'Kit PJ nao encontrado.');
+            $this->flash('error', 'Kit PJ não encontrado.');
             $this->redirect('/kit-pj');
             return;
         }

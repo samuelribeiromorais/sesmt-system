@@ -30,7 +30,7 @@ class ConfigController extends Controller
         )->fetchAll();
 
         $this->view('config/index', [
-            'pageTitle'     => 'Configuracoes',
+            'pageTitle'     => 'Configurações',
             'tiposDocs'     => $tipoDocModel->all([], 'categoria ASC, nome ASC'),
             'tiposCerts'    => $tiposCert,
             'ministrantes'  => $ministranteModel->all([], 'nome ASC'),
@@ -57,13 +57,13 @@ class ConfigController extends Controller
             'nome'           => trim($this->input('nome', '')),
             'categoria'      => $this->input('categoria', 'outro'),
             'validade_meses' => $this->input('validade_meses') ?: null,
-            'obrigatorio'    => (int)$this->input('obrigatorio', 0),
-            'descricao'      => trim($this->input('descricao', '')),
+            'obrigatorio' => (int)$this->input('obrigatorio', 0),
+            'descricao' => trim($this->input('descricao', '')),
             'ativo'          => (int)$this->input('ativo', 1),
         ];
 
         if (empty($data['nome'])) {
-            $this->flash('error', 'Nome do tipo de documento e obrigatorio.');
+            $this->flash('error', 'Nome do tipo de documento e obrigatório.');
             $this->redirect('/configuracoes');
         }
 
@@ -119,8 +119,8 @@ class ConfigController extends Controller
 
         $id = (int)$this->input('id', 0);
         $data = [
-            'codigo'               => trim($this->input('codigo', '')),
-            'titulo'               => trim($this->input('titulo', '')),
+            'codigo' => trim($this->input('codigo', '')),
+            'titulo' => trim($this->input('titulo', '')),
             'duracao'              => trim($this->input('duracao', '8h')),
             'validade_meses'       => (int)$this->input('validade_meses', 12),
             'tem_anuencia'         => (int)$this->input('tem_anuencia', 0),
@@ -132,7 +132,7 @@ class ConfigController extends Controller
         ];
 
         if (empty($data['codigo']) || empty($data['titulo'])) {
-            $this->flash('error', 'Codigo e titulo sao obrigatorios.');
+            $this->flash('error', 'Código e título sao obrigatórios.');
             $this->redirect('/configuracoes#tipos-certificado');
         }
 
@@ -167,7 +167,7 @@ class ConfigController extends Controller
         ];
 
         if (empty($data['nome']) || empty($data['cargo_titulo'])) {
-            $this->flash('error', 'Nome e cargo/titulo sao obrigatorios.');
+            $this->flash('error', 'Nome e cargo/titulo sao obrigatórios.');
             $this->redirect('/configuracoes#ministrantes');
         }
 
@@ -218,7 +218,7 @@ class ConfigController extends Controller
     }
 
     // ========================================================================
-    // Configuracao SMTP
+    // Configuração SMTP
     // ========================================================================
 
     public function salvarSmtp(): void
@@ -262,8 +262,8 @@ class ConfigController extends Controller
             file_put_contents($envFile, $content, LOCK_EX);
         }
 
-        LoggerMiddleware::log('config', 'Configuracoes SMTP atualizadas');
-        $this->flash('success', 'Configuracoes SMTP salvas com sucesso.');
+        LoggerMiddleware::log('config', 'Configurações SMTP atualizadas');
+        $this->flash('success', 'Configurações SMTP salvas com sucesso.');
         $this->redirect('/configuracoes#smtp');
     }
 
@@ -273,7 +273,7 @@ class ConfigController extends Controller
 
         $emailTeste = trim($this->input('email_teste', ''));
         if (empty($emailTeste) || !filter_var($emailTeste, FILTER_VALIDATE_EMAIL)) {
-            $this->json(['success' => false, 'error' => 'Informe um email valido para teste.']);
+            $this->json(['success' => false, 'error' => 'Informe um email válido para teste.']);
             return;
         }
 
@@ -293,12 +293,12 @@ class ConfigController extends Controller
             // Test connection using fsockopen
             $fp = @fsockopen($host, $port, $errno, $errstr, 10);
             if (!$fp) {
-                $this->json(['success' => false, 'error' => "Nao foi possivel conectar ao servidor SMTP: {$errstr} ({$errno})"]);
+                $this->json(['success' => false, 'error' => "Não foi possivel conectar ao servidor SMTP: {$errstr} ({$errno})"]);
                 return;
             }
             fclose($fp);
 
-            $this->json(['success' => true, 'message' => "Conexao ao servidor SMTP ({$host}:{$port}) estabelecida com sucesso."]);
+            $this->json(['success' => true, 'message' => "Conexão ao servidor SMTP ({$host}:{$port}) estabelecida com sucesso."]);
         } catch (\Exception $e) {
             $this->json(['success' => false, 'error' => 'Erro ao testar SMTP: ' . $e->getMessage()]);
         }
@@ -322,7 +322,7 @@ class ConfigController extends Controller
         $tipoCert = $stmt->fetch(\PDO::FETCH_ASSOC);
 
         if (!$tipoCert) {
-            $this->flash('error', 'Tipo de certificado nao encontrado.');
+            $this->flash('error', 'Tipo de certificado não encontrado.');
             $this->redirect('/configuracoes');
             return;
         }

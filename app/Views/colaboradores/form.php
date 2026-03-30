@@ -34,8 +34,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="funcao">Funcao</label>
-                    <input type="text" id="funcao" name="funcao" class="form-control"
+                    <label for="função">Função</label>
+                    <input type="text" id="função" name="funcao" class="form-control"
                            value="<?= htmlspecialchars($colab['funcao'] ?? '') ?>">
                 </div>
 

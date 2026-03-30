@@ -4,7 +4,7 @@
 
 <div class="table-container">
     <div class="table-header">
-        <span class="table-title">Historico de Versoes - <?= htmlspecialchars($doc['arquivo_nome']) ?></span>
+        <span class="table-title">Histórico de Versoes - <?= htmlspecialchars($doc['arquivo_nome']) ?></span>
     </div>
     <table>
         <thead>

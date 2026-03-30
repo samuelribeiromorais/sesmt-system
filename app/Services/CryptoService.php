@@ -33,7 +33,7 @@ class CryptoService
     {
         $key = $_ENV['AES_KEY'] ?? '';
         if (empty($key)) {
-            throw new \RuntimeException('AES_KEY nao configurada no .env');
+            throw new \RuntimeException('AES_KEY não configurada no .env');
         }
         return hash('sha256', $key, true);
     }

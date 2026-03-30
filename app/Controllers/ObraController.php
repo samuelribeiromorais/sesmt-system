@@ -67,7 +67,7 @@ class ObraController extends Controller
             if ($colab['docs']['vencido'] > 0 || $colab['certs']['vencido'] > 0) {
                 $colab['conformidade'] = 'irregular';
             } elseif ($colab['docs']['proximo_vencimento'] > 0 || $colab['certs']['proximo_vencimento'] > 0) {
-                $colab['conformidade'] = 'atencao';
+                $colab['conformidade'] = 'atenção';
             } else {
                 $colab['conformidade'] = 'regular';
             }
@@ -76,7 +76,7 @@ class ObraController extends Controller
 
         // Summary counts
         $totalRegular = count(array_filter($colaboradores, fn($c) => $c['conformidade'] === 'regular'));
-        $totalAtencao = count(array_filter($colaboradores, fn($c) => $c['conformidade'] === 'atencao'));
+        $totalAtencao = count(array_filter($colaboradores, fn($c) => $c['conformidade'] === 'atenção'));
         $totalIrregular = count(array_filter($colaboradores, fn($c) => $c['conformidade'] === 'irregular'));
 
         $this->view('obras/show', [

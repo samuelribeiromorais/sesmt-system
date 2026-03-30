@@ -48,7 +48,7 @@ class OcrService
 
     /**
      * Extrai dados de um ASO a partir do texto OCR.
-     * Retorna: tipo_aso, data_exame, medico, apto
+     * Retorna: tipo_aso, data_exame, médico, apto
      */
     public static function extrairDadosASO(string $texto): array
     {

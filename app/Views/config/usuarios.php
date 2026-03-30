@@ -55,7 +55,7 @@
                     <select name="perfil" class="form-control">
                         <option value="rh">RH (somente leitura)</option>
                         <option value="sesmt">SESMT (controle total)</option>
-                        <option value="admin">Admin (configuracoes)</option>
+                        <option value="admin">Admin (configurações)</option>
                     </select>
                 </div>
             </div>

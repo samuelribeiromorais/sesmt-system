@@ -1,5 +1,5 @@
 <?php
-$meses = ['', 'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+$meses = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 $diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
 $primeiroDia = (int)date('w', mktime(0, 0, 0, $mes, 1, $ano));
 $totalDias = (int)date('t', mktime(0, 0, 0, $mes, 1, $ano));
@@ -15,7 +15,7 @@ $hoje = (int)date('j'); $mesAtual = (int)date('n'); $anoAtual = (int)date('Y');
     <div style="display:flex; gap:8px;">
         <a href="/treinamentos/calendario?mes=<?= $mesAnterior ?>&ano=<?= $anoAnterior ?>" class="btn btn-outline btn-sm">&laquo; Anterior</a>
         <span style="font-size:18px; font-weight:600; min-width:200px; text-align:center;"><?= $meses[$mes] ?> <?= $ano ?></span>
-        <a href="/treinamentos/calendario?mes=<?= $mesSeguinte ?>&ano=<?= $anoSeguinte ?>" class="btn btn-outline btn-sm">Proximo &raquo;</a>
+        <a href="/treinamentos/calendario?mes=<?= $mesSeguinte ?>&ano=<?= $anoSeguinte ?>" class="btn btn-outline btn-sm">Próximo &raquo;</a>
         <a href="/treinamentos/novo" class="btn btn-primary btn-sm">Novo Treinamento</a>
     </div>
 </div>

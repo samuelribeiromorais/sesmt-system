@@ -25,7 +25,7 @@ class BuscaController extends Controller
         $userId = Session::get('user_id');
         if (!$userId) {
             header('Content-Type: application/json', true, 401);
-            echo json_encode(['error' => 'Nao autenticado']);
+            echo json_encode(['error' => 'Não autenticado']);
             exit;
         }
 

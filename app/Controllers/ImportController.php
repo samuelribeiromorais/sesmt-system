@@ -19,7 +19,7 @@ class ImportController extends Controller
         'cpf',
         'matricula',
         'cargo',
-        'funcao',
+        'função',
         'setor',
         'cliente_id',
         'obra_id',
@@ -45,7 +45,7 @@ class ImportController extends Controller
         $this->requirePost();
 
         if (empty($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== UPLOAD_ERR_OK) {
-            $this->flash('error', 'Selecione um arquivo XLSX valido.');
+            $this->flash('error', 'Selecione um arquivo XLSX válido.');
             $this->redirect('/importar/colaboradores');
             return;
         }
@@ -54,7 +54,7 @@ class ImportController extends Controller
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 
         if (!in_array($ext, ['xlsx', 'xls'])) {
-            $this->flash('error', 'Formato invalido. Use arquivos .xlsx ou .xls.');
+            $this->flash('error', 'Formato inválido. Use arquivos .xlsx ou .xls.');
             $this->redirect('/importar/colaboradores');
             return;
         }
@@ -70,7 +70,7 @@ class ImportController extends Controller
         }
 
         if (count($rows) < 2) {
-            $this->flash('error', 'Arquivo vazio ou sem dados alem do cabecalho.');
+            $this->flash('error', 'Arquivo vazio ou sem dados além do cabecalho.');
             $this->redirect('/importar/colaboradores');
             return;
         }
@@ -95,13 +95,13 @@ class ImportController extends Controller
             $rowErrors = [];
 
             if (empty($mapped['nome_completo'])) {
-                $rowErrors[] = 'Nome obrigatorio';
+                $rowErrors[] = 'Nome obrigatório';
             }
 
             if (!empty($mapped['cpf'])) {
                 $cpfClean = preg_replace('/\D/', '', $mapped['cpf']);
                 if (strlen($cpfClean) !== 11) {
-                    $rowErrors[] = 'CPF invalido';
+                    $rowErrors[] = 'CPF inválido';
                 } else {
                     // Check duplicate
                     $cpfHash = CryptoService::hash($cpfClean);
@@ -127,7 +127,7 @@ class ImportController extends Controller
         Session::set('import_total_rows', count($dataRows));
 
         $this->view('importar/preview', [
-            'pageTitle'   => 'Preview da Importacao',
+            'pageTitle'   => 'Preview da Importação',
             'headers'     => $this->templateHeaders,
             'rows'        => array_slice($previewRows, 0, 20),
             'totalRows'   => count($dataRows),
@@ -142,7 +142,7 @@ class ImportController extends Controller
 
         $tmpPath = Session::get('import_tmp_file');
         if (!$tmpPath || !file_exists($tmpPath)) {
-            $this->flash('error', 'Sessao de importacao expirada. Envie o arquivo novamente.');
+            $this->flash('error', 'Sessão de importação expirada. Envie o arquivo novamente.');
             $this->redirect('/importar/colaboradores');
             return;
         }
@@ -175,7 +175,7 @@ class ImportController extends Controller
 
             // Validate required
             if (empty($mapped['nome_completo'])) {
-                $errorsList[] = "Linha {$rowNum}: Nome obrigatorio.";
+                $errorsList[] = "Linha {$rowNum}: Nome obrigatório.";
                 continue;
             }
 
@@ -187,7 +187,7 @@ class ImportController extends Controller
                 'cpf_hash'       => $cpfClean ? CryptoService::hash($cpfClean) : null,
                 'matricula'      => $mapped['matricula'] ?: null,
                 'cargo'          => $mapped['cargo'] ?: null,
-                'funcao'         => $mapped['funcao'] ?: null,
+                'funcao' => $mapped['funcao'] ?: null,
                 'setor'          => $mapped['setor'] ?: null,
                 'cliente_id'     => $mapped['cliente_id'] ?: null,
                 'obra_id'        => $mapped['obra_id'] ?: null,
@@ -223,7 +223,7 @@ class ImportController extends Controller
         Session::remove('import_tmp_file');
         Session::remove('import_total_rows');
 
-        LoggerMiddleware::log('importar', "Importacao de colaboradores: {$successes} criados, " . count($errorsList) . " erros.");
+        LoggerMiddleware::log('importar', "Importação de colaboradores: {$successes} criados, " . count($errorsList) . " erros.");
 
         $message = "{$successes} colaborador(es) importado(s) com sucesso.";
         if (!empty($errorsList)) {
@@ -264,7 +264,7 @@ class ImportController extends Controller
         // Example row
         $example = [
             'Joao da Silva', '12345678901', 'MAT001', 'Eletricista',
-            'Eletricista Industrial', 'Producao', '1', '1',
+            'Eletricista Industrial', 'Produção', '1', '1',
             '2024-01-15', 'ativo', '1990-05-20', '11999998888', 'joao@email.com',
         ];
         foreach ($example as $col => $value) {

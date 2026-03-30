@@ -144,7 +144,7 @@ class ColaboradorController extends Controller
             'cpfDisplay'         => $cpfDisplay,
             'certificados'       => $certificados,
             'documentos'         => $documentos,
-            'historico'          => $historico,
+            'histórico'          => $historico,
             'docsVigentes'       => $docsVigentes,
             'docsVencendo'       => $docsVencendo,
             'docsVencidos'       => $docsVencidos,
@@ -189,7 +189,7 @@ class ColaboradorController extends Controller
             'cpf_hash'       => $cpf ? CryptoService::hash($cpf) : null,
             'matricula'      => trim($this->input('matricula', '')),
             'cargo'          => trim($this->input('cargo', '')),
-            'funcao'         => trim($this->input('funcao', '')),
+            'funcao' => trim($this->input('funcao', '')),
             'setor'          => trim($this->input('setor', '')),
             'cliente_id'     => $this->input('cliente_id') ?: null,
             'obra_id'        => $this->input('obra_id') ?: null,
@@ -254,7 +254,7 @@ class ColaboradorController extends Controller
             'nome_completo'  => trim($this->input('nome_completo', '')),
             'matricula'      => trim($this->input('matricula', '')),
             'cargo'          => trim($this->input('cargo', '')),
-            'funcao'         => trim($this->input('funcao', '')),
+            'funcao' => trim($this->input('funcao', '')),
             'setor'          => trim($this->input('setor', '')),
             'cliente_id'     => $this->input('cliente_id') ?: null,
             'obra_id'        => $this->input('obra_id') ?: null,
@@ -291,7 +291,7 @@ class ColaboradorController extends Controller
         $model = new Colaborador();
         $colab = $model->find((int)$id);
         if (!$colab) {
-            $this->flash('error', 'Colaborador nao encontrado.');
+            $this->flash('error', 'Colaborador não encontrado.');
             $this->redirect('/colaboradores');
             return;
         }
@@ -300,7 +300,7 @@ class ColaboradorController extends Controller
         $documentos = $docModel->findByColaborador((int)$id);
 
         if (empty($documentos)) {
-            $this->flash('warning', 'Este colaborador nao possui documentos.');
+            $this->flash('warning', 'Este colaborador não possui documentos.');
             $this->redirect("/colaboradores/{$id}");
             return;
         }
@@ -379,9 +379,9 @@ class ColaboradorController extends Controller
             return;
         }
 
-        $camposPermitidos = ['cargo', 'funcao', 'setor', 'status', 'cliente_id', 'obra_id', 'unidade'];
+        $camposPermitidos = ['cargo', 'função', 'setor', 'status', 'cliente_id', 'obra_id', 'unidade'];
         if (!in_array($campo, $camposPermitidos)) {
-            $this->flash('error', 'Campo invalido.');
+            $this->flash('error', 'Campo inválido.');
             $this->redirect('/colaboradores');
             return;
         }

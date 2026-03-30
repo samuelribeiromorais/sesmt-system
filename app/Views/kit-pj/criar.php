@@ -53,41 +53,62 @@
     </div>
 
     <h3 style="margin-bottom:16px; color:var(--c-primary);">Riscos Ocupacionais</h3>
+    <?php
+    $riscosOpcoes = [
+        'riscos_fisicos' => [
+            'label' => 'Fisicos',
+            'opções' => ['Ruido Continuo ou Intermitente', 'Calor', 'Frio', 'Vibracao', 'Radiacoes não ionizantes', 'Pressoes anormais', 'Ausencia Risco Fisico'],
+            'default' => ['Ruido Continuo ou Intermitente'],
+        ],
+        'riscos_quimicos' => [
+            'label' => 'Quimicos',
+            'opções' => ['Poeiras', 'Fumos', 'Gases e Vapores', 'Solventes', 'Nevoas', 'Ausencia Risco Quimico'],
+            'default' => ['Ausencia Risco Quimico'],
+        ],
+        'riscos_biologicos' => [
+            'label' => 'Biologicos',
+            'opções' => ['Virus', 'Bacterias', 'Fungos', 'Parasitas', 'Ausencia Risco Biologico'],
+            'default' => ['Ausencia Risco Biologico'],
+        ],
+        'riscos_ergonomicos' => [
+            'label' => 'Ergonômicos',
+            'opções' => ['Posturas em pe/sentado por longos períodos', 'Esforco fisico intenso', 'Levantamento manual de peso', 'Movimentos repetitivos', 'Jornada prolongada', 'Ausencia Risco Ergonômico'],
+            'default' => ['Posturas em pe/sentado por longos períodos'],
+        ],
+        'riscos_acidentes' => [
+            'label' => 'Acidentes',
+            'opções' => ['Queda de mesmo nivel e/ou escada de acesso', 'Queda de altura', 'Eletricidade', 'Maquinas sem protecao', 'Ferramentas inadequadas', 'Espaco confinado', 'Ausencia Risco Acidente'],
+            'default' => ['Queda de mesmo nivel e/ou escada de acesso'],
+        ],
+    ];
+    ?>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;">
-        <div>
-            <label class="form-label">Fisicos</label>
-            <input type="text" name="riscos_fisicos" class="form-input" value="Ruido Continuo ou Intermitente">
+        <?php foreach ($riscosOpcoes as $name => $grupo): ?>
+        <div style="border:1px solid #ddd; border-radius:6px; padding:12px;">
+            <div style="font-weight:600; margin-bottom:8px; color:var(--c-primary);"><?= $grupo['label'] ?></div>
+            <?php foreach ($grupo['opções'] as $op): ?>
+            <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; margin-bottom:4px;">
+                <input type="checkbox" name="<?= $name ?>[]" value="<?= htmlspecialchars($op) ?>"
+                       <?= in_array($op, $grupo['default']) ? 'checked' : '' ?>>
+                <?= htmlspecialchars($op) ?>
+            </label>
+            <?php endforeach; ?>
         </div>
-        <div>
-            <label class="form-label">Quimicos</label>
-            <input type="text" name="riscos_quimicos" class="form-input" value="Ausencia Risco Quimico">
-        </div>
-        <div>
-            <label class="form-label">Biologicos</label>
-            <input type="text" name="riscos_biologicos" class="form-input" value="Ausencia Risco Biologicos">
-        </div>
-        <div>
-            <label class="form-label">Ergonomicos</label>
-            <input type="text" name="riscos_ergonomicos" class="form-input" value="Posturas em pe/sentado por longos periodos.">
-        </div>
-        <div style="grid-column:1/-1;">
-            <label class="form-label">Acidentes</label>
-            <input type="text" name="riscos_acidentes" class="form-input" value="Queda de mesmo nivel e/ou escada de acesso.">
-        </div>
+        <?php endforeach; ?>
     </div>
 
     <h3 style="margin-bottom:16px; color:var(--c-primary);">Exames</h3>
     <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:24px;">
         <?php
         $examesList = [
-            'Exame Clinico', 'Acuidade Visual', 'Audiometria Tonal Ocupacional',
+            'Exame Clínico', 'Acuidade Visual', 'Audiometria Tonal Ocupacional',
             'Avaliacao Psicossocial', 'Eletrocardiograma (ECG)', 'Eletroencefalograma (EEG)',
             'Glicose no Sangue', 'Hemograma Completo', 'Espirometria', 'Raio-X de Torax (PA)'
         ];
         foreach ($examesList as $ex): ?>
         <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">
             <input type="checkbox" name="exames[]" value="<?= htmlspecialchars($ex) ?>"
-                   <?= in_array($ex, ['Exame Clinico', 'Audiometria Tonal Ocupacional']) ? 'checked' : '' ?>>
+                   <?= in_array($ex, ['Exame Clínico', 'Audiometria Tonal Ocupacional']) ? 'checked' : '' ?>>
             <?= htmlspecialchars($ex) ?>
         </label>
         <?php endforeach; ?>
@@ -97,19 +118,19 @@
     <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:24px;">
         <?php
         $aptidoesList = [
-            'Apto para a funcao', 'Trabalho em Altura', 'Trabalho com Eletricidade',
+            'Apto para a função', 'Trabalho em Altura', 'Trabalho com Eletricidade',
             'Trabalho em Espaco Confinado'
         ];
         foreach ($aptidoesList as $ap): ?>
         <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">
             <input type="checkbox" name="aptidoes[]" value="<?= htmlspecialchars($ap) ?>"
-                   <?= $ap === 'Apto para a funcao' ? 'checked' : '' ?>>
+                   <?= $ap === 'Apto para a função' ? 'checked' : '' ?>>
             <?= htmlspecialchars($ap) ?>
         </label>
         <?php endforeach; ?>
     </div>
 
-    <h3 style="margin-bottom:16px; color:var(--c-primary);">Medico Responsavel (PCMSO)</h3>
+    <h3 style="margin-bottom:16px; color:var(--c-primary);">Médico Responsavel (PCMSO)</h3>
     <div style="display:grid; grid-template-columns:2fr 1fr 1fr; gap:16px; margin-bottom:24px;">
         <div>
             <label class="form-label">Nome</label>

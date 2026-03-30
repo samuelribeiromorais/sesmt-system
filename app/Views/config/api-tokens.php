@@ -49,7 +49,7 @@
                     <?php if ($t['ativo']): ?>
                     <form method="POST" action="/usuarios/api-tokens/<?= $t['id'] ?>/revogar" style="display:inline;">
                         <?= \App\Core\View::csrfField() ?>
-                        <button type="submit" class="btn btn-danger btn-sm" data-confirm="Revogar token '<?= htmlspecialchars($t['nome']) ?>'? Esta acao nao pode ser desfeita.">
+                        <button type="submit" class="btn btn-danger btn-sm" data-confirm="Revogar token '<?= htmlspecialchars($t['nome']) ?>'? Esta acao não pode ser desfeita.">
                             Revogar
                         </button>
                     </form>

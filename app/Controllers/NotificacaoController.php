@@ -4,7 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Core\Session;
-use App\Models\Notificacao;
+use App\Models\Notificação;
 
 class NotificacaoController extends Controller
 {
@@ -15,7 +15,7 @@ class NotificacaoController extends Controller
             $this->redirect('/login');
         }
 
-        $model = new Notificacao();
+        $model = new Notificação();
         $page = max(1, (int)$this->input('page', 1));
         $perPage = 30;
         $offset = ($page - 1) * $perPage;
@@ -24,12 +24,12 @@ class NotificacaoController extends Controller
         $total = $model->countForUser((int)$userId);
         $totalPages = max(1, (int)ceil($total / $perPage));
 
-        $this->view('notificacoes/index', [
-            'notificacoes' => $notificacoes,
+        $this->view('notificações/index', [
+            'notificações' => $notificacoes,
             'page'         => $page,
             'totalPages'   => $totalPages,
             'total'        => $total,
-            'pageTitle'    => 'Notificacoes',
+            'pageTitle'    => 'Notificações',
         ]);
     }
 
@@ -38,21 +38,21 @@ class NotificacaoController extends Controller
         $userId = Session::get('user_id');
         if (!$userId) {
             header('Content-Type: application/json', true, 401);
-            echo json_encode(['error' => 'Nao autenticado']);
+            echo json_encode(['error' => 'Não autenticado']);
             exit;
         }
 
-        $model = new Notificacao();
+        $model = new Notificação();
         $unreadCount = $model->countUnread((int)$userId);
         $notificacoes = $model->getUnread((int)$userId, 10);
 
         header('Content-Type: application/json');
         echo json_encode([
             'unread_count'  => $unreadCount,
-            'notificacoes'  => array_map(fn($n) => [
+            'notificações'  => array_map(fn($n) => [
                 'id'       => $n['id'],
                 'tipo'     => $n['tipo'],
-                'titulo'   => $n['titulo'],
+                'titulo' => $n['titulo'],
                 'mensagem' => $n['mensagem'],
                 'link'     => $n['link'],
                 'criado_em' => $n['criado_em'],
@@ -66,10 +66,10 @@ class NotificacaoController extends Controller
         $this->requirePost();
         $userId = Session::get('user_id');
         if (!$userId) {
-            $this->json(['error' => 'Nao autenticado'], 401);
+            $this->json(['error' => 'Não autenticado'], 401);
         }
 
-        $model = new Notificacao();
+        $model = new Notificação();
         $notif = $model->find((int)$id);
 
         if ($notif && (int)$notif['usuario_id'] === (int)$userId) {
@@ -89,17 +89,17 @@ class NotificacaoController extends Controller
         $this->requirePost();
         $userId = Session::get('user_id');
         if (!$userId) {
-            $this->json(['error' => 'Nao autenticado'], 401);
+            $this->json(['error' => 'Não autenticado'], 401);
         }
 
-        $model = new Notificacao();
+        $model = new Notificação();
         $model->markAllRead((int)$userId);
 
         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
             $this->json(['success' => true]);
         }
 
-        $this->flash('success', 'Todas as notificacoes foram marcadas como lidas.');
+        $this->flash('success', 'Todas as notificações foram marcadas como lidas.');
         $this->redirect('/notificacoes');
     }
 }

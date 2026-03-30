@@ -81,7 +81,7 @@ class ValidationService
         $erros = [];
         foreach ($campos as $campo) {
             if (!isset($data[$campo]) || trim((string)$data[$campo]) === '') {
-                $erros[] = "O campo '{$campo}' e obrigatorio.";
+                $erros[] = "O campo '{$campo}' e obrigatório.";
             }
         }
         return $erros;

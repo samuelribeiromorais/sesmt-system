@@ -53,7 +53,7 @@ class AlertaController extends Controller
         $clienteModel = new Cliente();
         $clientes = $clienteModel->all(['ativo' => 1], 'nome_fantasia ASC');
 
-        // Historico de alertas (ultimos 50 enviados)
+        // Histórico de alertas (ultimos 50 enviados)
         $db = Database::getInstance();
         $historico = $db->query(
             "SELECT a.*, c.nome_completo,
@@ -78,7 +78,7 @@ class AlertaController extends Controller
              FROM alertas"
         )->fetch();
 
-        // Ultima verificacao (do log)
+        // Ultima verificação (do log)
         $ultimaVerif = $db->query(
             "SELECT criado_em FROM logs_acesso
              WHERE acao LIKE '%Verificacao de validades%'
@@ -95,7 +95,7 @@ class AlertaController extends Controller
             'clientes'         => $clientes,
             'clienteFilter'    => $clienteFilter,
             'tipoFilter'       => $tipoFilter,
-            'historico'        => $historico,
+            'histórico'        => $historico,
             'alertaStats'      => $alertaStats,
             'ultimaVerif'      => $ultimaVerif,
             'smtpOk'           => $smtpOk,
@@ -104,7 +104,7 @@ class AlertaController extends Controller
     }
 
     /**
-     * Executar verificacao de validades + gerar alertas (manual via botao)
+     * Executar verificação de validades + gerar alertas (manual via botao)
      */
     public function executarVerificacao(): void
     {
@@ -119,7 +119,7 @@ class AlertaController extends Controller
         $statsAlertas = $alertService->gerarAlertas();
 
         LoggerMiddleware::log('alertas', sprintf(
-            'Verificacao de validades executada manualmente. Status atualizados: %d docs vencidos, %d docs proximos, %d certs vencidos, %d certs proximos. Alertas criados: %d',
+            'Verificação de validades executada manualmente. Status atualizados: %d docs vencidos, %d docs próximos, %d certs vencidos, %d certs próximos. Alertas criados: %d',
             $statsValidade['docs_vencidos'],
             $statsValidade['docs_proximos'],
             $statsValidade['certs_vencidos'],
@@ -134,7 +134,7 @@ class AlertaController extends Controller
         $_SESSION['flash'] = [
             'type' => 'success',
             'message' => sprintf(
-                'Verificacao concluida! Status atualizados: %d doc(s) vencido(s), %d doc(s) proximo(s), %d cert(s) vencido(s), %d cert(s) proximo(s). %d alerta(s) criado(s).',
+                'Verificação concluida! Status atualizados: %d doc(s) vencido(s), %d doc(s) próximo(s), %d cert(s) vencido(s), %d cert(s) próximo(s). %d alerta(s) criado(s).',
                 $statsValidade['docs_vencidos'],
                 $statsValidade['docs_proximos'],
                 $statsValidade['certs_vencidos'],
@@ -187,7 +187,7 @@ class AlertaController extends Controller
         } else {
             $_SESSION['flash'] = [
                 'type' => 'danger',
-                'message' => 'Erro ao enviar email. Verifique as configuracoes SMTP em Configuracoes.'
+                'message' => 'Erro ao enviar email. Verifique as configurações SMTP em Configurações.'
             ];
         }
 
@@ -209,11 +209,11 @@ class AlertaController extends Controller
         $stmt->execute();
         $count = $stmt->rowCount();
 
-        LoggerMiddleware::log('alertas', "Historico de alertas limpo: {$count} alerta(s) antigo(s) removido(s).");
+        LoggerMiddleware::log('alertas', "Histórico de alertas limpo: {$count} alerta(s) antigo(s) removido(s).");
 
         $_SESSION['flash'] = [
             'type' => 'success',
-            'message' => "{$count} alerta(s) com mais de 90 dias removido(s) do historico."
+            'message' => "{$count} alerta(s) com mais de 90 dias removido(s) do histórico."
         ];
         header('Location: /alertas');
         exit;

@@ -130,7 +130,7 @@ class EmailService
     }
 
     /**
-     * Envia relatorio mensal de vencimentos
+     * Envia relatório mensal de vencimentos
      */
     public function enviarRelatorioMensal(string $assunto, string $corpo): bool
     {
@@ -165,7 +165,7 @@ class EmailService
     private function enviar(string $assunto, string $corpo): bool
     {
         if (empty($this->config['host']) || empty($this->config['username'])) {
-            error_log("[EmailService] SMTP nao configurado. Email nao enviado: {$assunto}");
+            error_log("[EmailService] SMTP não configurado. Email não enviado: {$assunto}");
             return false;
         }
 

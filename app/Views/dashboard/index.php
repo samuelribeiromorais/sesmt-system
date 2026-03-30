@@ -11,7 +11,7 @@ $certsProximos = ($certificados_status['proximo_vencimento'] ?? 0);
 $certsVencidos = ($certificados_status['vencido'] ?? 0);
 
 // Prepare chart data from PHP variables
-$chartStatusLabels = json_encode(['Vigente', 'Proximo Vencimento', 'Vencido']);
+$chartStatusLabels = json_encode(['Vigente', 'Próximo Vencimento', 'Vencido']);
 $chartStatusData   = json_encode([$docsVigentes + $certsVigentes, $docsProximos + $certsProximos, $docsVencidos + $certsVencidos]);
 $chartStatusColors = json_encode(['#afd85a', '#f39c12', '#e74c3c']);
 
@@ -80,6 +80,35 @@ $categoriaNomes = [
         </div>
     </a>
     <?php endforeach; ?>
+
+    <?php
+    $mesPassadoNome  = date('M', strtotime('first day of last month'));
+    $mesCorrNome     = date('M/Y');
+    $mesProxNome     = date('M', strtotime('first day of next month'));
+    $countPassado    = $docs_mes_passado_count ?? 0;
+    $countCorrente   = $docs_mes_corrente_count ?? 0;
+    $countProximo    = $docs_vencendo_proximo_mes_count ?? 0;
+    ?>
+    <a href="/relatorios/mensal?mes=<?= date('m') ?>&ano=<?= date('Y') ?>" class="card-stat stat-card-clickable" style="border-left: 4px solid #6366f1; background: #fff; text-decoration:none; color:inherit;">
+        <div class="card-stat-value" style="font-size: 1.1rem; color: #6366f1;">Produção Mensal</div>
+        <div class="card-stat-label" style="margin-top: 8px; display:flex; flex-direction:column; gap:4px;">
+            <span>
+                <span style="display:inline-block; background:#f3f4f6; border-radius:4px; padding:1px 7px; font-size:11px; color:#6b7280;"><?= $mesPassadoNome ?></span>
+                <strong style="margin-left:4px;"><?= number_format($countPassado, 0, ',', '.') ?></strong>
+                <span style="color:#9ca3af; font-size:11px;"> inseridos</span>
+            </span>
+            <span>
+                <span style="display:inline-block; background:#ede9fe; border-radius:4px; padding:1px 7px; font-size:11px; color:#6366f1;"><?= $mesCorrNome ?></span>
+                <strong style="margin-left:4px; color:#6366f1;"><?= number_format($countCorrente, 0, ',', '.') ?></strong>
+                <span style="color:#9ca3af; font-size:11px;"> inseridos</span>
+            </span>
+            <span>
+                <span style="display:inline-block; background:#fef3c7; border-radius:4px; padding:1px 7px; font-size:11px; color:#d97706;"><?= $mesProxNome ?></span>
+                <strong style="margin-left:4px; color:#d97706;"><?= number_format($countProximo, 0, ',', '.') ?></strong>
+                <span style="color:#9ca3af; font-size:11px;"> a renovar</span>
+            </span>
+        </div>
+    </a>
 </div>
 
 <div class="cards-row" style="margin-top: 16px;">
@@ -92,39 +121,73 @@ $categoriaNomes = [
     <?php if (!empty($missing_docs_count) && $missing_docs_count > 0): ?>
     <a href="/alertas" class="card-stat warning stat-card-clickable" style="flex: 0 0 auto; padding: 16px 32px; text-decoration:none; color:inherit;">
         <div class="card-stat-value"><?= (int)$missing_docs_count ?></div>
-        <div class="card-stat-label">Colaboradores ativos sem categorias obrigatorias</div>
+        <div class="card-stat-label">Colaboradores ativos sem categorias obrigatórias</div>
     </a>
     <?php endif; ?>
     <?php $totalPendentes = $total_aprovacoes_pendentes ?? 0; if ($totalPendentes > 0): ?>
     <a href="#aprovacoes-pendentes" class="card-stat stat-card-clickable" style="flex: 0 0 auto; padding: 16px 32px; text-decoration:none; color:inherit; border-left: 4px solid #8b5cf6;" onclick="document.getElementById('aprovacoes-pendentes').scrollIntoView({behavior:'smooth'}); return false;">
         <div class="card-stat-value" style="color:#8b5cf6;"><?= number_format($totalPendentes, 0, ',', '.') ?></div>
-        <div class="card-stat-label">Aprovacoes pendentes</div>
+        <div class="card-stat-label">Aprovações pendentes</div>
     </a>
     <?php endif; ?>
 </div>
 
-<!-- ============ CHARTS (Pizza + Barras) ============ -->
+<!-- ============ CHARTS (Pizza + Barras) — quadros iguais lado a lado ============ -->
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
-    <!-- Doughnut: Document status distribution -->
+    <!-- Pizza -->
     <div class="table-container">
         <div class="table-header">
-            <span class="table-title">Distribuicao por Status</span>
+            <span class="table-title">Distribuição por Status</span>
         </div>
-        <div style="padding: 24px; display: flex; justify-content: center;">
+        <div style="padding: 24px; display: flex; justify-content: center; align-items: center; min-height: 360px;">
             <canvas id="chartStatus" style="max-width: 320px; max-height: 320px;"></canvas>
         </div>
     </div>
 
-    <!-- Bar: Documents by client -->
+    <!-- Barras: ocupa todo o quadro -->
     <div class="table-container">
         <div class="table-header">
             <span class="table-title">Documentos por Cliente (Top 10)</span>
         </div>
-        <div style="padding: 24px;">
-            <canvas id="chartClients" style="max-height: 320px;"></canvas>
+        <div style="padding: 24px; position: relative; height: 360px;">
+            <canvas id="chartClients"></canvas>
         </div>
     </div>
 </div>
+
+<!-- ============ DOCUMENTOS DO MES CORRENTE — largura total ============ -->
+<?php if (!empty($docs_mes_corrente)): ?>
+<div class="table-container" style="margin-top: 24px;">
+    <div class="table-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="table-title">Inseridos em <?= date('m/Y') ?> (<?= number_format($docs_mes_corrente_count, 0, ',', '.') ?>)</span>
+        <a href="/relatorios/mensal?mes=<?= date('m') ?>&ano=<?= date('Y') ?>" class="btn btn-outline btn-sm">Ver todos</a>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Colaborador</th>
+                <th>Tipo</th>
+                <th>Status</th>
+                <th>Inserido em</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($docs_mes_corrente as $dm): ?>
+            <tr>
+                <td style="font-weight:600; font-size:13px;"><?= htmlspecialchars($dm['nome_completo']) ?></td>
+                <td style="font-size:12px;"><?= htmlspecialchars($dm['tipo_nome'] ?? ucfirst($dm['categoria'] ?? '')) ?></td>
+                <td>
+                    <span class="badge <?= ['vigente'=>'badge-vigente','proximo_vencimento'=>'badge-proximo','vencido'=>'badge-vencido'][$dm['status']] ?? '' ?>">
+                        <?= ['vigente'=>'Vigente','proximo_vencimento'=>'Prox.','vencido'=>'Vencido','obsoleto'=>'Obsoleto'][$dm['status']] ?? $dm['status'] ?>
+                    </span>
+                </td>
+                <td style="font-size:12px; color:#999;"><?= date('d/m H:i', strtotime($dm['criado_em'])) ?></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+<?php endif; ?>
 
 <!-- ============ KPI INDICATORS ============ -->
 <?php
@@ -167,7 +230,7 @@ $jsonVencData = json_encode($vencData);
 
     <div class="card-stat" style="flex:1; border-left:4px solid <?= $tempoColor ?>; background:#fff; text-align:center;">
         <div class="card-stat-value" style="font-size:2rem; color:<?= $tempoColor ?>;"><?= $tempoIsNum ? $kpiTempoRenov . ' dias' : $kpiTempoRenov ?></div>
-        <div class="card-stat-label">Tempo Medio Renovacao</div>
+        <div class="card-stat-label">Tempo Medio Renovação</div>
         <div style="margin-top:6px; font-size:12px; color:#6b7280;">Ultimos 12 meses</div>
     </div>
 </div>
@@ -176,7 +239,7 @@ $jsonVencData = json_encode($vencData);
 <div style="margin-top: 16px;">
     <div class="table-container">
         <div class="table-header">
-            <span class="table-title">Vencimentos Previstos - Proximos 6 Meses (Apenas Ativos)</span>
+            <span class="table-title">Vencimentos Previstos - Próximos 6 Meses (Apenas Ativos)</span>
         </div>
         <div style="padding: 24px;">
             <canvas id="chartKpiVencimentos" style="max-height: 280px;"></canvas>
@@ -221,14 +284,14 @@ $jsonVencData = json_encode($vencData);
 <?php if (!empty($aprovacoes_pendentes)): ?>
 <div id="aprovacoes-pendentes" class="table-container" style="margin-top:24px; border-left: 4px solid #8b5cf6;">
     <div class="table-header">
-        <span class="table-title" style="color:#8b5cf6;">Aprovacoes Pendentes (<?= number_format($total_aprovacoes_pendentes ?? 0, 0, ',', '.') ?> total - mostrando 20 mais recentes)</span>
+        <span class="table-title" style="color:#8b5cf6;">Aprovações Pendentes (<?= number_format($total_aprovacoes_pendentes ?? 0, 0, ',', '.') ?> total - mostrando 20 mais recentes)</span>
     </div>
     <table>
         <thead>
             <tr>
                 <th>Colaborador</th>
                 <th>Documento</th>
-                <th>Emissao</th>
+                <th>Emissão</th>
                 <th>Enviado em</th>
                 <th style="text-align:center;">Acao</th>
             </tr>
@@ -333,7 +396,7 @@ function rejeitarDoc(docId) {
             </thead>
             <tbody>
                 <?php if (empty($docs_expiring)): ?>
-                <tr><td colspan="3" style="text-align:center;color:#6b7280;">Nenhum documento proximo do vencimento</td></tr>
+                <tr><td colspan="3" style="text-align:center;color:#6b7280;">Nenhum documento próximo do vencimento</td></tr>
                 <?php else: ?>
                 <?php foreach ($docs_expiring as $doc): ?>
                 <tr>
@@ -367,7 +430,7 @@ function rejeitarDoc(docId) {
             </thead>
             <tbody>
                 <?php if (empty($certs_expiring)): ?>
-                <tr><td colspan="3" style="text-align:center;color:#6b7280;">Nenhum certificado proximo do vencimento</td></tr>
+                <tr><td colspan="3" style="text-align:center;color:#6b7280;">Nenhum certificado próximo do vencimento</td></tr>
                 <?php else: ?>
                 <?php foreach ($certs_expiring as $cert): ?>
                 <tr>
@@ -530,7 +593,7 @@ document.addEventListener('DOMContentLoaded', function () {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             scales: {
                 x: {
                     ticks: {

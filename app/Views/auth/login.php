@@ -12,7 +12,7 @@
                 'empty'    => 'Preencha todos os campos.',
                 'inactive' => 'Sua conta esta desativada. Contacte o administrador.',
                 'locked'   => 'Conta bloqueada. Tente novamente em ' . ($_GET['min'] ?? '15') . ' minutos.',
-                'csrf'     => 'Token de seguranca invalido. Tente novamente.',
+                'csrf'     => 'Token de seguranca inválido. Tente novamente.',
             ];
             echo htmlspecialchars($msgs[$error] ?? 'Erro ao fazer login.');
             ?>
@@ -21,7 +21,7 @@
 
     <?php if (!empty($expired)): ?>
         <div class="alert alert-warning">
-            Sua sessao expirou por inatividade. Faca login novamente.
+            Sua sessão expirou por inatividade. Faca login novamente.
         </div>
     <?php endif; ?>
 

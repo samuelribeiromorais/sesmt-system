@@ -60,7 +60,7 @@
         </div>
 
         <div style="margin-top:12px; font-size:11px; color:#9ca3af;">
-            <strong>Colunas aceitas:</strong> nome_completo (ou PE_NOME), cpf (ou PE_CPF), matricula (ou CODIGO), cargo, funcao, setor, unidade, data_admissao, data_nascimento, telefone, email, PE_CIDADE, PE_UF
+            <strong>Colunas aceitas:</strong> nome_completo (ou PE_NOME), cpf (ou PE_CPF), matricula (ou CODIGO), cargo, função, setor, unidade, data_admissao, data_nascimento, telefone, email, PE_CIDADE, PE_UF
         </div>
     </div>
 </div>
@@ -136,7 +136,7 @@
     <table>
         <thead>
             <tr>
-                <th>Descricao</th>
+                <th>Descrição</th>
                 <th>Criado por</th>
                 <th>Criado em</th>
                 <th>Expira em</th>
@@ -213,7 +213,7 @@
             <input type="hidden" name="_csrf_token" value="<?= $csrfToken ?>">
             <div style="padding:24px;">
                 <div style="margin-bottom:16px;">
-                    <label style="display:block; font-size:13px; font-weight:600; color:var(--c-text); margin-bottom:6px;">Descricao</label>
+                    <label style="display:block; font-size:13px; font-weight:600; color:var(--c-text); margin-bottom:6px;">Descrição</label>
                     <input type="text" name="descricao" value="Upload de dados de colaboradores"
                            style="width:100%; padding:10px 12px; border:1px solid var(--c-border); border-radius:6px; font-size:14px; background:var(--c-bg); color:var(--c-text);">
                     <span style="font-size:11px; color:#6b7280;">Visivel para quem receber o link</span>

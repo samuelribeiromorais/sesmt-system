@@ -29,7 +29,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="data_emissao">Data de Emissao *</label>
+                    <label for="data_emissao">Data de Emissão *</label>
                     <input type="date" id="data_emissao" name="data_emissao" class="form-control" required
                            value="<?= date('Y-m-d') ?>">
                 </div>
@@ -37,7 +37,7 @@
                 <div class="form-group" style="grid-column: 1 / -1;">
                     <label for="arquivos">Arquivo(s) PDF *</label>
                     <input type="file" id="arquivos" name="arquivos[]" class="form-control" accept=".pdf" multiple required>
-                    <small style="color:var(--c-gray);">Tamanho maximo: 10MB por arquivo. Apenas PDF. Voce pode selecionar multiplos arquivos PDF.</small>
+                    <small style="color:var(--c-gray);">Tamanho máximo: 10MB por arquivo. Apenas PDF. Voce pode selecionar multiplos arquivos PDF.</small>
                 </div>
 
                 <div class="form-group" style="grid-column: 1 / -1;">

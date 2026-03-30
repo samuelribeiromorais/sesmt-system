@@ -2,7 +2,7 @@
 function statusLabel($s) {
     return match($s) {
         'vigente' => '<span class="badge badge-vigente">Vigente</span>',
-        'proximo_vencimento' => '<span class="badge badge-proximo">Proximo vencimento</span>',
+        'proximo_vencimento' => '<span class="badge badge-proximo">Próximo vencimento</span>',
         'vencido' => '<span class="badge badge-vencido">Vencido</span>',
         default => '<span class="badge badge-obsoleto">-</span>',
     };
@@ -23,7 +23,7 @@ function statusLabel($s) {
 <div class="table-container">
     <div class="table-header"><span class="table-title">Certificados</span></div>
     <table>
-        <thead><tr><th>Tipo</th><th>Duracao</th><th>Realizacao</th><th>Emissao</th><th>Validade</th><th>Status</th></tr></thead>
+        <thead><tr><th>Tipo</th><th>Duracao</th><th>Realizacao</th><th>Emissão</th><th>Validade</th><th>Status</th></tr></thead>
         <tbody>
         <?php if (empty($certificados)): ?>
         <tr><td colspan="6" style="text-align:center;color:#6b7280;">Nenhum certificado</td></tr>
@@ -46,7 +46,7 @@ function statusLabel($s) {
 <div class="table-container" style="margin-top:24px;">
     <div class="table-header"><span class="table-title">Documentos</span></div>
     <table>
-        <thead><tr><th>Tipo</th><th>Categoria</th><th>Emissao</th><th>Validade</th><th>Status</th><th>Arquivo</th></tr></thead>
+        <thead><tr><th>Tipo</th><th>Categoria</th><th>Emissão</th><th>Validade</th><th>Status</th><th>Arquivo</th></tr></thead>
         <tbody>
         <?php if (empty($documentos)): ?>
         <tr><td colspan="6" style="text-align:center;color:#6b7280;">Nenhum documento</td></tr>

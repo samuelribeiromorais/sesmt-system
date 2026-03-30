@@ -17,7 +17,7 @@ class ReportService
     }
 
     /**
-     * Gera relatorio Excel de um colaborador (certificados + documentos)
+     * Gera relatório Excel de um colaborador (certificados + documentos)
      */
     public function excelColaborador(int $colaboradorId): string
     {
@@ -26,7 +26,7 @@ class ReportService
         $stmt->execute(['id' => $colaboradorId]);
         $colab = $stmt->fetch();
 
-        if (!$colab) throw new \RuntimeException('Colaborador nao encontrado.');
+        if (!$colab) throw new \RuntimeException('Colaborador não encontrado.');
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -61,7 +61,7 @@ class ReportService
         $sheet->getStyle("A{$row}")->applyFromArray($headerStyle);
         $row++;
 
-        $cols = ['A' => 'Tipo', 'B' => 'Duracao', 'C' => 'Realizacao', 'D' => 'Emissao', 'E' => 'Validade', 'F' => 'Status'];
+        $cols = ['A' => 'Tipo', 'B' => 'Duracao', 'C' => 'Realizacao', 'D' => 'Emissão', 'E' => 'Validade', 'F' => 'Status'];
         foreach ($cols as $col => $label) {
             $sheet->setCellValue("{$col}{$row}", $label);
         }
@@ -99,7 +99,7 @@ class ReportService
         $sheet->getStyle("A{$row}")->applyFromArray($headerStyle);
         $row++;
 
-        $cols2 = ['A' => 'Tipo', 'B' => 'Categoria', 'C' => 'Emissao', 'D' => 'Validade', 'E' => 'Status', 'F' => 'Arquivo'];
+        $cols2 = ['A' => 'Tipo', 'B' => 'Categoria', 'C' => 'Emissão', 'D' => 'Validade', 'E' => 'Status', 'F' => 'Arquivo'];
         foreach ($cols2 as $col => $label) {
             $sheet->setCellValue("{$col}{$row}", $label);
         }
@@ -144,14 +144,14 @@ class ReportService
     }
 
     /**
-     * Gera relatorio Excel de conformidade por cliente
+     * Gera relatório Excel de conformidade por cliente
      */
     public function excelCliente(int $clienteId): string
     {
         $stmt = $this->db->prepare("SELECT * FROM clientes WHERE id = :id");
         $stmt->execute(['id' => $clienteId]);
         $cliente = $stmt->fetch();
-        if (!$cliente) throw new \RuntimeException('Cliente nao encontrado.');
+        if (!$cliente) throw new \RuntimeException('Cliente não encontrado.');
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -224,7 +224,7 @@ class ReportService
     }
 
     /**
-     * Gera relatorio Excel de conformidade por obra
+     * Gera relatório Excel de conformidade por obra
      */
     public function excelObra(int $obraId): string
     {
@@ -234,7 +234,7 @@ class ReportService
         );
         $stmt->execute(['id' => $obraId]);
         $obra = $stmt->fetch();
-        if (!$obra) throw new \RuntimeException('Obra nao encontrada.');
+        if (!$obra) throw new \RuntimeException('Obra não encontrada.');
 
         $clienteNome = $obra['nome_fantasia'] ?? $obra['razao_social'];
 

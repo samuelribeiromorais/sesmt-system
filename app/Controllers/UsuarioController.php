@@ -108,7 +108,7 @@ class UsuarioController extends Controller
 
         $userId = Session::get('user_id');
         if (!$userId) {
-            $this->json(['error' => 'Nao autenticado'], 401);
+            $this->json(['error' => 'Não autenticado'], 401);
             return;
         }
 
@@ -152,7 +152,7 @@ class UsuarioController extends Controller
         // Se já tem 2FA ativo, mostrar opção de desativar
         if (!empty($user['totp_ativo'])) {
             $this->view('config/2fa-setup', [
-                'pageTitle'  => 'Autenticacao 2FA',
+                'pageTitle'  => 'Autenticação 2FA',
                 'totp_ativo' => true,
                 'secret'     => '',
                 'qr_url'     => '',
@@ -165,7 +165,7 @@ class UsuarioController extends Controller
         $qrUrl = $totp->getQrUrl($user['email'], $secret);
 
         $this->view('config/2fa-setup', [
-            'pageTitle'  => 'Autenticacao 2FA',
+            'pageTitle'  => 'Autenticação 2FA',
             'totp_ativo' => false,
             'secret'     => $secret,
             'qr_url'     => $qrUrl,
@@ -184,13 +184,13 @@ class UsuarioController extends Controller
         $code = trim($this->input('totp_code', ''));
 
         if (empty($secret) || empty($code)) {
-            $this->flash('error', 'Informe o codigo de verificacao.');
+            $this->flash('error', 'Informe o código de verificação.');
             $this->redirect('/usuarios/2fa/setup');
         }
 
         $totp = new TotpService();
         if (!$totp->verify($secret, $code)) {
-            $this->flash('error', 'Codigo invalido. Tente novamente.');
+            $this->flash('error', 'Código inválido. Tente novamente.');
             $this->redirect('/usuarios/2fa/setup');
         }
 
@@ -201,7 +201,7 @@ class UsuarioController extends Controller
         ]);
 
         LoggerMiddleware::log('2fa', '2FA ativado pelo usuario');
-        $this->flash('success', 'Autenticacao em duas etapas ativada com sucesso.');
+        $this->flash('success', 'Autenticação em duas etapas ativada com sucesso.');
         $this->redirect('/usuarios/2fa/setup');
     }
 
@@ -221,7 +221,7 @@ class UsuarioController extends Controller
         ]);
 
         LoggerMiddleware::log('2fa', '2FA desativado pelo usuario');
-        $this->flash('success', 'Autenticacao em duas etapas desativada.');
+        $this->flash('success', 'Autenticação em duas etapas desativada.');
         $this->redirect('/usuarios/2fa/setup');
     }
 
@@ -232,15 +232,15 @@ class UsuarioController extends Controller
     /**
      * Lista as sessões ativas do usuário logado.
      */
-    public function sessoes(): void
+    public function sessões(): void
     {
         $userId = Session::get('user_id');
         $model = new SessaoAtiva();
         $sessoes = $model->findByUsuario($userId);
 
         $this->view('config/sessoes', [
-            'pageTitle' => 'Sessoes Ativas',
-            'sessoes'   => $sessoes,
+            'pageTitle' => 'Sessões Ativas',
+            'sessões'   => $sessoes,
         ]);
     }
 
@@ -257,13 +257,13 @@ class UsuarioController extends Controller
 
         // Verificar se a sessão pertence ao usuário logado
         if (!$sessao || (int)$sessao['usuario_id'] !== $userId) {
-            $this->flash('error', 'Sessao nao encontrada.');
+            $this->flash('error', 'Sessão não encontrada.');
             $this->redirect('/usuarios/sessoes');
         }
 
         // Não permitir encerrar a sessão atual
         if ($sessao['session_id'] === session_id()) {
-            $this->flash('error', 'Voce nao pode encerrar sua sessao atual. Use o logout.');
+            $this->flash('error', 'Voce não pode encerrar sua sessão atual. Use o logout.');
             $this->redirect('/usuarios/sessoes');
         }
 
@@ -279,8 +279,8 @@ class UsuarioController extends Controller
         // Remover do banco
         $model->removerPorId((int)$id);
 
-        LoggerMiddleware::log('sessao', "Sessao remota encerrada (IP: {$sessao['ip_address']})");
-        $this->flash('success', 'Sessao encerrada com sucesso.');
+        LoggerMiddleware::log('sessão', "Sessão remota encerrada (IP: {$sessao['ip_address']})");
+        $this->flash('success', 'Sessão encerrada com sucesso.');
         $this->redirect('/usuarios/sessoes');
     }
 
@@ -329,7 +329,7 @@ class UsuarioController extends Controller
 
         // Validar confirmação
         if ($novaSenha !== $confirmarSenha) {
-            $this->flash('error', 'A nova senha e a confirmacao nao conferem.');
+            $this->flash('error', 'A nova senha e a confirmação não conferem.');
             $this->redirect('/usuarios/alterar-senha');
         }
 
@@ -361,14 +361,14 @@ class UsuarioController extends Controller
 
         foreach ($historico as $senhaAntiga) {
             if (password_verify($novaSenha, $senhaAntiga)) {
-                $this->flash('error', 'A nova senha nao pode ser igual a uma das 5 ultimas senhas utilizadas.');
+                $this->flash('error', 'A nova senha não pode ser igual a uma das 5 ultimas senhas utilizadas.');
                 $this->redirect('/usuarios/alterar-senha');
             }
         }
 
         // Também verificar contra a senha atual
         if (password_verify($novaSenha, $user['senha_hash'])) {
-            $this->flash('error', 'A nova senha nao pode ser igual a senha atual.');
+            $this->flash('error', 'A nova senha não pode ser igual a senha atual.');
             $this->redirect('/usuarios/alterar-senha');
         }
 
@@ -398,7 +398,7 @@ class UsuarioController extends Controller
     private function validarPoliticaSenha(string $senha): ?string
     {
         if (strlen($senha) < 8) {
-            return 'A senha deve ter no minimo 8 caracteres.';
+            return 'A senha deve ter no mínimo 8 caracteres.';
         }
         if (!preg_match('/[A-Z]/', $senha)) {
             return 'A senha deve conter pelo menos uma letra maiuscula.';
@@ -407,7 +407,7 @@ class UsuarioController extends Controller
             return 'A senha deve conter pelo menos uma letra minuscula.';
         }
         if (!preg_match('/[0-9]/', $senha)) {
-            return 'A senha deve conter pelo menos um numero.';
+            return 'A senha deve conter pelo menos um número.';
         }
         if (!preg_match('/[^A-Za-z0-9]/', $senha)) {
             return 'A senha deve conter pelo menos um caractere especial.';
@@ -465,7 +465,7 @@ class UsuarioController extends Controller
         LoggerMiddleware::log('api_token', "Token de API criado: {$nome}");
 
         // Show the token once (expires in 90 days)
-        $this->flash('success', "Token criado com sucesso (expira em 90 dias). Copie agora, ele nao sera exibido novamente: {$token}");
+        $this->flash('success', "Token criado com sucesso (expira em 90 dias). Copie agora, ele não sera exibido novamente: {$token}");
         $this->redirect('/usuarios/api-tokens');
     }
 
@@ -481,7 +481,7 @@ class UsuarioController extends Controller
         $tokenRecord = $model->find((int) $id);
 
         if (!$tokenRecord || (int) $tokenRecord['usuario_id'] !== $userId) {
-            $this->flash('error', 'Token nao encontrado.');
+            $this->flash('error', 'Token não encontrado.');
             $this->redirect('/usuarios/api-tokens');
             return;
         }

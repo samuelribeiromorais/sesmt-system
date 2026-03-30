@@ -46,7 +46,7 @@ class BackupController extends Controller
         $this->view('backup/index', [
             'backups' => $backups,
             'cronAtivo' => $cronAtivo,
-            'pageTitle' => 'Configuracoes',
+            'pageTitle' => 'Configurações',
         ]);
     }
 
@@ -86,7 +86,7 @@ class BackupController extends Controller
         $path = $this->getBackupDir() . '/' . $nome;
 
         if (!file_exists($path) || !preg_match('/^db_[\d\-_]+\.sql\.gz$/', $nome)) {
-            $this->flash('error', 'Arquivo de backup nao encontrado.');
+            $this->flash('error', 'Arquivo de backup não encontrado.');
             $this->redirect('/backup');
             return;
         }
@@ -111,7 +111,7 @@ class BackupController extends Controller
             LoggerMiddleware::log('backup', "Backup excluido: {$nome}");
             $this->flash('success', "Backup {$nome} excluido.");
         } else {
-            $this->flash('error', 'Arquivo nao encontrado.');
+            $this->flash('error', 'Arquivo não encontrado.');
         }
 
         $this->redirect('/backup');
@@ -134,8 +134,8 @@ class BackupController extends Controller
         // Remover entrada anterior e adicionar nova
         exec("(crontab -l 2>/dev/null | grep -v 'backup.sh'; echo '{$cronLine}') | crontab -");
 
-        LoggerMiddleware::log('backup', "Backup automatico configurado: diario as {$horario}");
-        $this->flash('success', "Backup automatico configurado para todos os dias as {$horario}.");
+        LoggerMiddleware::log('backup', "Backup automático configurado: diario as {$horario}");
+        $this->flash('success', "Backup automático configurado para todos os dias as {$horario}.");
         $this->redirect('/backup');
     }
 

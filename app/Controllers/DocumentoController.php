@@ -177,7 +177,7 @@ class DocumentoController extends Controller
         $observacoes = trim($this->input('observacoes', ''));
 
         if (!$colaboradorId || !$tipoDocumentoId || !$dataEmissao) {
-            $this->flash('error', 'Preencha todos os campos obrigatorios.');
+            $this->flash('error', 'Preencha todos os campos obrigatórios.');
             $this->redirect("/documentos/upload/{$colaboradorId}");
         }
 
@@ -212,12 +212,12 @@ class DocumentoController extends Controller
 
             $mime = $finfo->file($files['tmp_name'][$i]);
             if (!in_array($mime, $config['upload']['allowed_types'])) {
-                $this->flash('error', 'Apenas arquivos PDF sao permitidos. Arquivo invalido: ' . $files['name'][$i]);
+                $this->flash('error', 'Apenas arquivos PDF sao permitidos. Arquivo inválido: ' . $files['name'][$i]);
                 $this->redirect("/documentos/upload/{$colaboradorId}");
             }
 
             if ($files['size'][$i] > $config['upload']['max_size']) {
-                $this->flash('error', 'Arquivo excede o tamanho maximo de 10MB: ' . $files['name'][$i]);
+                $this->flash('error', 'Arquivo excede o tamanho máximo de 10MB: ' . $files['name'][$i]);
                 $this->redirect("/documentos/upload/{$colaboradorId}");
             }
         }
@@ -376,7 +376,7 @@ class DocumentoController extends Controller
         $docModel = new Documento();
         $doc = $docModel->find((int)$id);
         if (!$doc) {
-            $this->flash('error', 'Documento nao encontrado.');
+            $this->flash('error', 'Documento não encontrado.');
             $this->redirect('/documentos');
         }
 
@@ -392,7 +392,7 @@ class DocumentoController extends Controller
         }
 
         if (!file_exists($filePath)) {
-            $this->flash('error', 'Arquivo nao encontrado no servidor.');
+            $this->flash('error', 'Arquivo não encontrado no servidor.');
             $this->redirect("/colaboradores/{$doc['colaborador_id']}");
         }
 
@@ -415,7 +415,7 @@ class DocumentoController extends Controller
         $doc = $docModel->find((int)$id);
         if (!$doc) {
             http_response_code(404);
-            die('Documento nao encontrado.');
+            die('Documento não encontrado.');
         }
 
         $config = require dirname(__DIR__) . '/config/app.php';
@@ -431,7 +431,7 @@ class DocumentoController extends Controller
 
         if (!file_exists($filePath)) {
             http_response_code(404);
-            die('Arquivo nao encontrado.');
+            die('Arquivo não encontrado.');
         }
 
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -511,7 +511,7 @@ class DocumentoController extends Controller
         $docModel = new Documento();
         $doc = $docModel->find((int)$id);
         if (!$doc) {
-            $this->flash('error', 'Documento nao encontrado.');
+            $this->flash('error', 'Documento não encontrado.');
             $this->redirect('/documentos');
         }
 
@@ -559,7 +559,7 @@ class DocumentoController extends Controller
     }
 
     /**
-     * Atualizar data de emissao de um documento
+     * Atualizar data de emissão de um documento
      */
     public function atualizarEmissao(string $id): void
     {
@@ -568,19 +568,19 @@ class DocumentoController extends Controller
         $docModel = new Documento();
         $doc = $docModel->find((int)$id);
         if (!$doc) {
-            $this->flash('error', 'Documento nao encontrado.');
+            $this->flash('error', 'Documento não encontrado.');
             $this->redirect('/documentos');
             return;
         }
 
         $dataEmissao = $this->input('data_emissao');
         if (!$dataEmissao || !strtotime($dataEmissao)) {
-            $this->flash('error', 'Data de emissao invalida.');
+            $this->flash('error', 'Data de emissão invalida.');
             $this->redirect("/documentos/{$id}");
             return;
         }
 
-        // Recalcular validade com base na nova emissao
+        // Recalcular validade com base na nova emissão
         $tipoModel = new TipoDocumento();
         $tipo = $tipoModel->find((int)$doc['tipo_documento_id']);
         $dataValidade = null;
@@ -618,12 +618,12 @@ class DocumentoController extends Controller
 
         $docModel->update((int)$id, $updateData);
 
-        LoggerMiddleware::log('editar', "Data de emissao alterada para {$dataEmissao} (Doc ID: {$id})");
+        LoggerMiddleware::log('editar', "Data de emissão alterada para {$dataEmissao} (Doc ID: {$id})");
         DashboardController::clearCache();
 
-        $this->flash('success', 'Data de emissao atualizada com sucesso.');
+        $this->flash('success', 'Data de emissão atualizada com sucesso.');
 
-        // Voltar para a pagina do colaborador se veio de la
+        // Voltar para a página do colaborador se veio de la
         $referer = $_SERVER['HTTP_REFERER'] ?? '';
         if (strpos($referer, '/colaboradores/') !== false) {
             $this->redirect("/colaboradores/{$doc['colaborador_id']}");
@@ -660,7 +660,7 @@ class DocumentoController extends Controller
             }
         }
 
-        LoggerMiddleware::log('excluir', "Exclusao em lote: {$count} documento(s) movidos para lixeira");
+        LoggerMiddleware::log('excluir', "Exclusão em lote: {$count} documento(s) movidos para lixeira");
         DashboardController::clearCache();
 
         $this->json([
@@ -681,7 +681,7 @@ class DocumentoController extends Controller
         $docModel = new Documento();
         $doc = $docModel->find((int)$id);
         if (!$doc) {
-            $this->flash('error', 'Documento nao encontrado.');
+            $this->flash('error', 'Documento não encontrado.');
             $this->redirect('/documentos');
             return;
         }
@@ -711,7 +711,7 @@ class DocumentoController extends Controller
         LoggerMiddleware::log('editar', "Documento {$decisao}: ID {$id} (" . ($doc['arquivo_nome'] ?? '') . ")");
         $this->flash('success', "Documento {$decisao} com sucesso.");
 
-        // Voltar para a pagina de origem
+        // Voltar para a página de origem
         $referer = $_SERVER['HTTP_REFERER'] ?? '';
         if (str_contains($referer, '/dashboard')) {
             $this->redirect('/dashboard');
@@ -736,7 +736,7 @@ class DocumentoController extends Controller
         $stmt->execute(['uid' => Session::get('user_id'), 'cid' => (int)$colaboradorId]);
         $count = $stmt->rowCount();
 
-        LoggerMiddleware::log('editar', "Aprovacao em massa: {$count} documentos aprovados para colaborador ID {$colaboradorId}");
+        LoggerMiddleware::log('editar', "Aprovação em massa: {$count} documentos aprovados para colaborador ID {$colaboradorId}");
         $this->flash('success', "{$count} documentos aprovados com sucesso.");
         $this->redirect("/colaboradores/{$colaboradorId}");
     }

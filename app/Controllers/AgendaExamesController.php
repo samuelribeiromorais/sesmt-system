@@ -96,7 +96,7 @@ class AgendaExamesController extends Controller
         );
         $vencidos = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-        $meses = ['','Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+        $meses = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
         $this->view('agenda-exames/index', [
             'mes' => $mes,

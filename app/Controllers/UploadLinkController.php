@@ -125,7 +125,7 @@ class UploadLinkController extends Controller
                     '0.', '169.254.', '::1', 'localhost'];
                 foreach ($blockedRanges as $range) {
                     if (str_starts_with($hostIp, $range) || str_starts_with($host, $range)) {
-                        throw new \Exception("URL bloqueada: enderecos internos nao sao permitidos.");
+                        throw new \Exception("URL bloqueada: enderecos internos não sao permitidos.");
                     }
                 }
 
@@ -156,21 +156,21 @@ class UploadLinkController extends Controller
                 // Normalizar barras
                 $path = str_replace('/', '\\', $linkArquivo);
                 if (!file_exists($path)) {
-                    throw new \Exception("Arquivo nao encontrado: {$path}");
+                    throw new \Exception("Arquivo não encontrado: {$path}");
                 }
                 $tempFile = tempnam(sys_get_temp_dir(), 'sesmt_import_');
                 if (!copy($path, $tempFile)) {
-                    throw new \Exception("Nao foi possivel copiar o arquivo de: {$path}");
+                    throw new \Exception("Não foi possivel copiar o arquivo de: {$path}");
                 }
             } elseif (str_starts_with($linkArquivo, '/')) {
                 // Caminho Linux absoluto
                 if (!file_exists($linkArquivo)) {
-                    throw new \Exception("Arquivo nao encontrado: {$linkArquivo}");
+                    throw new \Exception("Arquivo não encontrado: {$linkArquivo}");
                 }
                 $tempFile = tempnam(sys_get_temp_dir(), 'sesmt_import_');
                 copy($linkArquivo, $tempFile);
             } else {
-                throw new \Exception("Formato de caminho nao reconhecido. Use URL (http://...), caminho de rede (\\\\servidor\\...) ou caminho absoluto.");
+                throw new \Exception("Formato de caminho não reconhecido. Use URL (http://...), caminho de rede (\\\\servidor\\...) ou caminho absoluto.");
             }
 
             // Detectar extensao
@@ -212,7 +212,7 @@ class UploadLinkController extends Controller
         $resultado = $this->cruzarDados($rows);
 
         LoggerMiddleware::log('upload_link_remoto', sprintf(
-            'Importacao via link: %s — %d atualizados, %d novos, %d ignorados',
+            'Importação via link: %s — %d atualizados, %d novos, %d ignorados',
             $nomeArquivo, $resultado['atualizados'], $resultado['novos'], $resultado['ignorados']
         ));
 
@@ -230,7 +230,7 @@ class UploadLinkController extends Controller
     }
 
     /**
-     * Upload direto pelo admin (com autenticacao)
+     * Upload direto pelo admin (com autenticação)
      */
     public function uploadDireto(): void
     {
@@ -247,7 +247,7 @@ class UploadLinkController extends Controller
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 
         if (!in_array($ext, ['xlsx', 'xls', 'csv'])) {
-            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Formato invalido. Use .xlsx, .xls ou .csv'];
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Formato inválido. Use .xlsx, .xls ou .csv'];
             header('Location: /upload-links');
             exit;
         }
@@ -293,7 +293,7 @@ class UploadLinkController extends Controller
     }
 
     /**
-     * Pagina publica de upload (sem autenticacao)
+     * Página pública de upload (sem autenticação)
      */
     public function paginaUpload(string $token): void
     {
@@ -306,9 +306,9 @@ class UploadLinkController extends Controller
 
         if (!$link || !$link['ativo'] || strtotime($link['expira_em']) < time()) {
             http_response_code(404);
-            echo $this->renderPublicPage('Link Invalido',
+            echo $this->renderPublicPage('Link Inválido',
                 '<div style="text-align:center; padding:60px 20px;">
-                    <h1 style="color:#e74c3c; font-size:48px; margin-bottom:16px;">Link Invalido</h1>
+                    <h1 style="color:#e74c3c; font-size:48px; margin-bottom:16px;">Link Inválido</h1>
                     <p style="color:#6b7280; font-size:16px;">Este link expirou ou foi revogado.</p>
                     <p style="color:#6b7280; font-size:14px; margin-top:12px;">Solicite um novo link ao administrador do sistema.</p>
                 </div>');
@@ -330,12 +330,12 @@ class UploadLinkController extends Controller
                 <div style="text-align:center; margin-bottom:32px;">
                     <h1 style="color:#005e4e; font-size:24px; margin-bottom:8px;">Upload de Dados de Colaboradores</h1>
                     <p style="color:#6b7280; font-size:14px;">' . htmlspecialchars($link['descricao']) . '</p>
-                    <p style="color:#6b7280; font-size:12px; margin-top:4px;">Link valido ate: ' . date('d/m/Y H:i', strtotime($link['expira_em'])) . '</p>
+                    <p style="color:#6b7280; font-size:12px; margin-top:4px;">Link válido ate: ' . date('d/m/Y H:i', strtotime($link['expira_em'])) . '</p>
                 </div>
 
                 <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:16px; margin-bottom:24px; font-size:13px; color:#166534;">
                     <strong>Formato aceito:</strong> Planilha Excel (.xlsx, .xls) ou CSV (.csv)<br>
-                    <strong>Colunas esperadas:</strong> nome_completo, cpf, matricula, cargo, funcao, setor, unidade, data_admissao, data_nascimento, telefone, email<br>
+                    <strong>Colunas esperadas:</strong> nome_completo, cpf, matricula, cargo, função, setor, unidade, data_admissao, data_nascimento, telefone, email<br>
                     <strong>CPF:</strong> Usado como chave para cruzamento. Dados existentes serao atualizados automaticamente.
                 </div>
 
@@ -395,7 +395,7 @@ class UploadLinkController extends Controller
     }
 
     /**
-     * Processar upload externo (sem autenticacao)
+     * Processar upload externo (sem autenticação)
      */
     public function processarUpload(string $token): void
     {
@@ -406,7 +406,7 @@ class UploadLinkController extends Controller
 
         if (!$link || !$link['ativo'] || $link['usado_em'] || strtotime($link['expira_em']) < time()) {
             http_response_code(403);
-            echo $this->renderPublicPage('Erro', '<div style="text-align:center;padding:60px;"><h1 style="color:#e74c3c;">Link invalido ou expirado.</h1></div>');
+            echo $this->renderPublicPage('Erro', '<div style="text-align:center;padding:60px;"><h1 style="color:#e74c3c;">Link inválido ou expirado.</h1></div>');
             exit;
         }
 
@@ -419,7 +419,7 @@ class UploadLinkController extends Controller
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 
         if (!in_array($ext, ['xlsx', 'xls', 'csv'])) {
-            echo $this->renderPublicPage('Erro', '<div style="text-align:center;padding:60px;"><h1 style="color:#e74c3c;">Formato invalido. Use .xlsx, .xls ou .csv</h1></div>');
+            echo $this->renderPublicPage('Erro', '<div style="text-align:center;padding:60px;"><h1 style="color:#e74c3c;">Formato inválido. Use .xlsx, .xls ou .csv</h1></div>');
             exit;
         }
 
@@ -507,7 +507,7 @@ class UploadLinkController extends Controller
                 'pe_uf' => 'uf',
                 'ctr_centrocusto4' => 'centro_custo',
                 'matricula' => 'matricula', 'matrícula' => 'matricula',
-                'funcao' => 'funcao', 'função' => 'funcao',
+                'funcao' => 'função', 'funcao' => 'função',
                 'data admissao' => 'data_admissao', 'data_admissao' => 'data_admissao',
                 'admissao' => 'data_admissao', 'dt admissao' => 'data_admissao',
                 'data nascimento' => 'data_nascimento', 'data_nascimento' => 'data_nascimento',
@@ -537,7 +537,7 @@ class UploadLinkController extends Controller
 
             $cpfRaw = preg_replace('/\D/', '', $mapped['cpf'] ?? '');
 
-            // Compor unidade a partir de cidade/uf se nao houver unidade direta
+            // Compor unidade a partir de cidade/uf se não houver unidade direta
             if (empty($mapped['unidade']) && (!empty($mapped['cidade']) || !empty($mapped['uf']))) {
                 $cidade = $mapped['cidade'] ?? '';
                 $uf = $mapped['uf'] ?? '';
@@ -568,7 +568,7 @@ class UploadLinkController extends Controller
                     $fieldMap = [
                         'matricula' => 'matricula',
                         'cargo' => 'cargo',
-                        'funcao' => 'funcao',
+                        'funcao' => 'função',
                         'setor' => 'setor',
                         'unidade' => 'unidade',
                         'data_admissao' => 'data_admissao',
@@ -617,7 +617,7 @@ class UploadLinkController extends Controller
                         'cpf_hash'        => $cpfHash,
                         'matricula'       => $mapped['matricula'] ?? null,
                         'cargo'           => $mapped['cargo'] ?? null,
-                        'funcao'          => $mapped['funcao'] ?? null,
+                        'funcao' => $mapped['funcao'] ?? null,
                         'setor'           => $mapped['setor'] ?? null,
                         'unidade'         => $mapped['unidade'] ?? null,
                         'data_admissao'   => $mapped['data_admissao'] ?? null,
@@ -636,7 +636,7 @@ class UploadLinkController extends Controller
                     ];
                 }
             } else {
-                // Sem CPF valido — tentar por nome exato
+                // Sem CPF válido — tentar por nome exato
                 $existing = $db->prepare(
                     "SELECT id FROM colaboradores WHERE UPPER(nome_completo) = UPPER(:nome) AND excluido_em IS NULL LIMIT 1"
                 );
@@ -649,7 +649,7 @@ class UploadLinkController extends Controller
                     $current = $colabModel->find($existing['id']);
 
                     // Se recebeu CPF parcial ou vazio, tentar atualizar outros campos
-                    $fieldMap = ['matricula', 'cargo', 'funcao', 'setor', 'data_admissao', 'data_nascimento', 'telefone', 'email'];
+                    $fieldMap = ['matricula', 'cargo', 'função', 'setor', 'data_admissao', 'data_nascimento', 'telefone', 'email'];
                     foreach ($fieldMap as $field) {
                         $newVal = $mapped[$field] ?? '';
                         $curVal = $current[$field] ?? '';
@@ -659,7 +659,7 @@ class UploadLinkController extends Controller
                         }
                     }
 
-                    // Atualizar CPF se veio e nao tinha
+                    // Atualizar CPF se veio e não tinha
                     if (strlen($cpfRaw) === 11 && empty($current['cpf_hash'])) {
                         $updates['cpf_encrypted'] = CryptoService::encrypt($cpfRaw);
                         $updates['cpf_hash'] = CryptoService::hash($cpfRaw);
@@ -683,7 +683,7 @@ class UploadLinkController extends Controller
                     $resultado['detalhes'][] = [
                         'acao' => 'ignorado',
                         'nome' => $nome,
-                        'campos' => 'CPF ausente/invalido e nome nao encontrado',
+                        'campos' => 'CPF ausente/invalido e nome não encontrado',
                     ];
                 }
             }

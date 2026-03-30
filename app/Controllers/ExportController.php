@@ -50,7 +50,7 @@ class ExportController extends Controller
         $sheet->setCellValue('A2', 'Gerado em: ' . date('d/m/Y H:i'));
 
         // Headers
-        $headers = ['Nome', 'Matricula', 'Cargo', 'Funcao', 'Setor', 'Cliente', 'Obra', 'Status'];
+        $headers = ['Nome', 'Matricula', 'Cargo', 'Função', 'Setor', 'Cliente', 'Obra', 'Status'];
         $row = 4;
         foreach ($headers as $i => $h) {
             $col = chr(65 + $i);
@@ -90,7 +90,7 @@ class ExportController extends Controller
         $stmt = $db->query($sql);
         $rows = $stmt->fetchAll();
 
-        // Similar pattern: create spreadsheet, add headers [Colaborador, Tipo, Categoria, Emissao, Validade, Status, Arquivo], fill data
+        // Similar pattern: create spreadsheet, add headers [Colaborador, Tipo, Categoria, Emissão, Validade, Status, Arquivo], fill data
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Documentos');
@@ -106,7 +106,7 @@ class ExportController extends Controller
         $sheet->getStyle('A1')->applyFromArray(['font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => '005E4E']]]);
         $sheet->setCellValue('A2', 'Gerado em: ' . date('d/m/Y H:i'));
 
-        $headers = ['Colaborador', 'Tipo', 'Categoria', 'Emissao', 'Validade', 'Status', 'Arquivo'];
+        $headers = ['Colaborador', 'Tipo', 'Categoria', 'Emissão', 'Validade', 'Status', 'Arquivo'];
         $row = 4;
         foreach ($headers as $i => $h) {
             $sheet->setCellValue(chr(65+$i) . $row, $h);
@@ -158,7 +158,7 @@ class ExportController extends Controller
         $sheet->getStyle('A1')->applyFromArray(['font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => '005E4E']]]);
         $sheet->setCellValue('A2', 'Gerado em: ' . date('d/m/Y H:i'));
 
-        $headers = ['Colaborador', 'Tipo', 'Duracao', 'Realizacao', 'Emissao', 'Validade', 'Status'];
+        $headers = ['Colaborador', 'Tipo', 'Duracao', 'Realizacao', 'Emissão', 'Validade', 'Status'];
         $row = 4;
         foreach ($headers as $i => $h) {
             $sheet->setCellValue(chr(65+$i) . $row, $h);

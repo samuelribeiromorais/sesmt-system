@@ -37,7 +37,7 @@
 
     <table>
         <thead>
-            <tr><th>Data/Hora</th><th>Usuario</th><th>Acao</th><th>Descricao</th><th>IP</th></tr>
+            <tr><th>Data/Hora</th><th>Usuario</th><th>Acao</th><th>Descrição</th><th>IP</th></tr>
         </thead>
         <tbody>
             <?php if (empty($logs)): ?>

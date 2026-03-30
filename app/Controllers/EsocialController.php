@@ -48,7 +48,7 @@ class EsocialController extends Controller
         $colab = $colabModel->findWithRelations((int) $colaboradorId);
 
         if (!$colab) {
-            $this->flash('error', 'Colaborador nao encontrado.');
+            $this->flash('error', 'Colaborador não encontrado.');
             $this->redirect('/esocial');
             return;
         }
@@ -76,7 +76,7 @@ class EsocialController extends Controller
         $colabModel = new Colaborador();
         $colab = $colabModel->find($colaboradorId);
         if (!$colab) {
-            $this->flash('error', 'Colaborador nao encontrado.');
+            $this->flash('error', 'Colaborador não encontrado.');
             $this->redirect('/esocial');
             return;
         }
@@ -105,7 +105,7 @@ class EsocialController extends Controller
         $evento = $model->findWithColaborador((int) $id);
 
         if (!$evento) {
-            $this->flash('error', 'Evento nao encontrado.');
+            $this->flash('error', 'Evento não encontrado.');
             $this->redirect('/esocial');
             return;
         }
@@ -126,7 +126,7 @@ class EsocialController extends Controller
         $evento = $model->findWithColaborador((int) $id);
 
         if (!$evento) {
-            $this->flash('error', 'Evento nao encontrado.');
+            $this->flash('error', 'Evento não encontrado.');
             $this->redirect('/esocial');
             return;
         }
@@ -150,7 +150,7 @@ class EsocialController extends Controller
                 'nome'      => $colab['nome_completo'],
                 'matricula' => $colab['matricula'] ?? '',
                 'cargo'     => $colab['cargo'] ?? '',
-                'funcao'    => $colab['funcao'] ?? '',
+                'funcao' => $colab['funcao'] ?? '',
             ],
         ];
 
@@ -161,10 +161,10 @@ class EsocialController extends Controller
                     'tipo_acidente'  => $this->input('tipo_acidente', ''),
                     'hora_acidente'  => $this->input('hora_acidente', ''),
                     'local_acidente' => $this->input('local_acidente', ''),
-                    'descricao'      => $this->input('descricao', ''),
+                    'descricao' => $this->input('descricao', ''),
                     'parte_atingida' => $this->input('parte_atingida', ''),
                     'agente_causador'=> $this->input('agente_causador', ''),
-                    'houve_obito'    => $this->input('houve_obito', 'nao'),
+                    'houve_obito'    => $this->input('houve_obito', 'não'),
                 ];
                 break;
 
@@ -188,7 +188,7 @@ class EsocialController extends Controller
                     'epc_eficaz'        => $this->input('epc_eficaz', 'sim'),
                     'epi_eficaz'        => $this->input('epi_eficaz', 'sim'),
                     'data_inicio'       => $this->input('data_inicio', ''),
-                    'descricao'         => $this->input('descricao', ''),
+                    'descricao' => $this->input('descricao', ''),
                 ];
                 break;
         }

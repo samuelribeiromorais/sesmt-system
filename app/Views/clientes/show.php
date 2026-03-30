@@ -5,7 +5,7 @@
         <span style="color:var(--c-gray); margin-left:16px;"><?= $totalColabs ?> colaborador(es) ativo(s)</span>
     </div>
     <div style="display:flex;gap:8px;">
-        <a href="/relatorios/cliente/<?= $cliente['id'] ?>" class="btn btn-outline btn-sm">Relatorio</a>
+        <a href="/relatorios/cliente/<?= $cliente['id'] ?>" class="btn btn-outline btn-sm">Relatório</a>
         <a href="/clientes/<?= $cliente['id'] ?>/editar" class="btn btn-outline btn-sm">Editar</a>
         <a href="/obras/novo/<?= $cliente['id'] ?>" class="btn btn-primary btn-sm">+ Nova Obra</a>
     </div>
@@ -45,7 +45,7 @@
     <div class="table-container">
         <div class="table-header"><span class="table-title">Requisitos Documentais</span></div>
         <table>
-            <thead><tr><th>Tipo</th><th>Categoria</th><th>Obrigatorio</th><th>Acoes</th></tr></thead>
+            <thead><tr><th>Tipo</th><th>Categoria</th><th>Obrigatório</th><th>Acoes</th></tr></thead>
             <tbody>
             <?php if (empty($requisitos)): ?>
             <tr><td colspan="4" style="text-align:center;color:var(--c-gray);">Nenhum requisito configurado.</td></tr>
@@ -72,7 +72,7 @@
                         <span class="badge" style="background:#e0f7fa; color:#00838f;">CERT</span>
                     <?php endif; ?>
                 </td>
-                <td><?= $req['obrigatorio'] ? 'Sim' : 'Nao' ?></td>
+                <td><?= $req['obrigatorio'] ? 'Sim' : 'Não' ?></td>
                 <td>
                     <form method="POST" action="/clientes/<?= $cliente['id'] ?>/requisitos/<?= $req['id'] ?>/excluir" style="display:inline;">
                         <?= \App\Core\View::csrfField() ?>
@@ -103,7 +103,7 @@
                     <?php endforeach; ?>
                 </select>
                 <label style="font-size:13px; display:flex; align-items:center; gap:4px;">
-                    <input type="checkbox" name="obrigatorio" value="1" checked> Obrigatorio
+                    <input type="checkbox" name="obrigatorio" value="1" checked> Obrigatório
                 </label>
                 <button type="submit" class="btn btn-primary btn-sm">Adicionar</button>
             </form>

@@ -14,7 +14,7 @@ class FileService
 
     /**
      * Valida um arquivo de upload
-     * @return string|null Mensagem de erro ou null se valido
+     * @return string|null Mensagem de erro ou null se válido
      */
     public function validar(array $file): ?string
     {
@@ -24,7 +24,7 @@ class FileService
                 UPLOAD_ERR_FORM_SIZE  => 'Arquivo excede o limite do formulario.',
                 UPLOAD_ERR_PARTIAL    => 'Upload incompleto.',
                 UPLOAD_ERR_NO_FILE    => 'Nenhum arquivo enviado.',
-                UPLOAD_ERR_NO_TMP_DIR => 'Erro de configuracao do servidor.',
+                UPLOAD_ERR_NO_TMP_DIR => 'Erro de configuração do servidor.',
                 UPLOAD_ERR_CANT_WRITE => 'Erro ao gravar arquivo.',
             ];
             return $errors[$file['error']] ?? 'Erro desconhecido no upload.';
@@ -32,13 +32,13 @@ class FileService
 
         if ($file['size'] > $this->config['max_size']) {
             $maxMb = round($this->config['max_size'] / 1048576);
-            return "Arquivo excede o tamanho maximo de {$maxMb}MB.";
+            return "Arquivo excede o tamanho máximo de {$maxMb}MB.";
         }
 
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
         $mime = $finfo->file($file['tmp_name']);
         if (!in_array($mime, $this->config['allowed_types'])) {
-            return 'Tipo de arquivo nao permitido. Apenas PDF.';
+            return 'Tipo de arquivo não permitido. Apenas PDF.';
         }
 
         return null;
@@ -83,7 +83,7 @@ class FileService
     }
 
     /**
-     * Remove caracteres inválidos de nomes de arquivo/pasta
+     * Remove caracteres invalidos de nomes de arquivo/pasta
      */
     private function sanitizarNome(string $nome): string
     {

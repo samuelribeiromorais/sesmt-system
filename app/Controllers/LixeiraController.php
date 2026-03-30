@@ -65,7 +65,7 @@ class LixeiraController extends Controller
                 break;
 
             default:
-                $this->flash('error', 'Tipo invalido.');
+                $this->flash('error', 'Tipo inválido.');
         }
 
         $this->redirect('/lixeira');
@@ -115,7 +115,7 @@ class LixeiraController extends Controller
                 break;
 
             default:
-                $this->flash('error', 'Tipo invalido.');
+                $this->flash('error', 'Tipo inválido.');
         }
 
         $this->redirect('/lixeira');

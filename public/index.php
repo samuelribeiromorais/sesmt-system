@@ -174,6 +174,7 @@ $router->get('/relatorios/colaborador/{id}', ['RelatorioController', 'porColabor
 $router->get('/relatorios/cliente/{id}', ['RelatorioController', 'porCliente'], ['AuthMiddleware']);
 $router->get('/relatorios/obra/{id}', ['RelatorioController', 'porObra'], ['AuthMiddleware']);
 $router->get('/relatorios/mensal', ['RelatorioController', 'mensal'], ['AuthMiddleware']);
+$router->get('/relatorios/tipo-documento', ['RelatorioController', 'porTipoDocumento'], ['AuthMiddleware']);
 
 // --- Logs ---
 $router->get('/logs', ['LogController', 'index'], ['AuthMiddleware']);

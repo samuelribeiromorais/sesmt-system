@@ -8,24 +8,24 @@
         <div class="alert alert-error">
             <?php
             $msgs = [
-                'invalid' => 'Codigo invalido. Tente novamente.',
-                'empty'   => 'Informe o codigo de 6 digitos.',
-                'csrf'    => 'Token de seguranca invalido. Tente novamente.',
+                'invalid' => 'Código inválido. Tente novamente.',
+                'empty'   => 'Informe o código de 6 digitos.',
+                'csrf'    => 'Token de seguranca inválido. Tente novamente.',
             ];
-            echo htmlspecialchars($msgs[$error] ?? 'Erro na verificacao.');
+            echo htmlspecialchars($msgs[$error] ?? 'Erro na verificação.');
             ?>
         </div>
     <?php endif; ?>
 
     <p style="text-align:center; font-size:13px; color:#666; margin-bottom:20px;">
-        Abra seu aplicativo autenticador e insira o codigo de 6 digitos.
+        Abra seu aplicativo autenticador e insira o código de 6 digitos.
     </p>
 
     <form method="POST" action="/login/2fa">
         <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
 
         <div class="form-group">
-            <label for="totp_code">Codigo de Verificacao</label>
+            <label for="totp_code">Código de Verificação</label>
             <input type="text" id="totp_code" name="totp_code" required
                    autocomplete="one-time-code" inputmode="numeric"
                    pattern="[0-9]{6}" maxlength="6"

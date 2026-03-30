@@ -26,12 +26,12 @@
     </div>
 
     <div style="margin-top:24px;padding:16px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;">
-        <h3 style="margin:0 0 8px;color:#0369a1;">Instrucoes</h3>
+        <h3 style="margin:0 0 8px;color:#0369a1;">Instruções</h3>
         <ul style="margin:0;padding-left:20px;color:#475569;font-size:14px;line-height:1.8;">
             <li>Baixe o template clicando no botao acima</li>
             <li>Preencha os dados dos colaboradores (um por linha)</li>
-            <li>Campos obrigatorios: <strong>nome_completo</strong></li>
-            <li>O CPF deve conter apenas numeros (11 digitos)</li>
+            <li>Campos obrigatórios: <strong>nome_completo</strong></li>
+            <li>O CPF deve conter apenas números (11 digitos)</li>
             <li>Datas no formato: AAAA-MM-DD (ex: 2024-01-15)</li>
             <li>Status validos: ativo, inativo, afastado, ferias</li>
             <li>cliente_id e obra_id devem ser IDs numericos existentes no sistema</li>

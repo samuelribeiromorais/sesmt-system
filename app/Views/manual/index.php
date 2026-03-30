@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manual de Operacao - SESMT TSE</title>
+    <title>Manual de Operação - SESMT TSE</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; font-size: 16px; color: #333; background: #f5f5f5; }
@@ -67,7 +67,7 @@
     <nav class="sidebar">
         <div class="logo">
             <img src="/assets/img/logo-tse.png?v=2" alt="TSE" style="max-width:160px; margin-bottom:8px;">
-            <p>Manual de Operacao</p>
+            <p>Manual de Operação</p>
         </div>
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="Buscar no manual..." oninput="filtrarManual(this.value)">
@@ -83,12 +83,12 @@
         <a href="#clientes"><span class="num">9</span> Clientes e Obras</a>
         <a href="#checklist"><span class="num">10</span> Checklist Pre-Obra</a>
         <a href="#agenda-exames"><span class="num">11</span> Agenda de Exames</a>
-        <a href="#relatorios"><span class="num">12</span> Relatorios</a>
+        <a href="#relatorios"><span class="num">12</span> Relatórios</a>
         <a href="#alertas"><span class="num">13</span> Alertas</a>
-        <a href="#exportacao"><span class="num">14</span> Exportacao</a>
+        <a href="#exportação"><span class="num">14</span> Exportação</a>
         <a href="#lixeira"><span class="num">15</span> Lixeira</a>
         <a href="#usuarios"><span class="num">16</span> Usuarios e Perfis</a>
-        <a href="#configuracoes"><span class="num">17</span> Configuracoes</a>
+        <a href="#configurações"><span class="num">17</span> Configurações</a>
         <a href="#backup"><span class="num">18</span> Backup</a>
         <a href="#faq"><span class="num">19</span> Perguntas Frequentes</a>
         <a href="/login" class="back-btn">Ir para o Sistema</a>
@@ -100,7 +100,7 @@
         <!-- 1. VISAO GERAL -->
         <section id="visao-geral" class="manual-section">
             <h2>1. Visao Geral do Sistema</h2>
-            <p>O <strong>SESMT TSE</strong> e o sistema de gestao de Seguranca e Saude do Trabalho da TSE Energia e Automacao Industrial. Ele serve para controlar todos os documentos, certificados, treinamentos e informacoes dos colaboradores da empresa.</p>
+            <p>O <strong>SESMT TSE</strong> e o sistema de gestao de Seguranca e Saude do Trabalho da TSE Energia e Automacao Industrial. Ele serve para controlar todos os documentos, certificados, treinamentos e informações dos colaboradores da empresa.</p>
 
             <h3>Para que serve?</h3>
             <ul>
@@ -133,15 +133,15 @@
             </div>
 
             <div class="box box-warn">
-                <strong>Atencao:</strong> Se voce errar a senha 5 vezes seguidas, o sistema vai bloquear por 15 minutos. Espere e tente novamente.
+                <strong>Atenção:</strong> Se voce errar a senha 5 vezes seguidas, o sistema vai bloquear por 15 minutos. Espere e tente novamente.
             </div>
 
-            <h3>Verificacao em duas etapas (2FA)</h3>
-            <p>O sistema permite ativar uma seguranca extra chamada "verificacao em duas etapas". Com ela, alem da senha, voce precisa digitar um codigo que aparece no seu celular.</p>
+            <h3>Verificação em duas etapas (2FA)</h3>
+            <p>O sistema permite ativar uma seguranca extra chamada "verificação em duas etapas". Com ela, além da senha, voce precisa digitar um código que aparece no seu celular.</p>
             <div class="steps">
                 <div class="step"><div class="step-content"><strong>Acesse "Usuarios" no menu lateral</strong><br>Clique no seu nome ou em "Configurar 2FA".</div></div>
-                <div class="step"><div class="step-content"><strong>Escaneie o QR Code</strong><br>Abra o app Google Authenticator no celular e escaneie o codigo que aparece na tela.</div></div>
-                <div class="step"><div class="step-content"><strong>Digite o codigo de 6 digitos</strong><br>O app vai mostrar um numero. Digite ele no campo e clique em "Ativar".</div></div>
+                <div class="step"><div class="step-content"><strong>Escaneie o QR Code</strong><br>Abra o app Google Authenticator no celular e escaneie o código que aparece na tela.</div></div>
+                <div class="step"><div class="step-content"><strong>Digite o código de 6 digitos</strong><br>O app vai mostrar um número. Digite ele no campo e clique em "Ativar".</div></div>
             </div>
 
             <h3>Trocar senha</h3>
@@ -153,29 +153,29 @@
             <h2>3. Dashboard (Tela Inicial)</h2>
             <p>O Dashboard e a primeira tela que voce ve ao entrar no sistema. Ele mostra um resumo de tudo que esta acontecendo.</p>
 
-            <h3>O que cada numero significa</h3>
+            <h3>O que cada número significa</h3>
             <table class="manual-table">
                 <tr><th>Card</th><th>O que mostra</th></tr>
                 <tr><td><strong>Colaboradores Ativos</strong></td><td>Quantos colaboradores estao com status "Ativo" no sistema</td></tr>
                 <tr><td><strong>Documentos/Certs Vencidos</strong></td><td>Quantos documentos e certificados ja passaram da data de validade</td></tr>
-                <tr><td><strong>Vencendo em 30 dias</strong></td><td>Quantos vao vencer nos proximos 30 dias (precisam de atencao)</td></tr>
+                <tr><td><strong>Vencendo em 30 dias</strong></td><td>Quantos vao vencer nos próximos 30 dias (precisam de atenção)</td></tr>
                 <tr><td><strong>Em dia</strong></td><td>Total de documentos e certificados que estao dentro da validade</td></tr>
                 <tr><td><strong>ASO / EPI / Treinamento</strong></td><td>Resumo por categoria: quantos vigentes, vencendo e vencidos</td></tr>
-                <tr><td><strong>Colaboradores sem documento</strong></td><td>Colaboradores ativos que nao tem nenhum documento no sistema</td></tr>
-                <tr><td><strong>Aprovacoes Pendentes</strong></td><td>Documentos que precisam ser revisados e aprovados pelo SESMT</td></tr>
+                <tr><td><strong>Colaboradores sem documento</strong></td><td>Colaboradores ativos que não tem nenhum documento no sistema</td></tr>
+                <tr><td><strong>Aprovações Pendentes</strong></td><td>Documentos que precisam ser revisados e aprovados pelo SESMT</td></tr>
             </table>
 
             <h3>Vencendo esta semana</h3>
-            <p>Abaixo dos cards, aparece uma tabela amarela com todos os documentos e certificados que vencem nos proximos 7 dias. Cada item mostra quantos dias faltam para vencer.</p>
+            <p>Abaixo dos cards, aparece uma tabela amarela com todos os documentos e certificados que vencem nos próximos 7 dias. Cada item mostra quantos dias faltam para vencer.</p>
 
             <div class="box box-important">
                 <strong>Importante:</strong> Se aparecer "0 dias" ou "1 dia", significa que voce precisa agir URGENTEMENTE para renovar o documento ou certificado.
             </div>
 
-            <h3>Graficos</h3>
+            <h3>Gráficos</h3>
             <ul>
-                <li><strong>Distribuicao por Status</strong> - Grafico de pizza mostrando quanto esta vigente, vencendo ou vencido</li>
-                <li><strong>Documentos por Cliente</strong> - Grafico de barras mostrando quantos documentos cada cliente tem</li>
+                <li><strong>Distribuição por Status</strong> - Gráfico de pizza mostrando quanto esta vigente, vencendo ou vencido</li>
+                <li><strong>Documentos por Cliente</strong> - Gráfico de barras mostrando quantos documentos cada cliente tem</li>
             </ul>
         </section>
 
@@ -188,15 +188,15 @@
             <div class="steps">
                 <div class="step"><div class="step-content"><strong>Clique em "Colaboradores" no menu lateral</strong><br>A lista de todos os colaboradores vai aparecer.</div></div>
                 <div class="step"><div class="step-content"><strong>Clique no botao verde "Novo"</strong><br>Fica no canto superior direito da tela.</div></div>
-                <div class="step"><div class="step-content"><strong>Preencha os dados</strong><br>Nome completo (obrigatorio), CPF, cargo, funcao, setor, cliente, obra, data de admissao, etc.</div></div>
-                <div class="step"><div class="step-content"><strong>Clique em "Salvar"</strong><br>O colaborador sera cadastrado e voce vera a pagina dele.</div></div>
+                <div class="step"><div class="step-content"><strong>Preencha os dados</strong><br>Nome completo (obrigatório), CPF, cargo, função, setor, cliente, obra, data de admissao, etc.</div></div>
+                <div class="step"><div class="step-content"><strong>Clique em "Salvar"</strong><br>O colaborador sera cadastrado e voce vera a página dele.</div></div>
             </div>
 
             <h3>Como buscar um colaborador</h3>
-            <p>Na pagina de colaboradores, use o campo de busca no topo. Voce pode digitar o nome ou parte do nome. A lista vai filtrar automaticamente.</p>
+            <p>Na página de colaboradores, use o campo de busca no topo. Voce pode digitar o nome ou parte do nome. A lista vai filtrar automaticamente.</p>
 
             <h3>Como editar</h3>
-            <p>Clique no nome do colaborador para abrir a pagina dele. Depois clique em <strong>"Editar"</strong>. Faca as alteracoes e clique em "Salvar".</p>
+            <p>Clique no nome do colaborador para abrir a página dele. Depois clique em <strong>"Editar"</strong>. Faca as alteracoes e clique em "Salvar".</p>
 
             <h3>Alterar status (Ativo / Inativo)</h3>
             <p>Para mudar um colaborador de ativo para inativo (ou vice-versa), edite o colaborador e mude o campo "Status".</p>
@@ -204,7 +204,7 @@
             <h3>Atualizacao em massa (Bulk Update)</h3>
             <p>Se voce precisa mudar o setor, cargo ou status de varios colaboradores de uma vez:</p>
             <div class="steps">
-                <div class="step"><div class="step-content"><strong>Marque os colaboradores</strong><br>Use as caixas de selecao (checkbox) na coluna da esquerda. Para selecionar todos, clique no checkbox do cabecalho.</div></div>
+                <div class="step"><div class="step-content"><strong>Marque os colaboradores</strong><br>Use as caixas de seleção (checkbox) na coluna da esquerda. Para selecionar todos, clique no checkbox do cabecalho.</div></div>
                 <div class="step"><div class="step-content"><strong>Uma barra verde aparece embaixo</strong><br>Ela mostra quantos estao selecionados.</div></div>
                 <div class="step"><div class="step-content"><strong>Escolha o campo e o valor</strong><br>Selecione "Cargo", "Setor", "Status", etc. e digite o novo valor.</div></div>
                 <div class="step"><div class="step-content"><strong>Clique em "Aplicar"</strong><br>Confirme a acao. Todos os selecionados serao atualizados.</div></div>
@@ -223,17 +223,17 @@
                 <tr><td><strong>ASO Periodico</strong></td><td>Exame feito periodicamente para verificar a saude</td><td>12 meses</td></tr>
                 <tr><td><strong>ASO Demissional</strong></td><td>Exame feito quando o colaborador sai da empresa</td><td>-</td></tr>
                 <tr><td><strong>Ficha de EPI</strong></td><td>Registro de entrega de equipamentos de protecao</td><td>6 meses (padrao) ou 3 meses (Cargill: Uberlandia, Primavera do Leste, Silvania, Vicentinopolis)</td></tr>
-                <tr><td><strong>Ordem de Servico</strong></td><td>Documento com as instrucoes de seguranca da funcao</td><td>-</td></tr>
+                <tr><td><strong>Ordem de Servico</strong></td><td>Documento com as instruções de seguranca da função</td><td>-</td></tr>
                 <tr><td><strong>Treinamentos</strong></td><td>Certificados de NR-10, NR-35, NR-12, etc.</td><td>12-60 meses</td></tr>
             </table>
 
             <h3>Como fazer upload de um documento</h3>
             <div class="steps">
-                <div class="step"><div class="step-content"><strong>Va ate a pagina do colaborador</strong><br>Clique no nome dele na lista.</div></div>
-                <div class="step"><div class="step-content"><strong>Clique em "Novo Documento"</strong><br>Fica na area de documentos da pagina do colaborador.</div></div>
+                <div class="step"><div class="step-content"><strong>Va ate a página do colaborador</strong><br>Clique no nome dele na lista.</div></div>
+                <div class="step"><div class="step-content"><strong>Clique em "Novo Documento"</strong><br>Fica na area de documentos da página do colaborador.</div></div>
                 <div class="step"><div class="step-content"><strong>Selecione o tipo de documento</strong><br>Escolha se e ASO, EPI, Treinamento, etc.</div></div>
-                <div class="step"><div class="step-content"><strong>Escolha o arquivo PDF</strong><br>Clique em "Escolher arquivo" e selecione o PDF do seu computador. Tamanho maximo: 10 MB.</div></div>
-                <div class="step"><div class="step-content"><strong>Preencha a data de emissao</strong><br>Coloque a data em que o documento foi emitido.</div></div>
+                <div class="step"><div class="step-content"><strong>Escolha o arquivo PDF</strong><br>Clique em "Escolher arquivo" e selecione o PDF do seu computador. Tamanho máximo: 10 MB.</div></div>
+                <div class="step"><div class="step-content"><strong>Preencha a data de emissão</strong><br>Coloque a data em que o documento foi emitido.</div></div>
                 <div class="step"><div class="step-content"><strong>Clique em "Enviar"</strong><br>O documento sera guardado e a validade calculada automaticamente.</div></div>
             </div>
 
@@ -241,15 +241,15 @@
             <table class="manual-table">
                 <tr><th>Status</th><th>Cor</th><th>Significado</th></tr>
                 <tr><td>Vigente</td><td style="color:#4caf50; font-weight:bold;">Verde</td><td>Dentro da validade, tudo certo</td></tr>
-                <tr><td>Proximo vencimento</td><td style="color:#ff9800; font-weight:bold;">Amarelo</td><td>Vai vencer em menos de 30 dias</td></tr>
+                <tr><td>Próximo vencimento</td><td style="color:#ff9800; font-weight:bold;">Amarelo</td><td>Vai vencer em menos de 30 dias</td></tr>
                 <tr><td>Vencido</td><td style="color:#e53935; font-weight:bold;">Vermelho</td><td>Ja passou da validade, precisa renovar</td></tr>
             </table>
 
-            <h3>Aprovacao de documentos</h3>
-            <p>Documentos importados precisam ser aprovados pelo SESMT. Na pagina do colaborador, voce vera botoes "Aprovar" e "Rejeitar" ao lado de cada documento pendente.</p>
+            <h3>Aprovação de documentos</h3>
+            <p>Documentos importados precisam ser aprovados pelo SESMT. Na página do colaborador, voce vera botoes "Aprovar" e "Rejeitar" ao lado de cada documento pendente.</p>
 
-            <h3>Editar data de emissao</h3>
-            <p>Se o sistema detectou a data errada (OCR), voce pode corrigir. Na pagina do colaborador, clique no icone de edicao ao lado da data de emissao do documento.</p>
+            <h3>Editar data de emissão</h3>
+            <p>Se o sistema detectou a data errada (OCR), voce pode corrigir. Na página do colaborador, clique no icone de edição ao lado da data de emissão do documento.</p>
         </section>
 
         <!-- 6. CERTIFICADOS -->
@@ -259,7 +259,7 @@
 
             <h3>Como emitir um certificado individual</h3>
             <div class="steps">
-                <div class="step"><div class="step-content"><strong>Clique em "Certificados" no menu</strong><br>A pagina de certificados vai abrir.</div></div>
+                <div class="step"><div class="step-content"><strong>Clique em "Certificados" no menu</strong><br>A página de certificados vai abrir.</div></div>
                 <div class="step"><div class="step-content"><strong>Clique em "Emitir Certificado"</strong><br>Escolha o colaborador.</div></div>
                 <div class="step"><div class="step-content"><strong>Selecione o tipo de certificado</strong><br>NR-10, NR-35, NR-12, etc.</div></div>
                 <div class="step"><div class="step-content"><strong>Preencha as datas</strong><br>Data de realizacao do treinamento.</div></div>
@@ -267,7 +267,7 @@
             </div>
 
             <div class="box box-tip">
-                <strong>Dica:</strong> Para emitir certificados para VARIOS colaboradores de uma vez, use a funcao de <strong>Treinamentos</strong> (secao 7).
+                <strong>Dica:</strong> Para emitir certificados para VARIOS colaboradores de uma vez, use a função de <strong>Treinamentos</strong> (seção 7).
             </div>
 
             <h3>Visualizar e imprimir</h3>
@@ -277,13 +277,13 @@
         <!-- 7. TREINAMENTOS -->
         <section id="treinamentos" class="manual-section">
             <h2>7. Treinamentos</h2>
-            <p>A funcao de treinamentos permite registrar um treinamento com VARIOS participantes de uma vez. O sistema gera certificados para todos automaticamente.</p>
+            <p>A função de treinamentos permite registrar um treinamento com VARIOS participantes de uma vez. O sistema gera certificados para todos automaticamente.</p>
 
             <h3>Como registrar um treinamento</h3>
             <div class="steps">
                 <div class="step"><div class="step-content"><strong>Clique em "Treinamentos" no menu</strong></div></div>
                 <div class="step"><div class="step-content"><strong>Clique em "Novo Treinamento"</strong></div></div>
-                <div class="step"><div class="step-content"><strong>Selecione o tipo</strong><br>Exemplo: NR-10 Basico, NR-35, NR-12, etc.</div></div>
+                <div class="step"><div class="step-content"><strong>Selecione o tipo</strong><br>Exemplo: NR-10 Básico, NR-35, NR-12, etc.</div></div>
                 <div class="step"><div class="step-content"><strong>Selecione o ministrante</strong><br>Quem vai ministrar o treinamento.</div></div>
                 <div class="step"><div class="step-content"><strong>Preencha as datas</strong><br>Data de inicio e fim do treinamento.</div></div>
                 <div class="step"><div class="step-content"><strong>Marque os participantes</strong><br>Marque todos os colaboradores que participaram. Use a busca para encontrar rapidamente.</div></div>
@@ -291,19 +291,19 @@
             </div>
 
             <h3>Lista de Presenca</h3>
-            <p>Na pagina do treinamento, clique em <strong>"Lista de Presenca"</strong>. Uma pagina formatada para impressao vai abrir com todos os nomes, cargos e campo de assinatura.</p>
+            <p>Na página do treinamento, clique em <strong>"Lista de Presenca"</strong>. Uma página formatada para impressão vai abrir com todos os nomes, cargos e campo de assinatura.</p>
 
             <h3>Calendario</h3>
-            <p>Clique em <strong>"Calendario"</strong> na pagina de treinamentos para ver uma visao mensal de todos os treinamentos realizados. Voce pode navegar entre meses.</p>
+            <p>Clique em <strong>"Calendario"</strong> na página de treinamentos para ver uma visao mensal de todos os treinamentos realizados. Voce pode navegar entre meses.</p>
 
             <h3>Certificados em lote</h3>
-            <p>Na pagina do treinamento, clique em <strong>"Imprimir Todos"</strong> para gerar todos os certificados de uma vez, prontos para impressao.</p>
+            <p>Na página do treinamento, clique em <strong>"Imprimir Todos"</strong> para gerar todos os certificados de uma vez, prontos para impressão.</p>
         </section>
 
         <!-- 8. KIT PJ -->
         <section id="kit-pj" class="manual-section">
             <h2>8. Kit PJ</h2>
-            <p>O Kit PJ e um conjunto de documentos gerados automaticamente para colaboradores de empresas terceirizadas (PJ). Inclui ASO, Pedido de Exames e Ficha Clinica.</p>
+            <p>O Kit PJ e um conjunto de documentos gerados automaticamente para colaboradores de empresas terceirizadas (PJ). Inclui ASO, Pedido de Exames e Ficha Clínica.</p>
 
             <h3>Como gerar um Kit PJ</h3>
             <div class="steps">
@@ -312,16 +312,16 @@
                 <div class="step"><div class="step-content"><strong>Preencha os dados da empresa PJ</strong><br>Razao social, CNPJ e endereco.</div></div>
                 <div class="step"><div class="step-content"><strong>Selecione o colaborador</strong></div></div>
                 <div class="step"><div class="step-content"><strong>Escolha o tipo de ASO</strong><br>Admissional, Periodico, Demissional, etc.</div></div>
-                <div class="step"><div class="step-content"><strong>Marque os exames necessarios</strong><br>Exame Clinico, Audiometria, Acuidade Visual, etc.</div></div>
-                <div class="step"><div class="step-content"><strong>Marque as aptidoes</strong><br>Apto para funcao, Trabalho em Altura, etc.</div></div>
-                <div class="step"><div class="step-content"><strong>Clique em "Gerar Kit PJ"</strong><br>O sistema gera 3 paginas prontas para impressao: ASO + Pedido de Exames + Ficha Clinica.</div></div>
+                <div class="step"><div class="step-content"><strong>Marque os exames necessarios</strong><br>Exame Clínico, Audiometria, Acuidade Visual, etc.</div></div>
+                <div class="step"><div class="step-content"><strong>Marque as aptidoes</strong><br>Apto para função, Trabalho em Altura, etc.</div></div>
+                <div class="step"><div class="step-content"><strong>Clique em "Gerar Kit PJ"</strong><br>O sistema gera 3 páginas prontas para impressão: ASO + Pedido de Exames + Ficha Clínica.</div></div>
             </div>
         </section>
 
         <!-- 9. CLIENTES E OBRAS -->
         <section id="clientes" class="manual-section">
             <h2>9. Clientes e Obras</h2>
-            <p>Cada cliente pode ter uma ou mais obras. O sistema permite cadastrar requisitos de seguranca por cliente (quais documentos e certificados sao obrigatorios).</p>
+            <p>Cada cliente pode ter uma ou mais obras. O sistema permite cadastrar requisitos de seguranca por cliente (quais documentos e certificados sao obrigatórios).</p>
 
             <h3>Cadastrar um cliente</h3>
             <div class="steps">
@@ -332,10 +332,10 @@
             </div>
 
             <h3>Cadastrar uma obra</h3>
-            <p>Na pagina do cliente, clique em <strong>"Nova Obra"</strong>. Preencha o nome da obra, endereco e status.</p>
+            <p>Na página do cliente, clique em <strong>"Nova Obra"</strong>. Preencha o nome da obra, endereco e status.</p>
 
             <h3>Requisitos de seguranca</h3>
-            <p>Na pagina do cliente, voce pode adicionar quais documentos e certificados sao obrigatorios. Exemplo: "NR-10 obrigatorio", "ASO obrigatorio". Isso permite gerar relatorios de conformidade.</p>
+            <p>Na página do cliente, voce pode adicionar quais documentos e certificados sao obrigatórios. Exemplo: "NR-10 obrigatório", "ASO obrigatório". Isso permite gerar relatorios de conformidade.</p>
         </section>
 
         <!-- 10. CHECKLIST PRE-OBRA -->
@@ -355,8 +355,8 @@
 
             <h3>O que e verificado</h3>
             <ul>
-                <li><strong>ASO</strong> — obrigatorio para todos (validade 12 meses)</li>
-                <li><strong>Ficha de EPI</strong> — obrigatorio para todos (validade 3 meses)</li>
+                <li><strong>ASO</strong> — obrigatório para todos (validade 12 meses)</li>
+                <li><strong>Ficha de EPI</strong> — obrigatório para todos (validade 3 meses)</li>
                 <li><strong>Requisitos do cliente</strong> — documentos e certificados extras que o cliente exige</li>
             </ul>
 
@@ -368,36 +368,36 @@
         <!-- 11. AGENDA DE EXAMES -->
         <section id="agenda-exames" class="manual-section">
             <h2>11. Agenda de Exames Periodicos</h2>
-            <p>A agenda mostra quando cada colaborador precisa fazer o proximo ASO (exame periodico). Ajuda a planejar com antecedencia.</p>
+            <p>A agenda mostra quando cada colaborador precisa fazer o próximo ASO (exame periodico). Ajuda a planejar com antecedencia.</p>
 
             <h3>Como funciona</h3>
             <div class="steps">
                 <div class="step"><div class="step-content"><strong>Clique em "Agenda de Exames" no menu</strong></div></div>
-                <div class="step"><div class="step-content"><strong>Veja o resumo dos proximos 12 meses</strong><br>Cards coloridos mostram quantos exames vencem em cada mes. Vermelho = muitos exames.</div></div>
+                <div class="step"><div class="step-content"><strong>Veja o resumo dos próximos 12 meses</strong><br>Cards coloridos mostram quantos exames vencem em cada mes. Vermelho = muitos exames.</div></div>
                 <div class="step"><div class="step-content"><strong>Navegue entre meses</strong><br>Use as setas para ver os exames de cada mes.</div></div>
             </div>
 
-            <h3>Secoes da pagina</h3>
+            <h3>Secoes da página</h3>
             <ul>
-                <li><strong>Cards mensais</strong> — Resumo visual dos proximos 12 meses. Clique em um mes para ver os detalhes.</li>
+                <li><strong>Cards mensais</strong> — Resumo visual dos próximos 12 meses. Clique em um mes para ver os detalhes.</li>
                 <li><strong>ASOs Vencidos</strong> — Lista em vermelho dos colaboradores com ASO ja vencido (acao urgente).</li>
                 <li><strong>Exames do mes</strong> — Lista detalhada de quem precisa fazer exame no mes selecionado.</li>
             </ul>
 
             <div class="box box-warn">
-                <strong>Atencao:</strong> Colaboradores com ASO vencido NAO podem ser enviados para obras. Agende o exame o mais rapido possivel.
+                <strong>Atenção:</strong> Colaboradores com ASO vencido NAO podem ser enviados para obras. Agende o exame o mais rápido possivel.
             </div>
         </section>
 
         <!-- 12. RELATORIOS -->
         <section id="relatorios" class="manual-section">
-            <h2>12. Relatorios</h2>
+            <h2>12. Relatórios</h2>
             <p>O sistema gera relatorios completos que podem ser visualizados na tela ou exportados.</p>
 
-            <h3>Tipos de relatorio</h3>
+            <h3>Tipos de relatório</h3>
             <table class="manual-table">
-                <tr><th>Relatorio</th><th>O que mostra</th></tr>
-                <tr><td><strong>Por Colaborador</strong></td><td>Todos os documentos e certificados de um colaborador especifico</td></tr>
+                <tr><th>Relatório</th><th>O que mostra</th></tr>
+                <tr><td><strong>Por Colaborador</strong></td><td>Todos os documentos e certificados de um colaborador específico</td></tr>
                 <tr><td><strong>Por Cliente</strong></td><td>Resumo de conformidade dos colaboradores vinculados ao cliente</td></tr>
                 <tr><td><strong>Por Obra</strong></td><td>Checklist de cada colaborador: quais requisitos atende e quais faltam</td></tr>
                 <tr><td><strong>Mensal</strong></td><td>Resumo do mes: vencimentos, treinamentos realizados, novos documentos</td></tr>
@@ -412,15 +412,15 @@
             <h3>Como funciona</h3>
             <div class="steps">
                 <div class="step"><div class="step-content"><strong>Va em "Alertas" no menu</strong></div></div>
-                <div class="step"><div class="step-content"><strong>Clique em "Executar Verificacao"</strong><br>O sistema vai checar todos os documentos e certificados.</div></div>
-                <div class="step"><div class="step-content"><strong>Veja os resultados</strong><br>Uma lista mostra o que esta vencido e o que esta proximo do vencimento.</div></div>
+                <div class="step"><div class="step-content"><strong>Clique em "Executar Verificação"</strong><br>O sistema vai checar todos os documentos e certificados.</div></div>
+                <div class="step"><div class="step-content"><strong>Veja os resultados</strong><br>Uma lista mostra o que esta vencido e o que esta próximo do vencimento.</div></div>
                 <div class="step"><div class="step-content"><strong>Enviar emails (opcional)</strong><br>Clique em "Enviar Emails" para notificar os responsaveis.</div></div>
             </div>
         </section>
 
         <!-- 12. EXPORTACAO -->
-        <section id="exportacao" class="manual-section">
-            <h2>14. Exportacao de Dados</h2>
+        <section id="exportação" class="manual-section">
+            <h2>14. Exportação de Dados</h2>
             <p>Voce pode exportar dados do sistema em formato CSV (abre no Excel).</p>
 
             <h3>O que pode exportar</h3>
@@ -431,13 +431,13 @@
             </ul>
 
             <h3>Como exportar</h3>
-            <p>Na pagina de cada modulo (Colaboradores, Documentos ou Certificados), procure o botao <strong>"Exportar CSV"</strong>. Clique e o arquivo sera baixado automaticamente.</p>
+            <p>Na página de cada modulo (Colaboradores, Documentos ou Certificados), procure o botao <strong>"Exportar CSV"</strong>. Clique e o arquivo sera baixado automaticamente.</p>
         </section>
 
         <!-- 13. LIXEIRA -->
         <section id="lixeira" class="manual-section">
             <h2>15. Lixeira</h2>
-            <p>Quando voce exclui um colaborador ou documento, ele nao e apagado de verdade. Ele vai para a lixeira, onde pode ser restaurado.</p>
+            <p>Quando voce exclui um colaborador ou documento, ele não e apagado de verdade. Ele vai para a lixeira, onde pode ser restaurado.</p>
 
             <h3>Como restaurar</h3>
             <div class="steps">
@@ -447,45 +447,45 @@
             </div>
 
             <div class="box box-warn">
-                <strong>Atencao:</strong> A exclusao permanente so pode ser feita por administradores e nao pode ser desfeita.
+                <strong>Atenção:</strong> A exclusão permanente so pode ser feita por administradores e não pode ser desfeita.
             </div>
         </section>
 
         <!-- 14. USUARIOS E PERFIS -->
         <section id="usuarios" class="manual-section">
             <h2>16. Usuarios e Perfis</h2>
-            <p>O sistema tem 3 tipos de usuario, cada um com permissoes diferentes:</p>
+            <p>O sistema tem 3 tipos de usuario, cada um com permissões diferentes:</p>
 
             <table class="manual-table">
                 <tr><th>Perfil</th><th>O que pode fazer</th></tr>
-                <tr><td><strong>Admin</strong></td><td>Acesso TOTAL ao sistema. Pode criar usuarios, acessar configuracoes, lixeira, logs e tudo mais.</td></tr>
-                <tr><td><strong>SESMT</strong></td><td>Acesso operacional. Pode gerenciar colaboradores, documentos, certificados, treinamentos, clientes e relatorios. Nao acessa configuracoes do sistema.</td></tr>
-                <tr><td><strong>RH</strong></td><td>Acesso somente leitura. Pode ver colaboradores e baixar documentos, mas nao pode editar ou excluir nada.</td></tr>
+                <tr><td><strong>Admin</strong></td><td>Acesso TOTAL ao sistema. Pode criar usuarios, acessar configurações, lixeira, logs e tudo mais.</td></tr>
+                <tr><td><strong>SESMT</strong></td><td>Acesso operacional. Pode gerenciar colaboradores, documentos, certificados, treinamentos, clientes e relatorios. Não acessa configurações do sistema.</td></tr>
+                <tr><td><strong>RH</strong></td><td>Acesso somente leitura. Pode ver colaboradores e baixar documentos, mas não pode editar ou excluir nada.</td></tr>
             </table>
 
-            <h3>Sessoes ativas</h3>
-            <p>Em <strong>Usuarios > Sessoes Ativas</strong>, voce pode ver em quais dispositivos sua conta esta logada e encerrar sessoes remotamente.</p>
+            <h3>Sessões ativas</h3>
+            <p>Em <strong>Usuarios > Sessões Ativas</strong>, voce pode ver em quais dispositivos sua conta esta logada e encerrar sessões remotamente.</p>
         </section>
 
         <!-- 15. CONFIGURACOES -->
-        <section id="configuracoes" class="manual-section">
-            <h2>17. Configuracoes (Apenas Admin)</h2>
-            <p>A area de configuracoes permite personalizar o sistema. Apenas administradores tem acesso.</p>
+        <section id="configurações" class="manual-section">
+            <h2>17. Configurações (Apenas Admin)</h2>
+            <p>A area de configurações permite personalizar o sistema. Apenas administradores tem acesso.</p>
 
-            <h3>Abas de configuracao</h3>
+            <h3>Abas de configuração</h3>
             <table class="manual-table">
                 <tr><th>Aba</th><th>O que configura</th></tr>
                 <tr><td><strong>Tipos de Documento</strong></td><td>Quais tipos de documento o sistema aceita (ASO, EPI, etc.), suas categorias e validades padrao</td></tr>
                 <tr><td><strong>Tipos de Certificado</strong></td><td>Quais certificados podem ser emitidos (NR-10, NR-35, etc.), duracao, conteudo programatico e validade. Botao "Ver" mostra preview do certificado.</td></tr>
                 <tr><td><strong>Ministrantes</strong></td><td>Instrutores que ministram os treinamentos, com cargo e registro profissional</td></tr>
-                <tr><td><strong>Configuracao SMTP</strong></td><td>Servidor de email para envio de alertas e notificacoes</td></tr>
+                <tr><td><strong>Configuração SMTP</strong></td><td>Servidor de email para envio de alertas e notificações</td></tr>
             </table>
         </section>
 
         <!-- 18. BACKUP -->
         <section id="backup" class="manual-section">
             <h2>18. Backup (Apenas Admin)</h2>
-            <p>O sistema permite fazer backup do banco de dados de forma manual ou automatica.</p>
+            <p>O sistema permite fazer backup do banco de dados de forma manual ou automática.</p>
 
             <h3>Backup manual</h3>
             <div class="steps">
@@ -494,7 +494,7 @@
                 <div class="step"><div class="step-content"><strong>Baixe o arquivo</strong><br>Clique em "Baixar" ao lado do backup para salvar no seu computador.</div></div>
             </div>
 
-            <h3>Backup automatico</h3>
+            <h3>Backup automático</h3>
             <p>Voce pode configurar para o sistema fazer backup automaticamente todos os dias:</p>
             <div class="steps">
                 <div class="step"><div class="step-content"><strong>Escolha o horario</strong><br>Recomendamos as 02:00 (madrugada).</div></div>
@@ -502,7 +502,7 @@
             </div>
 
             <div class="box box-info">
-                <strong>Informacao:</strong> Backups com mais de 30 dias sao removidos automaticamente. Os arquivos ficam salvos na pasta do OneDrive, entao ja tem uma copia na nuvem.
+                <strong>Informação:</strong> Backups com mais de 30 dias sao removidos automaticamente. Os arquivos ficam salvos na pasta do OneDrive, entao ja tem uma copia na nuvem.
             </div>
         </section>
 
@@ -514,32 +514,32 @@
             <p>Peca para o administrador do sistema resetar sua senha em <strong>Usuarios</strong>. Ele vai gerar uma nova senha temporaria para voce.</p>
 
             <h3>O documento ficou com a data errada. Como corrijo?</h3>
-            <p>Na pagina do colaborador, ao lado do documento, clique no icone de edicao da data de emissao. Coloque a data correta e salve. A validade sera recalculada automaticamente.</p>
+            <p>Na página do colaborador, ao lado do documento, clique no icone de edição da data de emissão. Coloque a data correta e salve. A validade sera recalculada automaticamente.</p>
 
             <h3>Como sei se um colaborador esta com tudo em dia?</h3>
-            <p>Va na pagina do colaborador. Na area de documentos, se tudo estiver verde, esta em dia. Se tiver algo amarelo ou vermelho, precisa renovar. Voce tambem pode gerar um <strong>Relatorio por Colaborador</strong>.</p>
+            <p>Va na página do colaborador. Na area de documentos, se tudo estiver verde, esta em dia. Se tiver algo amarelo ou vermelho, precisa renovar. Voce também pode gerar um <strong>Relatório por Colaborador</strong>.</p>
 
             <h3>Posso usar o sistema no celular?</h3>
             <p>Sim! O sistema funciona em celular e tablet. Abra o navegador do celular e acesse o mesmo endereco.</p>
 
             <h3>Como imprimo varios certificados de uma vez?</h3>
-            <p>Use a funcao de <strong>Treinamentos</strong>. Registre o treinamento com todos os participantes, e depois clique em "Imprimir Todos" ou "Baixar ZIP".</p>
+            <p>Use a função de <strong>Treinamentos</strong>. Registre o treinamento com todos os participantes, e depois clique em "Imprimir Todos" ou "Baixar ZIP".</p>
 
             <h3>O que acontece quando um documento vence?</h3>
             <p>O status muda para vermelho ("Vencido") automaticamente. O sistema vai mostrar o alerta no Dashboard e pode enviar email se o SMTP estiver configurado.</p>
 
             <h3>Excluir um colaborador apaga todos os documentos dele?</h3>
-            <p>Nao! O colaborador vai para a <strong>Lixeira</strong> e pode ser restaurado. Os documentos continuam vinculados a ele.</p>
+            <p>Não! O colaborador vai para a <strong>Lixeira</strong> e pode ser restaurado. Os documentos continuam vinculados a ele.</p>
 
-            <h3>Qual o tamanho maximo de arquivo que posso enviar?</h3>
+            <h3>Qual o tamanho máximo de arquivo que posso enviar?</h3>
             <p>O limite e de <strong>10 MB por arquivo</strong>. Apenas arquivos PDF sao aceitos.</p>
 
-            <h3>O sistema salva o historico de alteracoes?</h3>
-            <p>Sim! Toda alteracao e registrada com quem fez, quando fez e o que mudou. O administrador pode ver os <strong>Logs</strong> no menu lateral.</p>
+            <h3>O sistema salva o histórico de alteracoes?</h3>
+            <p>Sim! Toda alteração e registrada com quem fez, quando fez e o que mudou. O administrador pode ver os <strong>Logs</strong> no menu lateral.</p>
         </section>
 
         <div style="margin-top:60px; padding:20px; background:#005e4e; color:white; border-radius:8px; text-align:center;">
-            <p style="margin:0; font-size:14px;">Manual de Operacao - SESMT TSE Energia e Automacao Industrial</p>
+            <p style="margin:0; font-size:14px;">Manual de Operação - SESMT TSE Energia e Automacao Industrial</p>
             <p style="margin:4px 0 0; font-size:12px; opacity:0.7;">Versao 1.0 - Atualizado em <?= date('d/m/Y') ?></p>
         </div>
     </main>

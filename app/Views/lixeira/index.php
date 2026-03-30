@@ -49,7 +49,7 @@
                     </form>
                     <form method="POST" action="/lixeira/colaborador/<?= $c['id'] ?>/excluir" style="display:inline;">
                         <?= \App\Core\View::csrfField() ?>
-                        <button type="submit" class="btn btn-danger btn-sm" data-confirm="Excluir PERMANENTEMENTE este colaborador? Esta acao nao pode ser desfeita.">Excluir Permanente</button>
+                        <button type="submit" class="btn btn-danger btn-sm" data-confirm="Excluir PERMANENTEMENTE este colaborador? Esta acao não pode ser desfeita.">Excluir Permanente</button>
                     </form>
                 </td>
             </tr>
@@ -92,7 +92,7 @@
                     </form>
                     <form method="POST" action="/lixeira/documento/<?= $d['id'] ?>/excluir" style="display:inline;">
                         <?= \App\Core\View::csrfField() ?>
-                        <button type="submit" class="btn btn-danger btn-sm" data-confirm="Excluir PERMANENTEMENTE este documento? O arquivo fisico tambem sera removido.">Excluir Permanente</button>
+                        <button type="submit" class="btn btn-danger btn-sm" data-confirm="Excluir PERMANENTEMENTE este documento? O arquivo fisico também sera removido.">Excluir Permanente</button>
                     </form>
                 </td>
             </tr>
@@ -111,8 +111,8 @@
     <table>
         <thead>
             <tr>
-                <th>Codigo</th>
-                <th>Titulo</th>
+                <th>Código</th>
+                <th>Título</th>
                 <th>Colaborador</th>
                 <th>Excluido em</th>
                 <th>Acoes</th>
@@ -135,7 +135,7 @@
                     </form>
                     <form method="POST" action="/lixeira/certificado/<?= $cert['id'] ?>/excluir" style="display:inline;">
                         <?= \App\Core\View::csrfField() ?>
-                        <button type="submit" class="btn btn-danger btn-sm" data-confirm="Excluir PERMANENTEMENTE este certificado? Esta acao nao pode ser desfeita.">Excluir Permanente</button>
+                        <button type="submit" class="btn btn-danger btn-sm" data-confirm="Excluir PERMANENTEMENTE este certificado? Esta acao não pode ser desfeita.">Excluir Permanente</button>
                     </form>
                 </td>
             </tr>

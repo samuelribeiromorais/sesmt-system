@@ -71,9 +71,9 @@
                 <span>Alertas</span>
             </a>
 
-            <a href="/relatorios" class="nav-item <?= ($pageTitle ?? '') === 'Relatorios' ? 'active' : '' ?>">
+            <a href="/relatorios" class="nav-item <?= ($pageTitle ?? '') === 'Relatórios' ? 'active' : '' ?>">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                <span>Relatorios</span>
+                <span>Relatórios</span>
             </a>
 
             <div class="nav-divider"></div>
@@ -104,9 +104,9 @@
                 <span>Backup</span>
             </a>
 
-            <a href="/configuracoes" class="nav-item <?= ($pageTitle ?? '') === 'Configuracoes' ? 'active' : '' ?>">
+            <a href="/configuracoes" class="nav-item <?= ($pageTitle ?? '') === 'Configurações' ? 'active' : '' ?>">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                <span>Configuracoes</span>
+                <span>Configurações</span>
             </a>
             <?php endif; ?>
             <?php endif; ?>
@@ -114,7 +114,7 @@
 
         <a href="/manual" target="_blank" style="display:block; margin:0 12px 8px; padding:8px 12px; background:rgba(175,216,90,0.15); color:#afd85a; border:1px solid rgba(175,216,90,0.3); border-radius:6px; text-align:center; text-decoration:none; font-size:12px; font-weight:600;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px; margin-right:4px;"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-            Manual de Operacao
+            Manual de Operação
         </a>
         <div class="sidebar-footer">
             <div class="user-info">

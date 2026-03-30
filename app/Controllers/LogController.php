@@ -51,7 +51,7 @@ class LogController extends Controller
 
         $out = fopen('php://output', 'w');
         fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF)); // BOM UTF-8
-        fputcsv($out, ['Data/Hora', 'Usuario', 'Email', 'Acao', 'Descricao', 'IP'], ';');
+        fputcsv($out, ['Data/Hora', 'Usuario', 'Email', 'Acao', 'Descrição', 'IP'], ';');
 
         foreach ($logs as $log) {
             fputcsv($out, [

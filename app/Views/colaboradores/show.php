@@ -104,7 +104,7 @@ function statusSemaforo($status) {
             <?php endif; ?>
         </div>
         <table>
-            <thead><tr><th>Tipo</th><th>Emissao</th><th>Validade</th><th style="text-align:center;">Aprovacao</th><th>Acoes</th></tr></thead>
+            <thead><tr><th>Tipo</th><th>Emissão</th><th>Validade</th><th style="text-align:center;">Aprovação</th><th>Acoes</th></tr></thead>
             <tbody>
                 <?php if (empty($documentos)): ?>
                 <tr><td colspan="5" style="text-align:center;color:var(--c-gray);">Nenhum documento</td></tr>
@@ -119,16 +119,16 @@ function statusSemaforo($status) {
                         <?php endif; ?>
                     </td>
                     <td style="font-size:13px;">
-                        <span id="emissao-show-<?= $doc['id'] ?>">
+                        <span id="emissão-show-<?= $doc['id'] ?>">
                             <?= $doc['data_emissao'] ? date('d/m/Y', strtotime($doc['data_emissao'])) : '-' ?>
                             <?php if (!$isReadOnly): ?>
                             <button type="button" onclick="editEmissaoInline(<?= $doc['id'] ?>, '<?= $doc['data_emissao'] ?>')" class="btn btn-outline btn-sm" style="padding:1px 5px; font-size:10px; margin-left:4px;" title="Editar emissao">✎</button>
                             <?php endif; ?>
                         </span>
-                        <span id="emissao-form-<?= $doc['id'] ?>" style="display:none;">
+                        <span id="emissão-form-<?= $doc['id'] ?>" style="display:none;">
                             <form method="POST" action="/documentos/<?= $doc['id'] ?>/atualizar-emissao" style="display:inline-flex; align-items:center; gap:4px;">
                                 <?= \App\Core\View::csrfField() ?>
-                                <input type="date" name="data_emissao" id="emissao-input-<?= $doc['id'] ?>" value="<?= $doc['data_emissao'] ?>" class="form-input" style="padding:2px 6px; font-size:12px; width:140px;" required>
+                                <input type="date" name="data_emissao" id="emissão-input-<?= $doc['id'] ?>" value="<?= $doc['data_emissao'] ?>" class="form-input" style="padding:2px 6px; font-size:12px; width:140px;" required>
                                 <button type="submit" class="btn btn-primary btn-sm" style="padding:1px 6px; font-size:10px;">✓</button>
                                 <button type="button" onclick="cancelEmissaoInline(<?= $doc['id'] ?>)" class="btn btn-outline btn-sm" style="padding:1px 6px; font-size:10px;">✗</button>
                             </form>
@@ -213,7 +213,7 @@ function statusSemaforo($status) {
     <div style="padding:20px; display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
         <div><strong>CPF:</strong> <?= htmlspecialchars($cpfDisplay) ?></div>
         <div><strong>Matricula:</strong> <?= htmlspecialchars($colab['matricula'] ?? '-') ?></div>
-        <div><strong>Funcao:</strong> <?= htmlspecialchars($colab['funcao'] ?? '-') ?></div>
+        <div><strong>Função:</strong> <?= htmlspecialchars($colab['funcao'] ?? '-') ?></div>
         <div><strong>Setor:</strong> <?= htmlspecialchars($colab['setor'] ?? '-') ?></div>
         <div><strong>Unidade:</strong> <?= htmlspecialchars($colab['unidade'] ?? '-') ?></div>
         <div><strong>Admissao:</strong> <?= $colab['data_admissao'] ? date('d/m/Y', strtotime($colab['data_admissao'])) : '-' ?></div>
@@ -230,7 +230,7 @@ function statusSemaforo($status) {
 <?php if (!empty($historico)): ?>
 <div class="table-container" style="margin-top:24px;">
     <div class="table-header">
-        <span class="table-title">Historico de Atividades</span>
+        <span class="table-title">Histórico de Atividades</span>
     </div>
     <div style="padding:20px;">
         <?php foreach ($historico as $h): ?>
@@ -251,14 +251,14 @@ function statusSemaforo($status) {
 
 <script>
 function editEmissaoInline(docId, currentDate) {
-    document.getElementById('emissao-show-' + docId).style.display = 'none';
-    document.getElementById('emissao-form-' + docId).style.display = 'inline';
-    document.getElementById('emissao-input-' + docId).value = currentDate;
-    document.getElementById('emissao-input-' + docId).focus();
+    document.getElementById('emissão-show-' + docId).style.display = 'none';
+    document.getElementById('emissão-form-' + docId).style.display = 'inline';
+    document.getElementById('emissão-input-' + docId).value = currentDate;
+    document.getElementById('emissão-input-' + docId).focus();
 }
 function cancelEmissaoInline(docId) {
-    document.getElementById('emissao-form-' + docId).style.display = 'none';
-    document.getElementById('emissao-show-' + docId).style.display = 'inline';
+    document.getElementById('emissão-form-' + docId).style.display = 'none';
+    document.getElementById('emissão-show-' + docId).style.display = 'inline';
 }
 
 function viewPdf(docId, filename) {

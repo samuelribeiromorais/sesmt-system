@@ -129,7 +129,7 @@ class AuthController extends Controller
         $totp = new TotpService();
         $decryptedSecret = CryptoService::decrypt($user['totp_secret']);
         if (!$totp->verify($decryptedSecret, $code)) {
-            LoggerMiddleware::log('2fa_falha', "Codigo 2FA invalido para: {$user['email']}");
+            LoggerMiddleware::log('2fa_falha', "Código 2FA inválido para: {$user['email']}");
             $this->redirect('/login/2fa?error=invalid');
         }
 

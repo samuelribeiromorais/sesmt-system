@@ -1,13 +1,13 @@
 <div class="card">
     <div class="card-header">
-        <h2>Autenticacao em Duas Etapas (2FA)</h2>
+        <h2>Autenticação em Duas Etapas (2FA)</h2>
     </div>
     <div class="card-body">
 
         <?php if (!empty($totp_ativo)): ?>
             <!-- 2FA já ativo -->
             <div class="alert alert-success" style="margin-bottom:20px;">
-                A autenticacao em duas etapas esta <strong>ativada</strong> para sua conta.
+                A autenticação em duas etapas esta <strong>ativada</strong> para sua conta.
             </div>
 
             <form method="POST" action="/usuarios/2fa/desativar">
@@ -21,13 +21,13 @@
         <?php else: ?>
             <!-- Configurar 2FA -->
             <p style="margin-bottom:16px;">
-                Para ativar a autenticacao em duas etapas, siga os passos abaixo:
+                Para ativar a autenticação em duas etapas, siga os passos abaixo:
             </p>
 
             <div style="margin-bottom:24px;">
                 <h3 style="margin-bottom:8px;">1. Escaneie o QR Code</h3>
                 <p style="font-size:13px; color:#666; margin-bottom:12px;">
-                    Abra seu aplicativo autenticador (Google Authenticator, Authy, etc.) e escaneie o codigo abaixo
+                    Abra seu aplicativo autenticador (Google Authenticator, Authy, etc.) e escaneie o código abaixo
                     ou copie a chave manualmente.
                 </p>
 
@@ -46,9 +46,9 @@
             </div>
 
             <div>
-                <h3 style="margin-bottom:8px;">2. Confirme o codigo</h3>
+                <h3 style="margin-bottom:8px;">2. Confirme o código</h3>
                 <p style="font-size:13px; color:#666; margin-bottom:12px;">
-                    Digite o codigo de 6 digitos exibido no aplicativo para confirmar a configuracao.
+                    Digite o código de 6 digitos exibido no aplicativo para confirmar a configuração.
                 </p>
 
                 <form method="POST" action="/usuarios/2fa/ativar">

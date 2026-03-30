@@ -43,7 +43,7 @@
             <div style="font-size:14px; font-weight:600;"><?= htmlspecialchars($treinamento['criador_nome'] ?? '-') ?></div>
         </div>
         <div>
-            <small style="color:#6b7280;">Data de Emissao</small>
+            <small style="color:#6b7280;">Data de Emissão</small>
             <div style="font-size:14px; font-weight:600;"><?= date('d/m/Y', strtotime($treinamento['data_emissao'])) ?></div>
         </div>
         <?php if ($treinamento['observacoes']): ?>
@@ -65,7 +65,7 @@
             <tr>
                 <th>#</th>
                 <th>Nome</th>
-                <th>Cargo / Funcao</th>
+                <th>Cargo / Função</th>
                 <th>Setor</th>
                 <th style="text-align:center;">Status</th>
                 <th style="text-align:center;">Validade</th>
@@ -161,7 +161,7 @@ function getParticipanteData(colabId) {
     return {
         nome: p.nome,
         cpf: p.cpf,
-        funcao: p.funcao,
+        função: p.função,
         cargo: p.cargo,
         data_admissao: p.data_admissao,
         data_realizacao: TREINAMENTO.data_realizacao,
@@ -216,7 +216,7 @@ async function baixarTodosZip() {
     for (let i = 0; i < total; i++) {
         const p = PARTICIPANTES[i];
         const colabData = {
-            nome: p.nome, cpf: p.cpf, funcao: p.funcao, cargo: p.cargo,
+            nome: p.nome, cpf: p.cpf, função: p.função, cargo: p.cargo,
             data_admissao: p.data_admissao,
             data_realizacao: TREINAMENTO.data_realizacao,
             data_realizacao_fim: TREINAMENTO.data_realizacao_fim,

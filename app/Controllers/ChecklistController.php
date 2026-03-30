@@ -48,7 +48,7 @@ class ChecklistController extends Controller
         $obra = $stmt->fetch(\PDO::FETCH_ASSOC);
 
         if (!$obra) {
-            $this->flash('error', 'Obra nao encontrada.');
+            $this->flash('error', 'Obra não encontrada.');
             $this->redirect('/checklist');
             return;
         }

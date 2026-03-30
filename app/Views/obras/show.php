@@ -29,7 +29,7 @@ $statusClass = match($obra['status']) {
         </p>
     </div>
     <div style="display:flex; gap:8px;">
-        <a href="/relatorios/obra/<?= $obra['id'] ?>" class="btn btn-outline btn-sm">Relatorio</a>
+        <a href="/relatorios/obra/<?= $obra['id'] ?>" class="btn btn-outline btn-sm">Relatório</a>
         <a href="/obras/<?= $obra['id'] ?>/editar" class="btn btn-outline btn-sm">Editar</a>
         <?php if ($totalColabs > 0): ?>
         <a href="/obras/<?= $obra['id'] ?>/download-zip" class="btn btn-primary btn-sm" onclick="return confirm('Baixar documentos de <?= $totalColabs ?> colaborador(es) em ZIP?');">
@@ -51,7 +51,7 @@ $statusClass = match($obra['status']) {
     </div>
     <div class="card" style="padding:20px; text-align:center;">
         <div style="font-size:32px; font-weight:700; color:#f39c12;"><?= $totalAtencao ?></div>
-        <div style="color:var(--c-gray); font-size:13px;">Proximos do Vencimento</div>
+        <div style="color:var(--c-gray); font-size:13px;">Próximos do Vencimento</div>
     </div>
     <div class="card" style="padding:20px; text-align:center;">
         <div style="font-size:32px; font-weight:700; color:#e74c3c;"><?= $totalIrregular ?></div>
@@ -68,7 +68,7 @@ $statusClass = match($obra['status']) {
             <select id="filtro-status" class="form-control" style="width:160px; height:34px;">
                 <option value="">Todos</option>
                 <option value="regular">Regulares</option>
-                <option value="atencao">Proximos Venc.</option>
+                <option value="atenção">Próximos Venc.</option>
                 <option value="irregular">Irregulares</option>
             </select>
         </div>
@@ -142,12 +142,12 @@ $statusClass = match($obra['status']) {
                 <?php
                 $confColor = match($c['conformidade']) {
                     'regular' => 'ativo',
-                    'atencao' => 'afastado',
+                    'atenção' => 'afastado',
                     'irregular' => 'inativo',
                 };
                 $confLabel = match($c['conformidade']) {
                     'regular' => 'Regular',
-                    'atencao' => 'Atencao',
+                    'atenção' => 'Atenção',
                     'irregular' => 'Irregular',
                 };
                 ?>

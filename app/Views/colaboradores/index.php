@@ -129,7 +129,7 @@
         <select name="campo" id="bulkCampo" style="padding:6px 10px; border-radius:4px; border:none; font-size:13px;" required>
             <option value="">-- Campo --</option>
             <option value="cargo">Cargo</option>
-            <option value="funcao">Funcao</option>
+            <option value="função">Função</option>
             <option value="setor">Setor</option>
             <option value="status">Status</option>
             <option value="unidade">Unidade</option>

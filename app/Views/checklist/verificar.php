@@ -19,7 +19,7 @@
     </div>
     <div class="stat-card" style="border-left-color:#e53935;">
         <div class="stat-number" style="color:#e53935;"><?= $totalNok ?></div>
-        <div class="stat-label">Nao Conformes</div>
+        <div class="stat-label">Não Conformes</div>
     </div>
     <div class="stat-card" style="border-left-color:<?= $pctOk >= 80 ? '#4caf50' : ($pctOk >= 50 ? '#ff9800' : '#e53935') ?>;">
         <div class="stat-number"><?= $pctOk ?>%</div>
@@ -29,7 +29,7 @@
 
 <?php if ($totalNok > 0): ?>
 <div style="background:#fce4ec; border-left:5px solid #e53935; padding:12px 16px; border-radius:6px; margin-bottom:24px; font-size:14px;">
-    <strong style="color:#e53935;">Atencao:</strong> <?= $totalNok ?> colaborador(es) NAO estao com a documentacao completa para esta obra. Verifique os itens em vermelho abaixo.
+    <strong style="color:#e53935;">Atenção:</strong> <?= $totalNok ?> colaborador(es) NAO estao com a documentacao completa para esta obra. Verifique os itens em vermelho abaixo.
 </div>
 <?php else: ?>
 <div style="background:#e8f5e9; border-left:5px solid #4caf50; padding:12px 16px; border-radius:6px; margin-bottom:24px; font-size:14px;">
@@ -65,7 +65,7 @@
                 </td>
                 <td style="text-align:center;">
                     <?php if ($r['aso']['ok']): ?>
-                        <span title="Valido ate <?= $r['aso']['validade'] ? date('d/m/Y', strtotime($r['aso']['validade'])) : '' ?>" style="color:#4caf50; font-size:18px; cursor:help;">&#10003;</span>
+                        <span title="Válido ate <?= $r['aso']['validade'] ? date('d/m/Y', strtotime($r['aso']['validade'])) : '' ?>" style="color:#4caf50; font-size:18px; cursor:help;">&#10003;</span>
                     <?php elseif ($r['aso']['status'] === 'ausente'): ?>
                         <span title="Sem ASO" style="color:#e53935; font-size:16px; cursor:help;">&#10007;</span>
                     <?php elseif ($r['aso']['status'] === 'proximo_vencimento'): ?>
