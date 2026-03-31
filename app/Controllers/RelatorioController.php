@@ -305,6 +305,84 @@ class RelatorioController extends Controller
         ]);
     }
 
+    public function vencidos(): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $db = Database::getInstance();
+        $tipoId = (int)($this->input('tipo_documento_id') ?: 0);
+        $categoria = $this->input('categoria', '');
+
+        // Tipos de documento para filtro
+        $stmt = $db->query("SELECT id, nome, categoria FROM tipos_documento ORDER BY nome ASC");
+        $tiposDocumento = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        // Documentos vencidos
+        $whereDoc = "WHERE d.status = 'vencido' AND d.excluido_em IS NULL";
+        $paramsDoc = [];
+        if ($tipoId) {
+            $whereDoc .= " AND d.tipo_documento_id = :tid";
+            $paramsDoc['tid'] = $tipoId;
+        }
+        if ($categoria) {
+            $whereDoc .= " AND td.categoria = :cat";
+            $paramsDoc['cat'] = $categoria;
+        }
+        $stmt = $db->prepare(
+            "SELECT d.id, d.data_emissao, d.data_validade,
+                    DATEDIFF(CURDATE(), d.data_validade) AS dias_vencido,
+                    c.nome_completo, c.cargo, c.setor,
+                    td.nome AS tipo_nome, td.categoria
+             FROM documentos d
+             JOIN colaboradores c ON d.colaborador_id = c.id
+             LEFT JOIN tipos_documento td ON d.tipo_documento_id = td.id
+             {$whereDoc}
+             ORDER BY td.nome ASC, dias_vencido DESC
+             LIMIT 1000"
+        );
+        $stmt->execute($paramsDoc);
+        $documentosVencidos = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        // Certificados vencidos
+        $stmt = $db->prepare(
+            "SELECT cert.id, cert.data_realizacao, cert.data_validade,
+                    DATEDIFF(CURDATE(), cert.data_validade) AS dias_vencido,
+                    c.nome_completo, c.cargo, c.setor,
+                    tc.codigo AS tipo_codigo, tc.titulo AS tipo_titulo
+             FROM certificados cert
+             JOIN colaboradores c ON cert.colaborador_id = c.id
+             LEFT JOIN tipos_certificado tc ON cert.tipo_certificado_id = tc.id
+             WHERE cert.status = 'vencido'
+             ORDER BY tc.titulo ASC, dias_vencido DESC
+             LIMIT 500"
+        );
+        $stmt->execute();
+        $certificadosVencidos = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        // Resumo por tipo de documento
+        $stmt = $db->query(
+            "SELECT td.nome AS tipo_nome, td.categoria, COUNT(*) AS total
+             FROM documentos d
+             LEFT JOIN tipos_documento td ON d.tipo_documento_id = td.id
+             WHERE d.status = 'vencido' AND d.excluido_em IS NULL
+             GROUP BY d.tipo_documento_id
+             ORDER BY total DESC"
+        );
+        $resumoPorTipo = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        LoggerMiddleware::log('relatório', 'Relatório de vencidos visualizado.');
+
+        $this->view('relatorios/vencidos', [
+            'documentosVencidos'  => $documentosVencidos,
+            'certificadosVencidos'=> $certificadosVencidos,
+            'resumoPorTipo'       => $resumoPorTipo,
+            'tiposDocumento'      => $tiposDocumento,
+            'tipoId'              => $tipoId,
+            'categoria'           => $categoria,
+            'pageTitle'           => 'Documentos Vencidos',
+        ]);
+    }
+
     public function porColaborador(string $id): void
     {
         RoleMiddleware::requireAdminOrSesmt();

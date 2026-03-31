@@ -6,6 +6,21 @@ $nomesMes = ['01'=>'Janeiro','02'=>'Fevereiro','03'=>'Março','04'=>'Abril','05'
 $nomeMesAtual = $nomesMes[$mesAtual];
 ?>
 
+<!-- Destaque: Documentos Vencidos -->
+<div class="table-container" style="margin-bottom:24px; border-left:4px solid #dc2626;">
+    <div style="padding:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+        <div>
+            <div style="font-size:16px; font-weight:700; color:#dc2626; margin-bottom:4px;">Documentos e Certificados Vencidos</div>
+            <p style="color:var(--c-gray); font-size:14px; margin:0;">
+                Visão completa de tudo que está com validade expirada, agrupado por tipo de documento.
+            </p>
+        </div>
+        <a href="/relatorios/vencidos" class="btn btn-primary" style="background:#dc2626; border-color:#dc2626; white-space:nowrap;">
+            Ver Vencidos
+        </a>
+    </div>
+</div>
+
 <!-- Linha 1: Colaborador + Cliente -->
 <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px;">
     <div class="table-container">
