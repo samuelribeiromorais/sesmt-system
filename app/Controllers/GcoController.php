@@ -12,7 +12,7 @@ class GcoController extends Controller
 {
     public function index(): void
     {
-        RoleMiddleware::requireAdmin();
+        RoleMiddleware::requireAdminOrSesmt();
 
         $db = Database::getInstance();
 
@@ -50,7 +50,7 @@ class GcoController extends Controller
 
     public function sincronizar(): void
     {
-        RoleMiddleware::requireAdmin();
+        RoleMiddleware::requireAdminOrSesmt();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/gco');
