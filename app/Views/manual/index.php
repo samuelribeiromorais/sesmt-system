@@ -90,7 +90,8 @@
         <a href="#usuarios"><span class="num">16</span> Usuarios e Perfis</a>
         <a href="#configurações"><span class="num">17</span> Configurações</a>
         <a href="#backup"><span class="num">18</span> Backup</a>
-        <a href="#faq"><span class="num">19</span> Perguntas Frequentes</a>
+        <a href="#gco"><span class="num">19</span> Integração GCO</a>
+        <a href="#faq"><span class="num">20</span> Perguntas Frequentes</a>
         <a href="/login" class="back-btn">Ir para o Sistema</a>
     </nav>
 
@@ -208,6 +209,17 @@
                 <div class="step"><div class="step-content"><strong>Uma barra verde aparece embaixo</strong><br>Ela mostra quantos estao selecionados.</div></div>
                 <div class="step"><div class="step-content"><strong>Escolha o campo e o valor</strong><br>Selecione "Cargo", "Setor", "Status", etc. e digite o novo valor.</div></div>
                 <div class="step"><div class="step-content"><strong>Clique em "Aplicar"</strong><br>Confirme a acao. Todos os selecionados serao atualizados.</div></div>
+            </div>
+
+            <h3>WhatsApp do colaborador</h3>
+            <p>Na ficha de cada colaborador voce pode ver um botao verde de WhatsApp para contato rapido. O numero pode vir de duas fontes:</p>
+            <table class="manual-table">
+                <tr><th>Origem</th><th>Como funciona</th></tr>
+                <tr><td><strong>GCO (automatico)</strong></td><td>Se o colaborador tem celular cadastrado no sistema GCO, ele aparece automaticamente com a badge "Via GCO"</td></tr>
+                <tr><td><strong>Manual (SESMT)</strong></td><td>Se nao veio do GCO, o usuario SESMT pode adicionar o numero manualmente. Clique em <strong>"+ Adicionar WhatsApp"</strong> na ficha do colaborador</td></tr>
+            </table>
+            <div class="box box-info">
+                <strong>Importante:</strong> O numero inserido manualmente pelo SESMT nunca e sobrescrito pela sincronizacao do GCO. Os dois campos sao independentes. O sistema usa o numero do GCO como prioridade; se nao existir, usa o manual.
             </div>
         </section>
 
@@ -402,6 +414,27 @@
                 <tr><td><strong>Por Obra</strong></td><td>Checklist de cada colaborador: quais requisitos atende e quais faltam</td></tr>
                 <tr><td><strong>Mensal</strong></td><td>Resumo do mes: vencimentos, treinamentos realizados, novos documentos</td></tr>
             </table>
+
+            <h3>Documentos e Certificados Vencidos</h3>
+            <p>O relatorio de vencidos e o painel central de acao do SESMT. Acesse pelo botao vermelho <strong>"Ver Vencidos"</strong> na tela de Relatorios ou pelo item destacado no topo da pagina.</p>
+
+            <h3>O que aparece neste relatorio</h3>
+            <ul>
+                <li><strong>Resumo por tipo</strong> - Cards clicaveis mostrando quantos documentos estao vencidos por tipo (ASO, EPI, NR-10, etc.)</li>
+                <li><strong>Tabela de documentos vencidos</strong> - Listagem completa com colaborador, tipo, data de vencimento e badge vermelha com os dias de atraso</li>
+                <li><strong>Tabela de certificados vencidos</strong> - Mesma logica para certificados de treinamento</li>
+            </ul>
+
+            <h3>Como filtrar</h3>
+            <div class="steps">
+                <div class="step"><div class="step-content"><strong>Selecione o tipo de documento</strong><br>Use o filtro "Tipo de Documento" para ver apenas um tipo especifico (ex: somente ASO Periodico)</div></div>
+                <div class="step"><div class="step-content"><strong>Selecione a categoria (opcional)</strong><br>Filtre por ASO, EPI, Treinamento ou Outro</div></div>
+                <div class="step"><div class="step-content"><strong>Clique em "Filtrar"</strong><br>A tabela atualiza mostrando apenas os registros do filtro aplicado. Clique em "Limpar" para voltar a visao completa.</div></div>
+            </div>
+
+            <div class="box box-important">
+                <strong>Atenção:</strong> Somente colaboradores com status <strong>Ativo</strong> aparecem neste relatorio. Colaboradores inativos nao sao exibidos.
+            </div>
         </section>
 
         <!-- 11. ALERTAS -->
@@ -506,9 +539,51 @@
             </div>
         </section>
 
-        <!-- 19. FAQ -->
+        <!-- 19. INTEGRACAO GCO -->
+        <section id="gco" class="manual-section">
+            <h2>19. Integração GCO (Apenas Admin)</h2>
+            <p>O modulo de Integração GCO sincroniza automaticamente os colaboradores do sistema de RH da TSE (GCO) com o SESMT. Com um clique, o sistema busca todos os funcionarios ativos do GCO e cria ou atualiza seus cadastros no SESMT.</p>
+
+            <h3>O que a sincronizacao faz</h3>
+            <table class="manual-table">
+                <tr><th>Acao</th><th>Quando ocorre</th></tr>
+                <tr><td><strong>Criar</strong></td><td>Colaborador existe no GCO mas ainda nao existe no SESMT</td></tr>
+                <tr><td><strong>Atualizar</strong></td><td>Colaborador ja existe — atualiza cargo, setor, telefone, e-mail, obra, etc.</td></tr>
+                <tr><td><strong>Desativar</strong></td><td>Colaborador estava ativo no SESMT mas nao apareceu mais na lista do GCO (saiu da empresa)</td></tr>
+            </table>
+
+            <h3>Campos sincronizados do GCO</h3>
+            <ul>
+                <li>Nome completo, CPF, data de nascimento, data de admissão</li>
+                <li>Cargo, função, setor, unidade</li>
+                <li>Telefone, e-mail</li>
+                <li>Celular (apenas se o GCO informar — nunca sobrescreve o celular inserido manualmente)</li>
+                <li><strong>Obra e Cliente</strong> — extraidos automaticamente do campo <code>SITE_OBRA</code> do GCO (ex: "240 - CARGILL - PORTO NACIONAL - TO" vincula ao colaborador a obra Cargill Porto Nacional)</li>
+            </ul>
+
+            <h3>Como sincronizar</h3>
+            <div class="steps">
+                <div class="step"><div class="step-content"><strong>Clique em "Integração GCO" no menu lateral</strong><br>Disponivel apenas para administradores.</div></div>
+                <div class="step"><div class="step-content"><strong>Verifique os indicadores</strong><br>A tela mostra o total de colaboradores, quantos estao ativos, inativos e quantos ja estao vinculados ao GCO.</div></div>
+                <div class="step"><div class="step-content"><strong>Clique em "Iniciar Sincronizacao"</strong><br>Uma confirmacao vai aparecer. Confirme para iniciar. O processo leva alguns segundos.</div></div>
+                <div class="step"><div class="step-content"><strong>Acompanhe o resultado</strong><br>Apos concluir, o historico mostra: data/hora, duracao, total da API, criados, atualizados, desativados e erros.</div></div>
+            </div>
+
+            <h3>Historico de sincronizações</h3>
+            <p>A tabela de historico registra todas as sincronizacoes realizadas. Cada linha mostra o status (Concluido ou Erro) e quem executou. Em caso de erro, a mensagem de erro aparece na coluna Status.</p>
+
+            <div class="box box-warn">
+                <strong>Atenção:</strong> A sincronizacao usa a lista do GCO como <strong>fonte da verdade</strong>. Colaboradores que existem no SESMT mas nao aparecem no GCO serao <strong>desativados</strong> automaticamente. Nao ha como desfazer em massa — use com cuidado.
+            </div>
+
+            <div class="box box-info">
+                <strong>Configuracao:</strong> Para que a sincronizacao funcione, o token de acesso ao GCO deve estar configurado no arquivo <code>.env</code> do servidor (variavel <code>GCO_TOKEN</code>). Se o token nao estiver configurado, o botao "Iniciar Sincronizacao" fica desativado e um aviso aparece no topo da pagina.
+            </div>
+        </section>
+
+        <!-- 20. FAQ -->
         <section id="faq" class="manual-section">
-            <h2>19. Perguntas Frequentes</h2>
+            <h2>20. Perguntas Frequentes</h2>
 
             <h3>Esqueci minha senha. O que faco?</h3>
             <p>Peca para o administrador do sistema resetar sua senha em <strong>Usuarios</strong>. Ele vai gerar uma nova senha temporaria para voce.</p>
