@@ -9,7 +9,9 @@ use App\Core\Database;
  *
  * Lógica:
  *  - Busca todas as páginas da API (paginada de 100 em 100)
+ *    OU array direto (novo formato da API)
  *  - Para cada registro: cria ou atualiza colaborador pelo CPF
+ *  - SITE_OBRA é usado para vincular obra_id / cliente_id automaticamente
  *  - Ao final: desativa colaboradores que tinham codigo_gco mas não vieram na resposta
  */
 class GcoSyncService
@@ -17,6 +19,9 @@ class GcoSyncService
     private string $baseUrl;
     private string $token;
     private int $pageSize = 100;
+
+    /** Cache obra_id por SITE_OBRA para não repetir queries */
+    private array $cacheObra = [];
 
     public function __construct()
     {
@@ -87,29 +92,72 @@ class GcoSyncService
 
     private function buscarTodosRegistros(): array
     {
-        $todos    = [];
-        $pagina   = 1;
-        $total    = null;
+        $todos     = [];
+        $pagina    = 1;
+        $total     = null;
+        $registros = [];
 
         do {
             $url  = $this->buildUrl($pagina);
             $json = $this->fetch($url);
             $data = json_decode($json, true);
 
-            if (!isset($data['Registros'])) {
-                throw new \RuntimeException('Resposta da API inválida — campo "Registros" ausente.');
+            if (!is_array($data)) {
+                throw new \RuntimeException('Resposta da API inválida — JSON inválido ou não é array/objeto.');
             }
 
-            if ($total === null) {
-                $total = (int)($data['TotalRegistros'] ?? 0);
+            // ----------------------------------------------------------------
+            // Suporta dois formatos de resposta:
+            //
+            // 1. OBJETO PAGINADO (formato antigo):
+            //    { "Registros": [...], "TotalRegistros": 712 }
+            //
+            // 2. ARRAY DIRETO paginado (novo formato):
+            //    [ {"CODIGO": "...", "NOME": "...", ...}, ... ]
+            //    Continua buscando páginas até retornar página vazia ou incompleta.
+            // ----------------------------------------------------------------
+
+            if (array_key_exists('Registros', $data)) {
+                // Formato paginado com envelope (legado)
+                if ($total === null) {
+                    $total = (int)($data['TotalRegistros'] ?? 0);
+                }
+                $registros = $data['Registros'] ?? [];
+                $todos     = array_merge($todos, $registros);
+                $pagina++;
+
+            } else {
+                // Formato array direto — pode ainda ser paginado
+                $registros = $data;
+                $todos     = array_merge($todos, $registros);
+                $pagina++;
             }
 
-            $todos  = array_merge($todos, $data['Registros']);
-            $pagina++;
-
-        } while (count($todos) < $total && !empty($data['Registros']));
+        } while ($this->deveContunuarPaginando($todos, $total, $registros));
 
         return $todos;
+    }
+
+    /**
+     * Decide se deve buscar mais uma página.
+     *
+     * - Formato com envelope: para quando total foi atingido ou página veio vazia
+     * - Formato array direto: para quando a página veio com menos itens que o pageSize
+     *   (indica que é a última página)
+     */
+    private function deveContunuarPaginando(array $todos, ?int $total, array $ultimaPagina): bool
+    {
+        if (empty($ultimaPagina)) {
+            return false; // Página vazia — fim da paginação
+        }
+
+        if ($total !== null) {
+            // Formato com envelope: para quando buscou tudo
+            return count($todos) < $total;
+        }
+
+        // Formato array direto: para quando a página retornou menos que o tamanho máximo
+        return count($ultimaPagina) >= $this->pageSize;
     }
 
     private function processarRegistro(\PDO $db, array $reg): string
@@ -126,7 +174,7 @@ class GcoSyncService
         $stmt->execute(['hash' => $cpfHash, 'codigo' => $reg['CODIGO']]);
         $existente = $stmt->fetch(\PDO::FETCH_ASSOC);
 
-        $dados = $this->mapearCampos($reg, $cpfLimpo, $cpfHash);
+        $dados = $this->mapearCampos($reg, $cpfLimpo, $cpfHash, $db);
 
         if ($existente) {
             $sets = implode(', ', array_map(fn($k) => "{$k} = :{$k}", array_keys($dados)));
@@ -142,7 +190,7 @@ class GcoSyncService
         }
     }
 
-    private function mapearCampos(array $reg, string $cpfLimpo, string $cpfHash): array
+    private function mapearCampos(array $reg, string $cpfLimpo, string $cpfHash, \PDO $db): array
     {
         $status = ($reg['ATIVO'] === 'Sim') ? 'ativo' : 'inativo';
 
@@ -161,13 +209,6 @@ class GcoSyncService
             'unidade'         => $reg['UNIDADE'] ?? null,
             'status'          => $status,
             'atualizado_em'   => date('Y-m-d H:i:s'),
-
-            // -------------------------------------------------------------------
-            // FUTURO: quando a API GCO passar a retornar cliente e obra,
-            // descomente e ajuste os campos abaixo:
-            // 'cliente_id' => $this->resolverClienteId($reg['NOME_CLIENTE'] ?? null),
-            // 'obra_id'    => $this->resolverObraId($reg['CODIGO_OBRA'] ?? null),
-            // -------------------------------------------------------------------
         ];
 
         // Celular: só atualiza se a API enviar valor — nunca sobrescreve celular_manual
@@ -175,29 +216,91 @@ class GcoSyncService
             $campos['celular'] = $reg['CELULAR'];
         }
 
+        // SITE_OBRA: vincula obra_id e cliente_id quando disponível
+        if (!empty($reg['SITE_OBRA'])) {
+            $ids = $this->resolverObraIdDeSiteObra($reg['SITE_OBRA'], $db);
+            if ($ids !== null) {
+                $campos['obra_id']   = $ids['obra_id'];
+                $campos['cliente_id'] = $ids['cliente_id'];
+            }
+        }
+
         return $campos;
     }
 
-    // -------------------------------------------------------------------
-    // FUTURO: métodos de resolução de cliente/obra pelo nome/código do GCO
-    // -------------------------------------------------------------------
-    // private function resolverClienteId(?string $nomeCliente): ?int
-    // {
-    //     if (!$nomeCliente) return null;
-    //     $db = Database::getInstance();
-    //     $stmt = $db->prepare("SELECT id FROM clientes WHERE razao_social = :nome OR nome_fantasia = :nome LIMIT 1");
-    //     $stmt->execute(['nome' => $nomeCliente]);
-    //     return $stmt->fetchColumn() ?: null;
-    // }
-    //
-    // private function resolverObraId(?string $codigoObra): ?int
-    // {
-    //     if (!$codigoObra) return null;
-    //     $db = Database::getInstance();
-    //     $stmt = $db->prepare("SELECT id FROM obras WHERE codigo = :cod LIMIT 1");
-    //     $stmt->execute(['cod' => $codigoObra]);
-    //     return $stmt->fetchColumn() ?: null;
-    // }
+    /**
+     * Tenta encontrar a obra correspondente ao campo SITE_OBRA do GCO.
+     *
+     * Formato esperado: "{CODIGO} - {CLIENTE} - {LOCAL}"
+     * Exemplos:
+     *   "240 - CARGILL - PORTO NACIONAL - TO"  → Cargill Porto Nacional (id=7)
+     *   "101 - NESTLE - CAÇAPAVA"              → Nestle Cacapava (id=33)
+     *
+     * @return array|null ['obra_id' => int, 'cliente_id' => int] ou null se não encontrar
+     */
+    private function resolverObraIdDeSiteObra(string $siteObra, \PDO $db): ?array
+    {
+        // Cache para não repetir queries para o mesmo SITE_OBRA
+        if (array_key_exists($siteObra, $this->cacheObra)) {
+            return $this->cacheObra[$siteObra];
+        }
+
+        // Normaliza e divide o campo
+        $partes = explode(' - ', $siteObra);
+        if (count($partes) < 3) {
+            $this->cacheObra[$siteObra] = null;
+            return null;
+        }
+
+        // partes[0] = código (ex: "240")
+        // partes[1] = nome cliente (ex: "CARGILL")
+        // partes[2..n] = local/nome da obra (ex: "PORTO NACIONAL", "TO")
+        $clienteHint = $this->normalizarTexto($partes[1]);
+        // Usa no mínimo a primeira palavra do local para busca
+        $localPartes = array_slice($partes, 2);
+        $localHint   = $this->normalizarTexto(implode(' ', $localPartes));
+        // Primeira palavra significativa do local (ex: "PORTO" de "PORTO NACIONAL TO")
+        $localPrimeiro = explode(' ', trim($localHint))[0] ?? '';
+
+        try {
+            $stmt = $db->prepare(
+                "SELECT o.id, o.cliente_id
+                 FROM obras o
+                 JOIN clientes c ON c.id = o.cliente_id
+                 WHERE UPPER(c.nome_fantasia) LIKE :cliente
+                   AND (
+                       UPPER(o.nome) LIKE :local
+                       OR UPPER(o.local_obra) LIKE :local
+                   )
+                 LIMIT 1"
+            );
+            $stmt->execute([
+                'cliente' => '%' . $clienteHint . '%',
+                'local'   => '%' . $localPrimeiro . '%',
+            ]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            $resultado = $row
+                ? ['obra_id' => (int)$row['id'], 'cliente_id' => (int)$row['cliente_id']]
+                : null;
+
+        } catch (\Throwable) {
+            $resultado = null;
+        }
+
+        $this->cacheObra[$siteObra] = $resultado;
+        return $resultado;
+    }
+
+    /**
+     * Normaliza texto para comparação: remove acentos e converte para maiúsculas.
+     */
+    private function normalizarTexto(string $texto): string
+    {
+        // Remove acentos via transliteração
+        $texto = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $texto) ?: $texto;
+        return strtoupper(trim($texto));
+    }
 
     private function desativarAusentes(\PDO $db, array $codigosAtivos): int
     {

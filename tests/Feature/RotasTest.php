@@ -179,4 +179,39 @@ class RotasTest extends TestCase
     {
         $this->assertRouteExists('GET', '/lixeira', 'LixeiraController');
     }
+
+    // ── Integracao GCO ───────────────────────────────────────────────────────
+
+    public function testRotaGcoExiste(): void
+    {
+        $this->assertRouteExists('GET', '/gco', 'GcoController');
+        $this->assertRouteHasMiddleware('/gco', 'AuthMiddleware');
+    }
+
+    public function testRotaGcoSincronizarTemCsrfEAuth(): void
+    {
+        $this->assertRouteExists('POST', '/gco/sincronizar', 'GcoController');
+        $this->assertRouteHasMiddleware('/gco/sincronizar', 'CsrfMiddleware');
+        $this->assertRouteHasMiddleware('/gco/sincronizar', 'AuthMiddleware');
+    }
+
+    // ── Celular manual do colaborador ────────────────────────────────────────
+
+    public function testRotaCelularColaboradorExiste(): void
+    {
+        $this->assertRouteExists('POST', '/colaboradores/{id}/celular', 'ColaboradorController');
+    }
+
+    public function testRotaCelularColaboradorTemCsrf(): void
+    {
+        $this->assertRouteHasMiddleware('/colaboradores/{id}/celular', 'CsrfMiddleware');
+    }
+
+    // ── Relatorio vencidos ───────────────────────────────────────────────────
+
+    public function testRotaRelatorioVencidosExiste(): void
+    {
+        $this->assertRouteExists('GET', '/relatorios/vencidos', 'RelatorioController');
+        $this->assertRouteHasMiddleware('/relatorios/vencidos', 'AuthMiddleware');
+    }
 }
