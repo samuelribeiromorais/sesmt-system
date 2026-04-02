@@ -284,6 +284,20 @@ class ColaboradorController extends Controller
         $this->redirect("/colaboradores/{$id}");
     }
 
+    public function salvarCelular(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $celular = preg_replace('/\D/', '', $this->input('celular_manual', ''));
+
+        $model = new Colaborador();
+        $model->update((int)$id, ['celular_manual' => $celular ?: null]);
+
+        LoggerMiddleware::log('editar', "Celular manual atualizado para colaborador ID: {$id}");
+        $this->flash('success', 'Celular salvo com sucesso.');
+        $this->redirect("/colaboradores/{$id}");
+    }
+
     public function downloadZip(string $id): void
     {
         RoleMiddleware::requireAny();

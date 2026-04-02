@@ -177,6 +177,12 @@ $router->get('/relatorios/mensal', ['RelatorioController', 'mensal'], ['AuthMidd
 $router->get('/relatorios/tipo-documento', ['RelatorioController', 'porTipoDocumento'], ['AuthMiddleware']);
 $router->get('/relatorios/vencidos', ['RelatorioController', 'vencidos'], ['AuthMiddleware']);
 
+$router->post('/colaboradores/{id}/celular', ['ColaboradorController', 'salvarCelular'], ['AuthMiddleware', 'CsrfMiddleware']);
+
+// --- Integração GCO ---
+$router->get('/gco', ['GcoController', 'index'], ['AuthMiddleware']);
+$router->post('/gco/sincronizar', ['GcoController', 'sincronizar'], ['AuthMiddleware', 'CsrfMiddleware']);
+
 // --- Logs ---
 $router->get('/logs', ['LogController', 'index'], ['AuthMiddleware']);
 $router->get('/logs/exportar', ['LogController', 'exportar'], ['AuthMiddleware']);

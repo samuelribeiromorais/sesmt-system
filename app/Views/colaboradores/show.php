@@ -223,6 +223,62 @@ function statusSemaforo($status) {
         <div><strong>Data Nascimento:</strong> <?= !empty($colab['data_nascimento']) ? date('d/m/Y', strtotime($colab['data_nascimento'])) : '-' ?></div>
         <div><strong>Telefone:</strong> <?= htmlspecialchars($colab['telefone'] ?? '-') ?></div>
         <div><strong>Email:</strong> <?= htmlspecialchars($colab['email'] ?? '-') ?></div>
+
+        <!-- WhatsApp -->
+        <div style="grid-column:1/-1; border-top:1px solid var(--c-border); padding-top:16px; margin-top:4px;">
+        <?php
+            $celularWa = !empty($colab['celular']) ? $colab['celular'] : ($colab['celular_manual'] ?? null);
+            $origemWa  = !empty($colab['celular']) ? 'gco' : (!empty($colab['celular_manual']) ? 'manual' : null);
+            $waNumero  = $celularWa ? preg_replace('/\D/', '', $celularWa) : null;
+            // Garante código do país
+            if ($waNumero && !str_starts_with($waNumero, '55')) {
+                $waNumero = '55' . $waNumero;
+            }
+        ?>
+        <strong>WhatsApp:</strong>&nbsp;
+        <?php if ($waNumero): ?>
+            <a href="https://wa.me/<?= $waNumero ?>" target="_blank"
+               style="display:inline-flex; align-items:center; gap:6px; background:#25d366; color:#fff; padding:5px 14px; border-radius:20px; text-decoration:none; font-size:13px; font-weight:600; vertical-align:middle;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.122.555 4.122 1.526 5.857L.057 23.882a.5.5 0 00.611.611l5.963-1.463A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.933 0-3.74-.519-5.29-1.424l-.376-.221-3.905.958.977-3.819-.243-.389A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                <?= htmlspecialchars($celularWa) ?>
+            </a>
+            <?php if ($origemWa === 'gco'): ?>
+            <span style="font-size:11px; color:#16a34a; margin-left:6px; vertical-align:middle;">via GCO</span>
+            <?php elseif ($origemWa === 'manual'): ?>
+            <span style="font-size:11px; color:#2563eb; margin-left:6px; vertical-align:middle;">inserido manualmente</span>
+            <?php endif; ?>
+            <?php if (!$isReadOnly && $origemWa === 'manual'): ?>
+            &nbsp;<button type="button" onclick="editarCelular()" class="btn btn-outline btn-sm" style="font-size:11px; padding:2px 8px; vertical-align:middle;">✎ Editar</button>
+            <?php endif; ?>
+
+        <?php elseif (!$isReadOnly): ?>
+            <span style="color:var(--c-gray); font-size:13px;">Não informado</span>
+            &nbsp;<button type="button" onclick="editarCelular()" class="btn btn-outline btn-sm" style="font-size:12px; padding:3px 10px;">+ Adicionar</button>
+        <?php else: ?>
+            <span style="color:var(--c-gray);">Não informado</span>
+        <?php endif; ?>
+
+        <?php if (!$isReadOnly): ?>
+        <div id="form-celular" style="display:none; margin-top:10px; max-width:320px;">
+            <form method="POST" action="/colaboradores/<?= $colab['id'] ?>/celular">
+                <?= \App\Core\View::csrfField() ?>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="tel" name="celular_manual" placeholder="(11) 99999-9999"
+                           value="<?= htmlspecialchars($colab['celular_manual'] ?? '') ?>"
+                           class="form-input" style="flex:1;" maxlength="20">
+                    <button type="submit" class="btn btn-primary btn-sm">Salvar</button>
+                    <button type="button" onclick="document.getElementById('form-celular').style.display='none'" class="btn btn-outline btn-sm">✗</button>
+                </div>
+                <p style="font-size:11px; color:var(--c-gray); margin-top:4px;">
+                    Este número é salvo manualmente e não afeta o GCO.
+                    <?php if (!empty($colab['celular'])): ?>
+                    O GCO já fornece o celular acima.
+                    <?php endif; ?>
+                </p>
+            </form>
+        </div>
+        <?php endif; ?>
+        </div>
     </div>
 </div>
 
@@ -250,6 +306,11 @@ function statusSemaforo($status) {
 <?php endif; ?>
 
 <script>
+function editarCelular() {
+    const f = document.getElementById('form-celular');
+    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
 function editEmissaoInline(docId, currentDate) {
     document.getElementById('emissão-show-' + docId).style.display = 'none';
     document.getElementById('emissão-form-' + docId).style.display = 'inline';
