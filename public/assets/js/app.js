@@ -192,13 +192,15 @@ async function apiFetch(url, options = {}) {
         }
 
         // Save preference via AJAX
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
         fetch('/usuarios/tema', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'X-Requested-With': 'XMLHttpRequest',
             },
-            body: 'tema=' + encodeURIComponent(next),
+            body: 'tema=' + encodeURIComponent(next) + '&_csrf_token=' + encodeURIComponent(csrfToken),
         }).catch(() => {});
     });
 })();

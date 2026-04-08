@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/assets/css/style.css?v=6">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#005e4e">
+    <meta name="csrf-token" content="<?= htmlspecialchars(\App\Core\Session::get('csrf_token', '')) ?>">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
