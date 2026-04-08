@@ -39,21 +39,35 @@ services:
     restart: always
     env_file:
       - .env
+    environment:
+      - TZ=America/Sao_Paulo
     volumes:
-      - sesmt-backups:/backups
+      - ./storage/backups:/backups
       - ./storage:/storage:ro
     entrypoint: /bin/bash
     command: >
       -c "
+      echo 'Backup agendado para 19:00 (America/Sao_Paulo)';
       while true; do
+        HOUR=$$(date +%H);
+        MIN=$$(date +%M);
+        NOW_SEC=$$((HOUR * 3600 + MIN * 60));
+        TARGET_SEC=$$((19 * 3600));
+        if [ $$NOW_SEC -lt $$TARGET_SEC ]; then
+          WAIT=$$((TARGET_SEC - NOW_SEC));
+        else
+          WAIT=$$((86400 - NOW_SEC + TARGET_SEC));
+        fi;
+        echo \"Proximo backup em $$((WAIT / 3600))h$$((WAIT % 3600 / 60))m\";
+        sleep $$WAIT;
         TIMESTAMP=$$(date +%Y%m%d_%H%M%S);
         echo \"[$$TIMESTAMP] Iniciando backup...\";
         mariadb-dump -h db -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE | gzip > /backups/db_$$TIMESTAMP.sql.gz;
         tar czf /backups/storage_$$TIMESTAMP.tar.gz -C /storage uploads/ 2>/dev/null || true;
-        find /backups -name 'db_*.sql.gz' -mtime +7 -delete;
-        find /backups -name 'storage_*.tar.gz' -mtime +7 -delete;
+        find /backups -name 'db_*.sql.gz' -mtime +30 -delete;
+        find /backups -name 'storage_*.tar.gz' -mtime +30 -delete;
         echo \"[$$TIMESTAMP] Backup concluido.\";
-        sleep 86400;
+        sleep 60;
       done
       "
     depends_on:
@@ -64,8 +78,6 @@ services:
 
 volumes:
   sesmt-dbdata:
-    driver: local
-  sesmt-backups:
     driver: local
 
 networks:

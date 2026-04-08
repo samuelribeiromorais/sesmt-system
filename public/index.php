@@ -97,12 +97,9 @@ $router->get('/treinamentos/{id}/certificados', ['TreinamentoController', 'certi
 $router->get('/treinamentos/{id}/lista-presenca', ['TreinamentoController', 'listaPresenca'], ['AuthMiddleware']);
 $router->get('/treinamentos/{id}', ['TreinamentoController', 'show'], ['AuthMiddleware']);
 
-// --- Backup ---
+// --- Backup (somente log) ---
 $router->get('/backup', ['BackupController', 'index'], ['AuthMiddleware']);
-$router->post('/backup/executar', ['BackupController', 'executar'], ['AuthMiddleware', 'CsrfMiddleware']);
-$router->get('/backup/download/{nome}', ['BackupController', 'download'], ['AuthMiddleware']);
-$router->post('/backup/excluir/{nome}', ['BackupController', 'excluir'], ['AuthMiddleware', 'CsrfMiddleware']);
-$router->post('/backup/configurar-cron', ['BackupController', 'configurarCron'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->get('/backup/exportar', ['BackupController', 'exportar'], ['AuthMiddleware']);
 
 // --- Agenda de Exames ---
 $router->get('/agenda-exames', ['AgendaExamesController', 'index'], ['AuthMiddleware']);
