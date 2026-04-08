@@ -14,7 +14,7 @@ return [
     'session'  => [
         'lifetime'     => 900, // 15 min
         'max_attempts' => 5,
-        'lockout_time' => 900, // 15 min
+        'lockout_time' => 1200, // 20 min
     ],
     'alerts'   => [
         'days_before' => [30, 15, 7],
