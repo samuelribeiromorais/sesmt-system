@@ -173,6 +173,12 @@ class AuthController extends Controller
             }
         }
 
+        // 2FA obrigatorio para admin e sesmt
+        if (in_array($user['perfil'], ['admin', 'sesmt']) && empty($user['totp_ativo'])) {
+            $this->flash('warning', 'A autenticacao em duas etapas (2FA) e obrigatoria para seu perfil. Configure agora usando o Microsoft Authenticator.');
+            $this->redirect('/usuarios/2fa/setup');
+        }
+
         if ($user['perfil'] === 'rh') {
             $this->redirect('/colaboradores');
         }

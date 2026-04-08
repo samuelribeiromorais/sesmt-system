@@ -39,6 +39,12 @@ class UsuarioController extends Controller
             $this->redirect('/usuarios');
         }
 
+        $erroPolicy = $this->validarPoliticaSenha($senha);
+        if ($erroPolicy) {
+            $this->flash('error', $erroPolicy);
+            $this->redirect('/usuarios');
+        }
+
         $model = new Usuario();
         if ($model->findByEmail($email)) {
             $this->flash('error', 'Este email ja esta cadastrado.');
@@ -67,6 +73,12 @@ class UsuarioController extends Controller
             $this->redirect('/usuarios');
         }
 
+        $erroPolicy = $this->validarPoliticaSenha($novaSenha);
+        if ($erroPolicy) {
+            $this->flash('error', $erroPolicy);
+            $this->redirect('/usuarios');
+        }
+
         $model = new Usuario();
         $user = $model->find((int)$id);
         if (!$user) {
@@ -75,6 +87,7 @@ class UsuarioController extends Controller
 
         $model->update((int)$id, [
             'senha_hash'        => password_hash($novaSenha, PASSWORD_BCRYPT, ['cost' => 12]),
+            'senha_alterada_em' => date('Y-m-d H:i:s'),
             'tentativas_login'  => 0,
             'bloqueado_ate'     => null,
         ]);
@@ -397,8 +410,11 @@ class UsuarioController extends Controller
      */
     private function validarPoliticaSenha(string $senha): ?string
     {
-        if (strlen($senha) < 8) {
-            return 'A senha deve ter no mínimo 8 caracteres.';
+        if (mb_strlen($senha) < 12) {
+            return 'A senha deve ter no minimo 12 caracteres.';
+        }
+        if (mb_strlen($senha) > 128) {
+            return 'A senha deve ter no maximo 128 caracteres.';
         }
         if (!preg_match('/[A-Z]/', $senha)) {
             return 'A senha deve conter pelo menos uma letra maiuscula.';
@@ -407,10 +423,35 @@ class UsuarioController extends Controller
             return 'A senha deve conter pelo menos uma letra minuscula.';
         }
         if (!preg_match('/[0-9]/', $senha)) {
-            return 'A senha deve conter pelo menos um número.';
+            return 'A senha deve conter pelo menos um numero.';
         }
-        if (!preg_match('/[^A-Za-z0-9]/', $senha)) {
-            return 'A senha deve conter pelo menos um caractere especial.';
+        if (!preg_match('/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?\/\\\\~`"]/', $senha)) {
+            return 'A senha deve conter pelo menos um caractere especial (!@#$%^&*...).';
+        }
+        // Bloquear sequencias de 4+ caracteres iguais (aaaa, 1111)
+        if (preg_match('/(.)\1{3,}/', $senha)) {
+            return 'A senha nao pode conter 4 ou mais caracteres iguais seguidos.';
+        }
+        // Bloquear sequencias numericas obvias
+        $sequenciasProibidas = ['1234', '2345', '3456', '4567', '5678', '6789', '0123', '9876', '8765', '7654', '6543', '5432', '4321', '3210'];
+        foreach ($sequenciasProibidas as $seq) {
+            if (str_contains($senha, $seq)) {
+                return 'A senha nao pode conter sequencias numericas obvias (1234, 4321, etc.).';
+            }
+        }
+        // Bloquear sequencias alfabeticas obvias
+        $seqAlfa = ['abcd', 'bcde', 'cdef', 'defg', 'efgh', 'qwer', 'wert', 'erty', 'asdf', 'sdfg'];
+        foreach ($seqAlfa as $seq) {
+            if (str_contains(strtolower($senha), $seq)) {
+                return 'A senha nao pode conter sequencias alfabeticas obvias (abcd, qwer, asdf, etc.).';
+            }
+        }
+        // Bloquear senhas comuns
+        $senhasComuns = ['senha', 'password', 'admin', 'sesmt', 'tse2026', '123456', 'mudar123'];
+        foreach ($senhasComuns as $comum) {
+            if (str_contains(strtolower($senha), $comum)) {
+                return 'A senha nao pode conter palavras comuns ou previsíveis.';
+            }
         }
         return null;
     }
