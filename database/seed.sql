@@ -113,5 +113,4 @@ INSERT INTO tipos_documento (nome, categoria, validade_meses, obrigatorio, descr
 ('Lista de Presenca', 'treinamento', NULL, 0, 'Lista de presenca de treinamento'),
 ('Anuencia NR-10', 'anuencia', 24, 1, 'Anuencia para trabalho com eletricidade'),
 ('Anuencia NR-33', 'anuencia', 12, 1, 'Anuencia para trabalho em espaco confinado'),
-('Anuencia NR-35', 'anuencia', 24, 1, 'Anuencia para trabalho em altura'),
-('Kit Admissional', 'outro', NULL, 1, 'Conjunto de documentos admissionais');
+('Anuencia NR-35', 'anuencia', 24, 1, 'Anuencia para trabalho em altura');

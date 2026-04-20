@@ -60,8 +60,7 @@ INSERT INTO tipos_documento (nome, categoria, validade_meses, obrigatorio, descr
 ('Lista de Presença', 'treinamento', NULL, 0, 'Lista de presença de treinamento'),
 ('Anuência NR-10', 'anuencia', 24, 1, 'Anuência para trabalho com eletricidade'),
 ('Anuência NR-33', 'anuencia', 12, 1, 'Anuência para trabalho em espaço confinado'),
-('Anuência NR-35', 'anuencia', 24, 1, 'Anuência para trabalho em altura'),
-('Kit Admissional', 'outro', NULL, 1, 'Conjunto de documentos admissionais');
+('Anuência NR-35', 'anuencia', 24, 1, 'Anuência para trabalho em altura');
 
 -- DADOS DE TESTE
 INSERT INTO clientes (razao_social, nome_fantasia, cnpj, contato_nome, contato_email) VALUES

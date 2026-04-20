@@ -275,7 +275,15 @@ class DocumentoController extends Controller
         $pastaNome = $fileService->getDiretorioColaborador($colaboradorId, $nomeColaborador);
         $uploadDir = $config['upload']['path'] . '/' . $pastaNome;
         if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0750, true);
+            @mkdir($uploadDir, 0775, true);
+        }
+        if (!is_dir($uploadDir) || !is_writable($uploadDir)) {
+            @chmod($uploadDir, 0775);
+            if (!is_writable($uploadDir)) {
+                $this->flash('error', 'Pasta do colaborador sem permissão de escrita. Contate o administrador do servidor para ajustar permissões em: ' . $pastaNome);
+                $this->redirect("/documentos/upload/{$colaboradorId}");
+                return;
+            }
         }
 
         $uploadedCount = 0;
@@ -312,8 +320,8 @@ class DocumentoController extends Controller
 
                 $destPath = $uploadDir . '/' . $safeName;
 
-                if (!move_uploaded_file($files['tmp_name'][$i], $destPath)) {
-                    throw new \Exception('Falha ao mover arquivo: ' . $files['name'][$i]);
+                if (!@move_uploaded_file($files['tmp_name'][$i], $destPath)) {
+                    throw new \Exception('Falha ao salvar o arquivo "' . $files['name'][$i] . '". Verifique as permissões da pasta do colaborador.');
                 }
                 $movedFiles[] = $destPath;
 
