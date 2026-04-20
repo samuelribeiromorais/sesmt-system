@@ -28,7 +28,7 @@
         <div id="emissão-edit" style="display:none;">
             <strong>Emissão:</strong>
             <form method="POST" action="/documentos/<?= $doc['id'] ?>/atualizar-emissao" style="display:inline-flex; align-items:center; gap:6px;">
-                <input type="hidden" name="_csrf_token" value="<?= \App\Core\Session::get('_csrf_token') ?>">
+                <input type="hidden" name="_csrf_token" value="<?= \App\Core\Session::get('csrf_token') ?>">
                 <input type="date" name="data_emissao" value="<?= $doc['data_emissao'] ?>" class="form-input" style="padding:4px 8px; font-size:13px; width:160px;" required>
                 <button type="submit" class="btn btn-primary btn-sm" style="padding:2px 10px; font-size:11px;">Salvar</button>
                 <button type="button" onclick="cancelarEmissao()" class="btn btn-outline btn-sm" style="padding:2px 10px; font-size:11px;">Cancelar</button>

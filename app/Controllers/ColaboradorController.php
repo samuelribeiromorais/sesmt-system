@@ -145,17 +145,19 @@ class ColaboradorController extends Controller
         }
 
         // Count documents by status
-        $docsVigentes = count(array_filter($documentos, fn($d) => ($d['status'] ?? '') === 'vigente'));
-        $docsVencendo = count(array_filter($documentos, fn($d) => ($d['status'] ?? '') === 'proximo_vencimento'));
-        $docsVencidos = count(array_filter($documentos, fn($d) => ($d['status'] ?? '') === 'vencido'));
+        // Docs sem data_validade (ex: OS) são sempre conformes — nunca penalizam
+        $docsVigentes = count(array_filter($documentos, fn($d) => empty($d['data_validade']) || ($d['status'] ?? '') === 'vigente'));
+        $docsVencendo = count(array_filter($documentos, fn($d) => !empty($d['data_validade']) && ($d['status'] ?? '') === 'proximo_vencimento'));
+        $docsVencidos = count(array_filter($documentos, fn($d) => !empty($d['data_validade']) && ($d['status'] ?? '') === 'vencido'));
 
-        // Count certificates by status
-        $certsVigentes = count(array_filter($certificados, fn($c) => ($c['status'] ?? '') === 'vigente'));
-        $certsVencendo = count(array_filter($certificados, fn($c) => ($c['status'] ?? '') === 'proximo_vencimento'));
-        $certsVencidos = count(array_filter($certificados, fn($c) => ($c['status'] ?? '') === 'vencido'));
+        // Certificados: só conta os que têm PDF assinado vinculado
+        $certsComArquivo = array_filter($certificados, fn($c) => !empty($c['arquivo_assinado']));
+        $certsVigentes = count(array_filter($certsComArquivo, fn($c) => ($c['status'] ?? '') === 'vigente'));
+        $certsVencendo = count(array_filter($certsComArquivo, fn($c) => ($c['status'] ?? '') === 'proximo_vencimento'));
+        $certsVencidos = count(array_filter($certsComArquivo, fn($c) => ($c['status'] ?? '') === 'vencido'));
 
-        // Conformidade rate
-        $totalItens = count($documentos) + count($certificados);
+        // Conformidade rate (denominador só conta certs com PDF assinado)
+        $totalItens = count($documentos) + count($certsComArquivo);
         $taxaConformidade = $totalItens > 0
             ? (($docsVigentes + $certsVigentes) / $totalItens) * 100
             : 100;
@@ -441,6 +443,29 @@ class ColaboradorController extends Controller
 
         $this->flash('success', "{$affected} colaboradores atualizados ({$campo}).");
         $this->redirect('/colaboradores');
+    }
+
+    public function toggleIsento(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $model = new Colaborador();
+        $colab = $model->find((int)$id);
+        if (!$colab) {
+            $this->redirect('/colaboradores');
+        }
+
+        $isento = (int)$this->input('isento', 0);
+        $motivo = trim($this->input('isento_motivo', ''));
+        $model->update((int)$id, [
+            'isento'        => $isento,
+            'isento_motivo' => $isento ? ($motivo ?: null) : null,
+        ]);
+
+        $acao = $isento ? 'Marcado como isento' : 'Isenção removida';
+        LoggerMiddleware::log('editar', "{$acao}: {$colab['nome_completo']} (ID: {$id})");
+        $this->flash('success', $isento ? 'Colaborador marcado como isento.' : 'Isenção removida.');
+        $this->redirect("/colaboradores/{$id}");
     }
 
     public function destroy(string $id): void

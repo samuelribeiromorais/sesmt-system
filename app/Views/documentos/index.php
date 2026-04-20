@@ -49,6 +49,11 @@
                 <option value="proximo_vencimento" <?= ($status ?? '') === 'proximo_vencimento' ? 'selected' : '' ?>>Vencendo</option>
                 <option value="vencido" <?= ($status ?? '') === 'vencido' ? 'selected' : '' ?>>Vencidos</option>
             </select>
+            <select name="per_page" class="form-control" style="width:90px;" onchange="this.form.submit()">
+                <?php foreach ([30, 50, 100, 500] as $opt): ?>
+                <option value="<?= $opt ?>" <?= ($perPage ?? 30) == $opt ? 'selected' : '' ?>><?= $opt ?>/pág</option>
+                <?php endforeach; ?>
+            </select>
             <button type="submit" class="btn btn-secondary btn-sm">Buscar</button>
             <?php if ($search || $status || $categoria): ?>
             <a href="/documentos" class="btn btn-outline btn-sm">Limpar</a>
@@ -259,7 +264,7 @@
                     liveResults.style.display = 'block';
                 })
                 .catch(function() { liveResults.style.display = 'none'; });
-        }, 300);
+        }, 500);
     });
 
     input.addEventListener('keydown', function(e) {

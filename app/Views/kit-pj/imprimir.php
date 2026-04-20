@@ -61,10 +61,7 @@
                 <td colspan="3"><strong>CNPJ:</strong> <?= htmlspecialchars($kit['cnpj']) ?></td>
             </tr>
             <tr>
-                <td><strong>Endereco:</strong> <?= htmlspecialchars($kit['endereco'] ?? '') ?></td>
-                <td><strong>Bairro:</strong> <span class="blank"></span></td>
-                <td><strong>Cidade/UF:</strong> <span class="blank"></span></td>
-                <td><strong>CEP:</strong> <span class="blank"></span></td>
+                <td colspan="4" style="word-break:break-word; white-space:normal;"><strong>Endereço:</strong> <?= htmlspecialchars($kit['endereco'] ?? '') ?></td>
             </tr>
         </table>
 

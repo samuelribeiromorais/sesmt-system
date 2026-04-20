@@ -72,7 +72,7 @@
         ],
         'riscos_ergonomicos' => [
             'label' => 'Ergonômicos',
-            'opções' => ['Posturas em pe/sentado por longos períodos', 'Esforco fisico intenso', 'Levantamento manual de peso', 'Movimentos repetitivos', 'Jornada prolongada', 'Ausencia Risco Ergonômico'],
+            'opções' => ['Posturas em pe/sentado por longos períodos', 'Posturas incômodas por longos períodos', 'Esforco fisico intenso', 'Levantamento manual de peso', 'Movimentos repetitivos', 'Jornada prolongada', 'Ausencia Risco Ergonômico'],
             'default' => ['Posturas em pe/sentado por longos períodos'],
         ],
         'riscos_acidentes' => [

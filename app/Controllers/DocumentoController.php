@@ -24,7 +24,8 @@ class DocumentoController extends Controller
         $search = trim($this->input('q', ''));
         $mostrarInativos = (int)$this->input('mostrar_inativos', 0);
         $page = max(1, (int)$this->input('page', 1));
-        $perPage = 30;
+        $allowedPerPage = [30, 50, 100, 500];
+        $perPage = in_array((int)$this->input('per_page', 30), $allowedPerPage) ? (int)$this->input('per_page', 30) : 30;
         $offset = ($page - 1) * $perPage;
 
         // Filtro de colaboradores ativos por padrao
@@ -143,6 +144,7 @@ class DocumentoController extends Controller
             'mostrarInativos' => $mostrarInativos,
             'page'            => $page,
             'totalPages'      => $totalPages,
+            'perPage'         => $perPage,
             'pageTitle'       => 'Documentos',
         ]);
     }
@@ -316,6 +318,7 @@ class DocumentoController extends Controller
                 $movedFiles[] = $destPath;
 
                 $perfilEnviou = Session::user()['perfil'] ?? 'sesmt';
+                $isRh = ($perfilEnviou === 'rh');
                 $createData = [
                     'colaborador_id'      => $colaboradorId,
                     'tipo_documento_id'   => $tipoDocumentoId,
@@ -329,7 +332,9 @@ class DocumentoController extends Controller
                     'observacoes'         => $observacoes,
                     'enviado_por'         => Session::get('user_id'),
                     'enviado_por_perfil'  => $perfilEnviou,
-                    'aprovacao_status'    => ($perfilEnviou === 'rh') ? 'pendente' : null,
+                    'aprovacao_status'    => $isRh ? 'pendente' : 'aprovado',
+                    'aprovado_por'        => $isRh ? null : Session::get('user_id'),
+                    'aprovado_em'         => $isRh ? null : date('Y-m-d H:i:s'),
                     'versao'              => $nextVersion,
                     'documento_pai_id'    => $documentoPaiId,
                 ];
@@ -795,7 +800,7 @@ class DocumentoController extends Controller
         $perPage = 30;
         $offset  = ($page - 1) * $perPage;
 
-        $where  = "(d.aprovacao_status IS NULL OR d.aprovacao_status = 'pendente')
+        $where  = "d.aprovacao_status = 'pendente'
                    AND d.status != 'obsoleto' AND d.excluido_em IS NULL
                    AND c.excluido_em IS NULL AND c.status = 'ativo'";
         $params = [];

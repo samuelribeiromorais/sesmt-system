@@ -307,17 +307,14 @@ $jsonVencData = json_encode($vencData);
         </thead>
         <tbody>
             <?php foreach ($aprovacoes_pendentes as $ap): ?>
-            <tr>
+            <tr id="aprov-row-<?= $ap['id'] ?>">
                 <td><a href="/colaboradores/<?= $ap['colaborador_id'] ?>" style="color:var(--c-accent);"><?= htmlspecialchars($ap['nome_completo']) ?></a></td>
                 <td style="font-size:13px;"><?= htmlspecialchars($ap['tipo_nome']) ?></td>
                 <td style="font-size:13px;"><?= $ap['data_emissao'] ? date('d/m/Y', strtotime($ap['data_emissao'])) : '-' ?></td>
                 <td style="font-size:13px;"><?= date('d/m/Y', strtotime($ap['criado_em'])) ?></td>
                 <td style="text-align:center;">
-                    <form method="POST" action="/documentos/<?= $ap['id'] ?>/aprovar" style="display:inline-flex; gap:4px;">
-                        <?= \App\Core\View::csrfField() ?>
-                        <input type="hidden" name="decisao" value="aprovado">
-                        <button type="submit" class="btn btn-sm" style="padding:2px 10px; font-size:11px; background:#059669; color:white;">Aprovar</button>
-                    </form>
+                    <button type="button" class="btn btn-sm" style="padding:2px 10px; font-size:11px; background:#059669; color:white;"
+                            onclick="aprovarDoc(<?= $ap['id'] ?>, '<?= \App\Core\Session::get('csrf_token') ?>')">Aprovar</button>
                     <button type="button" class="btn btn-sm" style="padding:2px 10px; font-size:11px; background:#dc2626; color:white;"
                             onclick="rejeitarDoc(<?= $ap['id'] ?>)">Rejeitar</button>
                 </td>
@@ -345,10 +342,40 @@ $jsonVencData = json_encode($vencData);
     </div>
 </div>
 <script>
+function aprovarDoc(docId, csrf) {
+    const btn = event.currentTarget;
+    btn.disabled = true;
+    btn.textContent = '...';
+    const body = new URLSearchParams({ _csrf_token: csrf, decisao: 'aprovado' });
+    fetch('/documentos/' + docId + '/aprovar', { method: 'POST', body: body })
+        .then(r => { if (r.ok || r.redirected) { removerLinhaAprovacao(docId); } else { btn.disabled = false; btn.textContent = 'Aprovar'; } })
+        .catch(() => { btn.disabled = false; btn.textContent = 'Aprovar'; });
+}
+function removerLinhaAprovacao(docId) {
+    const row = document.getElementById('aprov-row-' + docId);
+    if (row) row.remove();
+    // Atualiza contador no header
+    const titulo = document.querySelector('#aprovacoes-pendentes .table-title');
+    if (titulo) {
+        const match = titulo.textContent.match(/(\d+)/);
+        if (match) {
+            const novo = Math.max(0, parseInt(match[1]) - 1);
+            titulo.textContent = titulo.textContent.replace(/\d+/, novo);
+        }
+    }
+}
 function rejeitarDoc(docId) {
     const modal = document.getElementById('rejeitar-modal');
     const form = document.getElementById('rejeitar-form');
     form.action = '/documentos/' + docId + '/aprovar';
+    // Intercept submit for AJAX
+    form.onsubmit = function(e) {
+        e.preventDefault();
+        const data = new URLSearchParams(new FormData(form));
+        fetch(form.action, { method: 'POST', body: data })
+            .then(r => { if (r.ok || r.redirected) { modal.style.display = 'none'; removerLinhaAprovacao(docId); } });
+        return false;
+    };
     modal.style.display = 'flex';
 }
 function toggleWidget(bodyId, btn) {

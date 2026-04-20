@@ -173,7 +173,7 @@
                     liveResults.style.display = 'block';
                 })
                 .catch(() => { liveResults.style.display = 'none'; });
-        }, 300);
+        }, 500);
     });
 
     input.addEventListener('keydown', function(e) {

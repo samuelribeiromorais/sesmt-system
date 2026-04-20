@@ -107,14 +107,14 @@ class DashboardService
     public function getKpiConformidade(): array
     {
         $totalAtivos = (int)$this->db->query(
-            "SELECT COUNT(*) FROM colaboradores WHERE status = 'ativo' AND excluido_em IS NULL"
+            "SELECT COUNT(*) FROM colaboradores WHERE status = 'ativo' AND isento = 0 AND excluido_em IS NULL"
         )->fetchColumn();
 
         $comProblemas = (int)$this->db->query(
             "SELECT COUNT(DISTINCT c.id)
              FROM colaboradores c
              JOIN {$this->latestDocsSubquery} d ON d.colaborador_id = c.id
-             WHERE c.status = 'ativo' AND c.excluido_em IS NULL
+             WHERE c.status = 'ativo' AND c.isento = 0 AND c.excluido_em IS NULL
                AND d.status IN ('vencido', 'proximo_vencimento')"
         )->fetchColumn();
 
@@ -196,7 +196,7 @@ class DashboardService
              FROM colaboradores c
              LEFT JOIN clientes cl ON c.cliente_id = cl.id
              LEFT JOIN documentos d ON d.colaborador_id = c.id AND d.status != 'obsoleto' AND d.excluido_em IS NULL
-             WHERE c.status = 'ativo' AND c.excluido_em IS NULL
+             WHERE c.status = 'ativo' AND c.isento = 0 AND c.excluido_em IS NULL
              GROUP BY c.id
              HAVING COUNT(d.id) = 0
              ORDER BY c.nome_completo ASC"
@@ -243,7 +243,7 @@ class DashboardService
              JOIN colaboradores c ON d.colaborador_id = c.id
              JOIN tipos_documento td ON d.tipo_documento_id = td.id
              LEFT JOIN usuarios u ON d.enviado_por = u.id
-             WHERE (d.aprovacao_status IS NULL OR d.aprovacao_status = 'pendente')
+             WHERE d.aprovacao_status = 'pendente'
                AND d.status != 'obsoleto'
                AND d.excluido_em IS NULL
                AND c.excluido_em IS NULL
@@ -304,7 +304,7 @@ class DashboardService
         $data['missing_docs_count'] = $this->getMissingDocsCount();
         $data['vencendo_esta_semana'] = $this->getVencendoEstaSemana();
         $data['aprovacoes_pendentes'] = $this->getAprovacoesPendentes();
-        $stmt = $this->db->query("SELECT COUNT(*) FROM documentos WHERE (aprovacao_status = 'pendente' OR aprovacao_status IS NULL) AND status != 'obsoleto' AND excluido_em IS NULL");
+        $stmt = $this->db->query("SELECT COUNT(*) FROM documentos WHERE aprovacao_status = 'pendente' AND status != 'obsoleto' AND excluido_em IS NULL");
         $data['total_aprovacoes_pendentes'] = (int)$stmt->fetchColumn();
 
         // Contagem total docs mês (rápido)

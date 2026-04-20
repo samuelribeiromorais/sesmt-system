@@ -9,6 +9,16 @@ function statusSemaforo($status) {
 }
 ?>
 
+<?php if ($colab['isento']): ?>
+<div style="background:#f0f9ff; border:1px solid #0ea5e9; border-radius:8px; padding:12px 16px; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+    <span style="font-size:18px;">🔵</span>
+    <span style="font-size:14px; color:#0369a1;"><strong>Colaborador Isento (PJ/Fazenda)</strong> — não contabilizado nos indicadores de conformidade.</span>
+    <?php if (!empty($colab['isento_motivo'])): ?>
+        <span style="font-size:13px; color:#6b7280; margin-left:4px;">Motivo: <?= htmlspecialchars($colab['isento_motivo']) ?></span>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+
 <!-- Resumo de Conformidade -->
 <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; margin-bottom:24px;">
     <div class="stat-card">
@@ -53,6 +63,15 @@ function statusSemaforo($status) {
         <?php endif; ?>
         <?php if (!$isReadOnly): ?>
         <a href="/colaboradores/<?= $colab['id'] ?>/editar" class="btn btn-outline btn-sm">Editar</a>
+        <form method="POST" action="/colaboradores/<?= $colab['id'] ?>/isento" style="display:inline;">
+            <?= \App\Core\View::csrfField() ?>
+            <input type="hidden" name="isento" value="<?= $colab['isento'] ? '0' : '1' ?>">
+            <button type="submit" class="btn btn-sm <?= $colab['isento'] ? 'btn-secondary' : 'btn-outline' ?>"
+                    title="<?= $colab['isento'] ? 'Remover isenção (PJ/Fazenda)' : 'Marcar como isento (PJ/Fazenda)' ?>"
+                    style="<?= $colab['isento'] ? 'background:#6b7280;color:white;' : '' ?>">
+                <?= $colab['isento'] ? '✓ Isento' : 'Marcar Isento' ?>
+            </button>
+        </form>
         <?php endif; ?>
     </div>
 </div>

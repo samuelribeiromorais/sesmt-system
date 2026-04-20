@@ -28,19 +28,23 @@ class LoggerMiddleware
             'referer'    => $_SERVER['HTTP_REFERER'] ?? '',
         ], $context);
 
-        $stmt = $db->prepare(
-            "INSERT INTO logs_acesso (usuario_id, acao, descricao, ip_address, user_agent, contexto, criado_em)
-             VALUES (:usuario_id, :acao, :descricao, :ip, :ua, :contexto, NOW())"
-        );
+        try {
+            $stmt = $db->prepare(
+                "INSERT INTO logs_acesso (usuario_id, acao, descricao, ip_address, user_agent, contexto, criado_em)
+                 VALUES (:usuario_id, :acao, :descricao, :ip, :ua, :contexto, NOW())"
+            );
 
-        $stmt->execute([
-            'usuario_id' => $user['id'] ?? null,
-            'acao'       => $acao,
-            'descricao'  => $descricao,
-            'ip'         => self::getClientIp(),
-            'ua'         => substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 500),
-            'contexto'   => !empty($context) ? json_encode($contextData, JSON_UNESCAPED_UNICODE) : null,
-        ]);
+            $stmt->execute([
+                'usuario_id' => $user['id'] ?? null,
+                'acao'       => $acao,
+                'descricao'  => $descricao,
+                'ip'         => self::getClientIp(),
+                'ua'         => substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 500),
+                'contexto'   => !empty($context) ? json_encode($contextData, JSON_UNESCAPED_UNICODE) : null,
+            ]);
+        } catch (\Throwable $e) {
+            error_log('LoggerMiddleware DB error: ' . $e->getMessage());
+        }
 
         // Also write to file log for CLI/cron access
         self::writeFileLog($acao, $descricao, $contextData, $user);

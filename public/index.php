@@ -189,6 +189,7 @@ $router->get('/relatorios/tipo-documento', ['RelatorioController', 'porTipoDocum
 $router->get('/relatorios/vencidos', ['RelatorioController', 'vencidos'], ['AuthMiddleware']);
 
 $router->post('/colaboradores/{id}/celular', ['ColaboradorController', 'salvarCelular'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/colaboradores/{id}/isento', ['ColaboradorController', 'toggleIsento'], ['AuthMiddleware', 'CsrfMiddleware']);
 
 // --- Integração GCO ---
 $router->get('/gco', ['GcoController', 'index'], ['AuthMiddleware']);
