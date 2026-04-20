@@ -53,6 +53,7 @@ $categorias = [
             <button class="config-tab" data-tab="tipos-certificado">Tipos de Certificado</button>
             <button class="config-tab" data-tab="ministrantes">Ministrantes</button>
             <button class="config-tab" data-tab="smtp">Configuração SMTP</button>
+            <a href="/configuracoes/funcoes" class="config-tab" style="text-decoration:none; display:flex; align-items:center;">NRs por Função</a>
         </div>
 
         <!-- ============================================================ -->

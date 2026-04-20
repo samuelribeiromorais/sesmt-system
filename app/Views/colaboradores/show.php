@@ -58,6 +58,27 @@ function statusSemaforo($status) {
 </div>
 
 <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+    <!-- NRs faltantes pela função -->
+    <?php if (!empty($nrsFaltantes)): ?>
+    <div class="table-container" style="margin-bottom:16px; border-left:4px solid #f39c12;">
+        <div class="table-header">
+            <span class="table-title" style="color:#d97706;">
+                ⚠ NRs Obrigatórias pela Função "<?= htmlspecialchars($colab['funcao']) ?>" — Faltando <?= count($nrsFaltantes) ?>
+            </span>
+        </div>
+        <div style="padding:12px 20px; display:flex; flex-wrap:wrap; gap:8px;">
+            <?php foreach ($nrsFaltantes as $nr): ?>
+            <span class="badge" style="background:#fff3cd; color:#856404; border:1px solid #ffc107; font-size:12px; padding:4px 10px;">
+                <?= htmlspecialchars($nr['codigo']) ?>
+                <?php if (!$isReadOnly): ?>
+                <a href="/certificados/emitir/<?= $colab['id'] ?>?tipo=<?= $nr['id'] ?>" style="color:#856404; margin-left:4px; text-decoration:none;" title="Emitir agora">＋</a>
+                <?php endif; ?>
+            </span>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Certificados -->
     <div class="table-container">
         <div class="table-header">

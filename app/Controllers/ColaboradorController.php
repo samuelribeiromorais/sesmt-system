@@ -123,6 +123,27 @@ class ColaboradorController extends Controller
         $certificados = $certModel->getLatestByColaborador((int)$id);
         $documentos   = $docModel->findByColaborador((int)$id);
 
+        // NRs obrigatórias pela função do colaborador que ainda não possui (vigente/próx. venc.)
+        $nrsFaltantes = [];
+        if (!empty($colab['funcao'])) {
+            $db = \App\Core\Database::getInstance();
+            $stmt = $db->prepare(
+                "SELECT tc.id, tc.codigo, tc.titulo
+                 FROM config_funcao_certs cfc
+                 JOIN tipos_certificado tc ON cfc.tipo_certificado_id = tc.id
+                 WHERE cfc.funcao = :funcao
+                   AND tc.id NOT IN (
+                       SELECT tipo_certificado_id FROM certificados
+                       WHERE colaborador_id = :cid
+                         AND status IN ('vigente','proximo_vencimento')
+                         AND excluido_em IS NULL
+                   )
+                 ORDER BY tc.codigo ASC"
+            );
+            $stmt->execute(['funcao' => $colab['funcao'], 'cid' => (int)$id]);
+            $nrsFaltantes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        }
+
         // Count documents by status
         $docsVigentes = count(array_filter($documentos, fn($d) => ($d['status'] ?? '') === 'vigente'));
         $docsVencendo = count(array_filter($documentos, fn($d) => ($d['status'] ?? '') === 'proximo_vencimento'));
@@ -152,6 +173,7 @@ class ColaboradorController extends Controller
             'certsVencendo'      => $certsVencendo,
             'certsVencidos'      => $certsVencidos,
             'taxaConformidade'   => $taxaConformidade,
+            'nrsFaltantes'       => $nrsFaltantes,
             'pageTitle'          => 'Colaboradores',
             'isReadOnly'         => Session::get('user_perfil') === 'rh',
         ]);

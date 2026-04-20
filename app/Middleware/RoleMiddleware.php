@@ -40,6 +40,12 @@ class RoleMiddleware
         $mw->handle();
     }
 
+    public static function requireRhOrSesmt(): void
+    {
+        $mw = new self(['admin', 'sesmt', 'rh']);
+        $mw->handle();
+    }
+
     public static function requireAny(): void
     {
         $mw = new self(['admin', 'sesmt', 'rh']);

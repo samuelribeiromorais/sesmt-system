@@ -149,7 +149,7 @@ class DocumentoController extends Controller
 
     public function uploadForm(string $colaboradorId): void
     {
-        RoleMiddleware::requireAdminOrSesmt();
+        RoleMiddleware::requireRhOrSesmt();
 
         $colabModel = new Colaborador();
         $colab = $colabModel->find((int)$colaboradorId);
@@ -169,7 +169,7 @@ class DocumentoController extends Controller
 
     public function upload(): void
     {
-        RoleMiddleware::requireAdminOrSesmt();
+        RoleMiddleware::requireRhOrSesmt();
 
         $colaboradorId = (int)$this->input('colaborador_id');
         $tipoDocumentoId = (int)$this->input('tipo_documento_id');
@@ -315,20 +315,23 @@ class DocumentoController extends Controller
                 }
                 $movedFiles[] = $destPath;
 
+                $perfilEnviou = Session::user()['perfil'] ?? 'sesmt';
                 $createData = [
-                    'colaborador_id'    => $colaboradorId,
-                    'tipo_documento_id' => $tipoDocumentoId,
-                    'arquivo_nome'      => $files['name'][$i],
-                    'arquivo_path'      => $pastaNome . '/' . $safeName,
-                    'arquivo_hash'      => $fileHash,
-                    'arquivo_tamanho'   => $files['size'][$i],
-                    'data_emissao'      => $dataEmissao,
-                    'data_validade'     => $dataValidade,
-                    'status'            => $status,
-                    'observacoes'       => $observacoes,
-                    'enviado_por'       => Session::get('user_id'),
-                    'versao'            => $nextVersion,
-                    'documento_pai_id'  => $documentoPaiId,
+                    'colaborador_id'      => $colaboradorId,
+                    'tipo_documento_id'   => $tipoDocumentoId,
+                    'arquivo_nome'        => $files['name'][$i],
+                    'arquivo_path'        => $pastaNome . '/' . $safeName,
+                    'arquivo_hash'        => $fileHash,
+                    'arquivo_tamanho'     => $files['size'][$i],
+                    'data_emissao'        => $dataEmissao,
+                    'data_validade'       => $dataValidade,
+                    'status'              => $status,
+                    'observacoes'         => $observacoes,
+                    'enviado_por'         => Session::get('user_id'),
+                    'enviado_por_perfil'  => $perfilEnviou,
+                    'aprovacao_status'    => ($perfilEnviou === 'rh') ? 'pendente' : null,
+                    'versao'              => $nextVersion,
+                    'documento_pai_id'    => $documentoPaiId,
                 ];
 
                 $id = $docModel->create($createData);

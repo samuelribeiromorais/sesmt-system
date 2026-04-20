@@ -350,4 +350,81 @@ class ConfigController extends Controller
             'responsavel' => $responsavel,
         ], '');
     }
+
+    // =========================================================================
+    // NRs Obrigatórias por Função
+    // =========================================================================
+
+    public function funcoes(): void
+    {
+        RoleMiddleware::requireAdmin();
+
+        $db = Database::getInstance();
+
+        // Funções existentes nos colaboradores
+        $funcoesColabs = $db->query(
+            "SELECT DISTINCT funcao FROM colaboradores
+             WHERE funcao IS NOT NULL AND funcao != '' AND status = 'ativo'
+             ORDER BY funcao ASC"
+        )->fetchAll(\PDO::FETCH_COLUMN);
+
+        // Mapeamentos existentes
+        $mapeamentos = $db->query(
+            "SELECT cfc.*, tc.codigo, tc.titulo
+             FROM config_funcao_certs cfc
+             JOIN tipos_certificado tc ON cfc.tipo_certificado_id = tc.id
+             ORDER BY cfc.funcao ASC, tc.codigo ASC"
+        )->fetchAll(\PDO::FETCH_ASSOC);
+
+        // Agrupar por função
+        $porFuncao = [];
+        foreach ($mapeamentos as $m) {
+            $porFuncao[$m['funcao']][] = $m;
+        }
+
+        $tiposCert = (new TipoCertificado())->all(['ativo' => 1], 'codigo ASC');
+
+        $this->view('config/funcoes', [
+            'porFuncao'    => $porFuncao,
+            'funcoesColabs' => $funcoesColabs,
+            'tiposCert'    => $tiposCert,
+            'pageTitle'    => 'NRs por Função',
+        ]);
+    }
+
+    public function funcaoAdicionar(): void
+    {
+        RoleMiddleware::requireAdmin();
+
+        $funcao = trim($this->input('funcao', ''));
+        $certId = (int)$this->input('tipo_certificado_id', 0);
+
+        if (!$funcao || !$certId) {
+            $this->flash('error', 'Preencha função e certificado.');
+            $this->redirect('/configuracoes/funcoes');
+            return;
+        }
+
+        $db = Database::getInstance();
+        try {
+            $db->prepare(
+                "INSERT IGNORE INTO config_funcao_certs (funcao, tipo_certificado_id) VALUES (:funcao, :cert)"
+            )->execute(['funcao' => $funcao, 'cert' => $certId]);
+            $this->flash('success', 'NR adicionada para a função.');
+        } catch (\Exception $e) {
+            $this->flash('error', 'Erro ao salvar.');
+        }
+
+        $this->redirect('/configuracoes/funcoes');
+    }
+
+    public function funcaoRemover(string $id): void
+    {
+        RoleMiddleware::requireAdmin();
+
+        $db = Database::getInstance();
+        $db->prepare("DELETE FROM config_funcao_certs WHERE id = :id")->execute(['id' => (int)$id]);
+        $this->flash('success', 'Mapeamento removido.');
+        $this->redirect('/configuracoes/funcoes');
+    }
 }

@@ -68,6 +68,7 @@ $router->post('/login/2fa', ['AuthController', 'twoFactorVerify']);
 // --- Dashboard ---
 $router->get('/', ['DashboardController', 'index'], ['AuthMiddleware']);
 $router->get('/dashboard', ['DashboardController', 'index'], ['AuthMiddleware']);
+$router->get('/rh', ['RhController', 'index'], ['AuthMiddleware']);
 
 // --- Colaboradores ---
 $router->get('/colaboradores', ['ColaboradorController', 'index'], ['AuthMiddleware']);
@@ -226,6 +227,9 @@ $router->post('/configuracoes/ministrante/{id}/excluir', ['ConfigController', 'e
 $router->post('/configuracoes/smtp', ['ConfigController', 'salvarSmtp'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/configuracoes/smtp/testar', ['ConfigController', 'testarSmtp'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->get('/configuracoes/preview-certificado/{id}', ['ConfigController', 'previewCertificado'], ['AuthMiddleware']);
+$router->get('/configuracoes/funcoes', ['ConfigController', 'funcoes'], ['AuthMiddleware']);
+$router->post('/configuracoes/funcoes/adicionar', ['ConfigController', 'funcaoAdicionar'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/configuracoes/funcoes/{id}/remover', ['ConfigController', 'funcaoRemover'], ['AuthMiddleware', 'CsrfMiddleware']);
 
 // --- Notificacoes ---
 $router->get('/notificacoes', ['NotificacaoController', 'index'], ['AuthMiddleware']);
