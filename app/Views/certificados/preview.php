@@ -45,6 +45,7 @@
             duracao: certData.duracao,
             tem_anuencia: parseInt(certData.tem_anuencia),
             tem_diego: parseInt(certData.tem_diego),
+            tem_diego_responsavel: parseInt(certData.tem_diego_responsavel || 0),
             conteudo_no_verso: parseInt(certData.conteudo_no_verso),
             conteudo_programatico: certData.conteudo_programatico,
         };

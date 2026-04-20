@@ -79,7 +79,19 @@ function gerarCertificadoHtml(colaborador, tipoCert, ministrante) {
     const imgMariana = '<img src="/assets/images/assinatura_mariana.png?v=3">';
     const imgCarimbo = '<img src="/assets/images/carimbo_tse.png?v=3" class="sig-stamp">';
 
-    if (ehNr12 && ministranteSeparado) {
+    const diegoCargo  = 'Engenheiro Eletricista';
+    const diegoReg    = 'CREA - 1018746617D/GO';
+    const diegoNome   = 'Diego Costa Rodrigues';
+
+    if (c.tem_diego_responsavel) {
+        // Mariana = Instrutora, Diego = Responsável Técnico (ex.: NR-10)
+        signaturesHtml = `<div class="cert-sig-grid">
+            ${sigBlock(imgMariana, respNome, `Instrutora<br>${respCargo}<br>${respRegistro}`)}
+            ${sigBlock('', nome, 'Participante')}
+            ${sigBlock('', diegoNome, `Responsável Técnico<br>${diegoCargo}<br>${diegoReg}`)}
+            ${sigBlock(imgCarimbo, 'TSE Automação Industrial Ltda', 'CNPJ 05.149.152/0002-55')}
+        </div>`;
+    } else if (ehNr12 && ministranteSeparado) {
         // NR-12: 4 assinaturas - Ministrante + Participante + Responsável + Empresa
         signaturesHtml = `<div class="cert-sig-grid">
             ${sigBlock('', minNome, `Instrutor(a)<br>${minCargo}<br>${minRegistro}`)}
@@ -88,9 +100,9 @@ function gerarCertificadoHtml(colaborador, tipoCert, ministrante) {
             ${sigBlock(imgCarimbo, 'TSE Automação Industrial Ltda', 'CNPJ 05.149.152/0002-55')}
         </div>`;
     } else if (c.tem_diego) {
-        // Layout 4 assinaturas: Diego + Participante + Mariana + TSE
+        // Layout 4 assinaturas: Diego (Instrutor) + Participante + Mariana (Resp.) + TSE
         signaturesHtml = `<div class="cert-sig-grid">
-            ${sigBlock('', 'Diego Costa Rodrigues', 'Instrutor<br>Engenheiro Eletricista<br>CREA - 1018746617D/GO')}
+            ${sigBlock('', diegoNome, `Instrutor<br>${diegoCargo}<br>${diegoReg}`)}
             ${sigBlock('', nome, 'Participante')}
             ${sigBlock(imgMariana, respNome, `Responsável Técnico<br>${respCargo}<br>${respRegistro}`)}
             ${sigBlock(imgCarimbo, 'TSE Automação Industrial Ltda', 'CNPJ 05.149.152/0002-55')}
@@ -422,6 +434,7 @@ async function baixarTodosPDFs(colaboradorData, certificados) {
             duracao: cert.duracao,
             tem_anuencia: cert.tem_anuencia,
             tem_diego: cert.tem_diego,
+            tem_diego_responsavel: cert.tem_diego_responsavel || 0,
             conteudo_no_verso: cert.conteudo_no_verso,
             conteudo_programatico: cert.conteudo_programatico,
         };

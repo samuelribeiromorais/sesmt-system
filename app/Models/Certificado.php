@@ -12,7 +12,7 @@ class Certificado extends Model
     {
         $stmt = $this->db->prepare(
             "SELECT cert.*, tc.codigo, tc.titulo, tc.duracao, tc.validade_meses,
-                    tc.tem_anuencia, tc.tem_diego, tc.conteudo_no_verso, tc.conteudo_programatico,
+                    tc.tem_anuencia, tc.tem_diego, tc.tem_diego_responsavel, tc.conteudo_no_verso, tc.conteudo_programatico,
                     tc.ministrante_id as tipo_ministrante_id,
                     COALESCE(m.nome, mt.nome) as ministrante_nome,
                     COALESCE(m.cargo_titulo, mt.cargo_titulo) as ministrante_cargo,

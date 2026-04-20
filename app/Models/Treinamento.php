@@ -13,7 +13,7 @@ class Treinamento extends Model
     {
         $stmt = $this->db->prepare(
             "SELECT t.*, tc.codigo as tipo_codigo, tc.titulo as tipo_titulo, tc.duracao,
-                    tc.validade_meses, tc.tem_anuencia, tc.tem_diego, tc.conteudo_no_verso,
+                    tc.validade_meses, tc.tem_anuencia, tc.tem_diego, tc.tem_diego_responsavel, tc.conteudo_no_verso,
                     tc.conteudo_programatico, tc.ministrante_id as tipo_ministrante_id,
                     m.nome as ministrante_nome, m.cargo_titulo as ministrante_cargo,
                     m.registro as ministrante_registro,

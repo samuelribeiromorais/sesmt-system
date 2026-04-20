@@ -35,6 +35,7 @@
                                 data-validade="<?= $t['validade_meses'] ?>"
                                 data-anuencia="<?= $t['tem_anuencia'] ?>"
                                 data-diego="<?= $t['tem_diego'] ?>"
+                                data-diego-responsavel="<?= $t['tem_diego_responsavel'] ?? 0 ?>"
                                 data-verso="<?= $t['conteudo_no_verso'] ?>"
                                 data-conteudo="<?= htmlspecialchars($t['conteudo_programatico'] ?? '[]') ?>"
                                 data-ministrante-id="<?= $t['ministrante_id'] ?? '' ?>"
@@ -136,6 +137,7 @@ document.querySelectorAll('#tipo-cert-select option[data-codigo]').forEach(opt =
         validade_meses: parseInt(opt.dataset.validade),
         tem_anuencia: parseInt(opt.dataset.anuencia),
         tem_diego: parseInt(opt.dataset.diego),
+        tem_diego_responsavel: parseInt(opt.dataset.diegoResponsavel || 0),
         conteudo_no_verso: parseInt(opt.dataset.verso),
         conteudo_programatico: opt.dataset.conteudo,
         ministrante_id: opt.dataset.ministranteId || null,

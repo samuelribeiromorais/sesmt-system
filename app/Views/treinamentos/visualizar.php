@@ -163,6 +163,7 @@ TIPOS_MAP[<?= $t['id'] ?>] = {
     validade_meses: <?= $t['validade_meses'] ?>,
     tem_anuencia: <?= $t['tem_anuencia'] ?>,
     tem_diego: <?= $t['tem_diego'] ?>,
+    tem_diego_responsavel: <?= $t['tem_diego_responsavel'] ?? 0 ?>,
     conteudo_no_verso: <?= $t['conteudo_no_verso'] ?>,
     conteudo_programatico: <?= json_encode($t['conteudo_programatico'] ?? '[]') ?>,
     ministrante_id: <?= json_encode($t['ministrante_id']) ?>,
