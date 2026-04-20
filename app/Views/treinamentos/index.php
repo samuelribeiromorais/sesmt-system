@@ -62,15 +62,21 @@
                 <th>Treinamento</th>
                 <th>Ministrante</th>
                 <th style="text-align:center;">Participantes</th>
+                <th style="text-align:center;">Status</th>
                 <th>Criado por</th>
                 <th style="text-align:center;">Acoes</th>
             </tr>
         </thead>
         <tbody>
             <?php if (empty($treinamentos)): ?>
-            <tr><td colspan="6" style="text-align:center; color:#6b7280; padding:40px; font-size:14px;">Nenhum treinamento registrado.</td></tr>
+            <tr><td colspan="7" style="text-align:center; color:#6b7280; padding:40px; font-size:14px;">Nenhum treinamento registrado.</td></tr>
             <?php else: ?>
             <?php foreach ($treinamentos as $t): ?>
+            <?php
+                $statusLabel = ['em_andamento' => 'Em Andamento', 'aguardando_assinaturas' => 'Aguard. Assinaturas', 'finalizada' => 'Finalizada'];
+                $statusClass = ['em_andamento' => 'badge-proximo_vencimento', 'aguardando_assinaturas' => 'badge-vigente', 'finalizada' => 'badge-vigente'];
+                $st = $t['status'] ?? 'em_andamento';
+            ?>
             <tr>
                 <td style="font-size:13px; white-space:nowrap;">
                     <?= date('d/m/Y', strtotime($t['data_realizacao'])) ?>
@@ -86,10 +92,19 @@
                 <td style="text-align:center;">
                     <span class="badge badge-vigente"><?= $t['total_participantes'] ?></span>
                 </td>
+                <td style="text-align:center;">
+                    <span class="badge <?= $statusClass[$st] ?>" style="font-size:11px;"><?= $statusLabel[$st] ?></span>
+                </td>
                 <td style="font-size:13px;"><?= htmlspecialchars($t['criador_nome'] ?? '-') ?></td>
                 <td style="text-align:center; white-space:nowrap;">
                     <a href="/treinamentos/<?= $t['id'] ?>" class="btn btn-outline btn-sm">Ver</a>
-                    <a href="/treinamentos/<?= $t['id'] ?>/certificados" class="btn btn-outline btn-sm" target="_blank">Certificados</a>
+                    <a href="/treinamentos/<?= $t['id'] ?>/editar" class="btn btn-outline btn-sm">Editar</a>
+                    <a href="/treinamentos/<?= $t['id'] ?>/certificados" class="btn btn-outline btn-sm" target="_blank">Certs</a>
+                    <form method="POST" action="/treinamentos/<?= $t['id'] ?>/excluir" style="display:inline;"
+                          onsubmit="return confirm('Excluir este treinamento e todos os certificados vinculados?')">
+                        <?= \App\Core\View::csrfField() ?>
+                        <button type="submit" class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;">Excluir</button>
+                    </form>
                 </td>
             </tr>
             <?php endforeach; ?>

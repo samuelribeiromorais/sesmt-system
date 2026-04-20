@@ -99,6 +99,12 @@ $router->get('/treinamentos/colaboradores-json', ['TreinamentoController', 'cola
 $router->post('/treinamentos/salvar', ['TreinamentoController', 'store'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->get('/treinamentos/{id}/certificados', ['TreinamentoController', 'certificados'], ['AuthMiddleware']);
 $router->get('/treinamentos/{id}/lista-presenca', ['TreinamentoController', 'listaPresenca'], ['AuthMiddleware']);
+$router->get('/treinamentos/{id}/editar', ['TreinamentoController', 'editForm'], ['AuthMiddleware']);
+$router->post('/treinamentos/{id}/atualizar', ['TreinamentoController', 'update'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/treinamentos/{id}/excluir', ['TreinamentoController', 'destroy'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/treinamentos/{id}/adicionar-colaboradores', ['TreinamentoController', 'adicionarColaboradores'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/treinamentos/{id}/remover-colaborador', ['TreinamentoController', 'removerColaborador'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/treinamentos/{id}/upload-assinado', ['TreinamentoController', 'uploadAssinado'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->get('/treinamentos/{id}', ['TreinamentoController', 'show'], ['AuthMiddleware']);
 
 // --- Backup (somente log) ---

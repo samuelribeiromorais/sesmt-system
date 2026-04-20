@@ -10,10 +10,23 @@
         <h2><?= htmlspecialchars($treinamento['tipo_codigo']) ?></h2>
         <span style="color:var(--c-gray);"><?= htmlspecialchars($treinamento['tipo_titulo']) ?> (<?= htmlspecialchars($treinamento['duracao']) ?>)</span>
     </div>
-    <div style="display:flex; gap:8px;">
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <?php
+            $stLabel = ['em_andamento'=>'Em Andamento','aguardando_assinaturas'=>'Aguard. Assinaturas','finalizada'=>'Finalizada'];
+            $stClass = ['em_andamento'=>'badge-proximo_vencimento','aguardando_assinaturas'=>'badge-vigente','finalizada'=>'badge-vigente'];
+            $trSt = $treinamento['status'] ?? 'em_andamento';
+        ?>
+        <span class="badge <?= $stClass[$trSt] ?>" style="align-self:center; font-size:12px;"><?= $stLabel[$trSt] ?></span>
         <a href="/treinamentos/<?= $treinamento['id'] ?>/lista-presenca" class="btn btn-outline btn-sm" target="_blank">Lista de Presenca</a>
         <a href="/treinamentos/<?= $treinamento['id'] ?>/certificados" class="btn btn-outline btn-sm" target="_blank">Imprimir Todos</a>
         <button class="btn btn-primary btn-sm" onclick="baixarTodosZip()">Baixar ZIP</button>
+        <a href="/treinamentos/<?= $treinamento['id'] ?>/editar" class="btn btn-outline btn-sm">Editar</a>
+        <button class="btn btn-outline btn-sm" onclick="abrirModalAddColab()" style="background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe;">+ Colaborador</button>
+        <form method="POST" action="/treinamentos/<?= $treinamento['id'] ?>/excluir" style="display:inline;"
+              onsubmit="return confirm('Excluir este treinamento e todos os certificados?')">
+            <?= \App\Core\View::csrfField() ?>
+            <button type="submit" class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;">Excluir</button>
+        </form>
         <a href="/treinamentos" class="btn btn-outline btn-sm">Voltar</a>
     </div>
 </div>
@@ -69,6 +82,7 @@
                 <th>Setor</th>
                 <th style="text-align:center;">Status</th>
                 <th style="text-align:center;">Validade</th>
+                <th style="text-align:center;">Assinado</th>
                 <th style="text-align:center;">Acoes</th>
             </tr>
         </thead>
@@ -90,8 +104,18 @@
                 </td>
                 <td style="text-align:center; font-size:13px;"><?= date('d/m/Y', strtotime($p['data_validade'])) ?></td>
                 <td style="text-align:center;">
-                    <button class="btn btn-outline btn-sm" onclick="previewParticipante(<?= $p['colaborador_id'] ?>)">Ver Cert.</button>
+                    <?php if (!empty($p['arquivo_assinado'])): ?>
+                        <span class="badge badge-vigente" title="Vinculado em <?= date('d/m/Y', strtotime($p['assinado_em'])) ?>">Assinado</span>
+                    <?php else: ?>
+                        <button class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:11px;"
+                                onclick="abrirUploadAssinado(<?= $p['certificado_id'] ?>)">Vincular</button>
+                    <?php endif; ?>
+                </td>
+                <td style="text-align:center; white-space:nowrap;">
+                    <button class="btn btn-outline btn-sm" onclick="previewParticipante(<?= $p['colaborador_id'] ?>)">Ver</button>
                     <button class="btn btn-outline btn-sm" onclick="baixarPdfParticipante(<?= $p['colaborador_id'] ?>)">PDF</button>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;font-size:11px;"
+                            onclick="removerColaborador(<?= $p['certificado_id'] ?>, '<?= htmlspecialchars(addslashes($p['nome_completo'])) ?>')">Remover</button>
                 </td>
             </tr>
             <?php endforeach; ?>
@@ -272,5 +296,99 @@ async function baixarTodosZip() {
     URL.revokeObjectURL(a.href);
 
     overlay.style.display = 'none';
+}
+
+// ---- Remover colaborador ----
+function removerColaborador(certId, nome) {
+    if (!confirm(`Remover ${nome} desta turma?`)) return;
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/treinamentos/<?= $treinamento['id'] ?>/remover-colaborador';
+    form.innerHTML = `
+        <input type="hidden" name="_csrf_token" value="${document.querySelector('[name=_csrf_token]')?.value || ''}">
+        <input type="hidden" name="certificado_id" value="${certId}">
+    `;
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// ---- Upload certificado assinado ----
+function abrirUploadAssinado(certId) {
+    document.getElementById('upload-cert-id').value = certId;
+    document.getElementById('upload-modal-trein').style.display = 'flex';
+}
+function fecharUploadModal() {
+    document.getElementById('upload-modal-trein').style.display = 'none';
+}
+</script>
+
+<!-- Modal upload certificado assinado -->
+<div id="upload-modal-trein" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; padding:32px; border-radius:12px; min-width:360px; max-width:500px; width:90%;">
+        <h3 style="margin:0 0 16px;">Vincular Certificado Assinado</h3>
+        <form method="POST" action="/treinamentos/<?= $treinamento['id'] ?>/upload-assinado" enctype="multipart/form-data">
+            <?= \App\Core\View::csrfField() ?>
+            <input type="hidden" name="certificado_id" id="upload-cert-id">
+            <div class="form-group">
+                <label>Arquivo PDF assinado *</label>
+                <input type="file" name="arquivo_assinado" accept=".pdf" class="form-control" required>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:16px;">
+                <button type="submit" class="btn btn-primary">Vincular</button>
+                <button type="button" class="btn btn-outline" onclick="fecharUploadModal()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal adicionar colaboradores -->
+<div id="modal-add-colab" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; padding:32px; border-radius:12px; min-width:400px; max-width:600px; width:90%; max-height:80vh; display:flex; flex-direction:column;">
+        <h3 style="margin:0 0 16px;">Adicionar Colaboradores</h3>
+        <form method="POST" action="/treinamentos/<?= $treinamento['id'] ?>/adicionar-colaboradores" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+            <?= \App\Core\View::csrfField() ?>
+            <div class="form-group">
+                <label>Buscar colaborador</label>
+                <input type="text" id="search-add-colab" class="form-control" placeholder="Digite o nome..." autocomplete="off" oninput="buscarColabAdd(this.value)">
+            </div>
+            <div id="add-colab-list" style="flex:1; overflow-y:auto; border:1px solid #e5e7eb; border-radius:6px; max-height:280px; padding:8px;">
+                <p style="color:#6b7280; font-size:13px; text-align:center; padding:20px 0;">Digite para buscar colaboradores</p>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:16px;">
+                <button type="submit" class="btn btn-primary">Adicionar Selecionados</button>
+                <button type="button" class="btn btn-outline" onclick="fecharModalAddColab()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function abrirModalAddColab() {
+    document.getElementById('modal-add-colab').style.display = 'flex';
+    document.getElementById('search-add-colab').focus();
+}
+function fecharModalAddColab() {
+    document.getElementById('modal-add-colab').style.display = 'none';
+}
+
+let searchTimer;
+function buscarColabAdd(q) {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(async () => {
+        if (q.trim().length < 2) return;
+        const res = await fetch(`/treinamentos/colaboradores-json?q=${encodeURIComponent(q)}`);
+        const list = await res.json();
+        const el = document.getElementById('add-colab-list');
+        if (!list.length) {
+            el.innerHTML = '<p style="color:#6b7280; font-size:13px; text-align:center; padding:20px 0;">Nenhum resultado</p>';
+            return;
+        }
+        el.innerHTML = list.map(c => `
+            <label style="display:flex; align-items:center; gap:8px; padding:8px; cursor:pointer; border-radius:4px;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
+                <input type="checkbox" name="colaborador_ids[]" value="${c.id}">
+                <span style="font-size:13px;"><strong>${c.nome_completo}</strong> <span style="color:#6b7280;">${c.cargo || ''}</span></span>
+            </label>
+        `).join('');
+    }, 300);
 }
 </script>

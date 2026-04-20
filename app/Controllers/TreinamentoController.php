@@ -351,4 +351,331 @@ class TreinamentoController extends Controller
         echo json_encode($results);
         exit;
     }
+
+    public function editForm(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $treinModel = new Treinamento();
+        $treinamento = $treinModel->findWithDetails((int)$id);
+
+        if (!$treinamento || $treinamento['excluido_em']) {
+            $this->flash('error', 'Treinamento não encontrado.');
+            $this->redirect('/treinamentos');
+            return;
+        }
+
+        $tipoModel = new TipoCertificado();
+        $ministranteModel = new Ministrante();
+        $tipos = $tipoModel->all(['ativo' => 1], 'codigo ASC');
+        $ministrantes = $ministranteModel->all(['ativo' => 1], 'nome ASC');
+
+        $this->view('treinamentos/editar', [
+            'treinamento' => $treinamento,
+            'tipos'       => $tipos,
+            'ministrantes'=> $ministrantes,
+            'pageTitle'   => 'Treinamentos',
+        ]);
+    }
+
+    public function update(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $treinModel = new Treinamento();
+        $treinamento = $treinModel->find((int)$id);
+
+        if (!$treinamento || $treinamento['excluido_em']) {
+            $this->flash('error', 'Treinamento não encontrado.');
+            $this->redirect('/treinamentos');
+            return;
+        }
+
+        $ministranteId     = (int)$this->input('ministrante_id') ?: null;
+        $dataRealizacao    = $this->input('data_realizacao');
+        $dataRealizacaoFim = $this->input('data_realizacao_fim') ?: null;
+        $dataEmissao       = $this->input('data_emissao');
+        $observacoes       = trim($this->input('observacoes', ''));
+
+        if (!$dataRealizacao || !$dataEmissao) {
+            $this->flash('error', 'Data de realização e emissão são obrigatórias.');
+            $this->redirect("/treinamentos/{$id}/editar");
+            return;
+        }
+
+        $tipoModel = new TipoCertificado();
+        $tipo = $tipoModel->find($treinamento['tipo_certificado_id']);
+        $dataValidade = date('Y-m-d', strtotime("{$dataEmissao} + {$tipo['validade_meses']} months"));
+        $daysLeft = (strtotime($dataValidade) - time()) / 86400;
+        $statusCert = 'vigente';
+        if ($daysLeft < 0) $statusCert = 'vencido';
+        elseif ($daysLeft <= 30) $statusCert = 'proximo_vencimento';
+
+        $db = Database::getInstance();
+        $db->beginTransaction();
+        try {
+            $treinModel->update((int)$id, [
+                'ministrante_id'      => $ministranteId,
+                'data_realizacao'     => $dataRealizacao,
+                'data_realizacao_fim' => $dataRealizacaoFim,
+                'data_emissao'        => $dataEmissao,
+                'observacoes'         => $observacoes ?: null,
+            ]);
+
+            // Recalculate all non-deleted certs in this training
+            $stmt = $db->prepare(
+                "UPDATE certificados SET
+                    data_realizacao = :dr,
+                    data_realizacao_fim = :drf,
+                    data_emissao = :de,
+                    data_validade = :dv,
+                    status = :st,
+                    ministrante_id = :mid
+                 WHERE treinamento_id = :tid AND excluido_em IS NULL"
+            );
+            $stmt->execute([
+                'dr'  => $dataRealizacao,
+                'drf' => $dataRealizacaoFim,
+                'de'  => $dataEmissao,
+                'dv'  => $dataValidade,
+                'st'  => $statusCert,
+                'mid' => $ministranteId,
+                'tid' => $id,
+            ]);
+
+            $db->commit();
+            LoggerMiddleware::log('editar', "Treinamento ID {$id} atualizado");
+            $this->flash('success', 'Treinamento atualizado com sucesso.');
+            $this->redirect("/treinamentos/{$id}");
+        } catch (\Exception $e) {
+            $db->rollBack();
+            $this->flash('error', 'Erro ao atualizar: ' . $e->getMessage());
+            $this->redirect("/treinamentos/{$id}/editar");
+        }
+    }
+
+    public function destroy(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $treinModel = new Treinamento();
+        $treinamento = $treinModel->find((int)$id);
+
+        if (!$treinamento) {
+            $this->flash('error', 'Treinamento não encontrado.');
+            $this->redirect('/treinamentos');
+            return;
+        }
+
+        $db = Database::getInstance();
+        $db->beginTransaction();
+        try {
+            $now = date('Y-m-d H:i:s');
+            $treinModel->update((int)$id, ['excluido_em' => $now]);
+
+            $db->prepare(
+                "UPDATE certificados SET excluido_em = :now WHERE treinamento_id = :tid AND excluido_em IS NULL"
+            )->execute(['now' => $now, 'tid' => $id]);
+
+            $db->commit();
+            LoggerMiddleware::log('excluir', "Treinamento ID {$id} excluído (soft)");
+            $this->flash('success', 'Treinamento excluído.');
+        } catch (\Exception $e) {
+            $db->rollBack();
+            $this->flash('error', 'Erro ao excluir: ' . $e->getMessage());
+        }
+        $this->redirect('/treinamentos');
+    }
+
+    public function adicionarColaboradores(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $treinModel = new Treinamento();
+        $treinamento = $treinModel->find((int)$id);
+
+        if (!$treinamento || $treinamento['excluido_em']) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Treinamento não encontrado.']);
+            exit;
+        }
+
+        $colaboradorIds = $this->input('colaborador_ids');
+        if (!$colaboradorIds) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Nenhum colaborador selecionado.']);
+            exit;
+        }
+        if (!is_array($colaboradorIds)) {
+            $colaboradorIds = [$colaboradorIds];
+        }
+
+        $tipoModel = new TipoCertificado();
+        $tipo = $tipoModel->find($treinamento['tipo_certificado_id']);
+        $dataEmissao  = $treinamento['data_emissao'];
+        $dataValidade = date('Y-m-d', strtotime("{$dataEmissao} + {$tipo['validade_meses']} months"));
+        $daysLeft = (strtotime($dataValidade) - time()) / 86400;
+        $statusCert = 'vigente';
+        if ($daysLeft < 0) $statusCert = 'vencido';
+        elseif ($daysLeft <= 30) $statusCert = 'proximo_vencimento';
+
+        $db = Database::getInstance();
+        $db->beginTransaction();
+        try {
+            $certModel = new Certificado();
+            $adicionados = 0;
+            foreach ($colaboradorIds as $colabId) {
+                $colabId = (int)$colabId;
+                // Skip if already in this training
+                $chk = $db->prepare(
+                    "SELECT id FROM certificados WHERE treinamento_id = :tid AND colaborador_id = :cid AND excluido_em IS NULL"
+                );
+                $chk->execute(['tid' => $id, 'cid' => $colabId]);
+                if ($chk->fetch()) continue;
+
+                $certData = [
+                    'colaborador_id'      => $colabId,
+                    'tipo_certificado_id' => $treinamento['tipo_certificado_id'],
+                    'data_realizacao'     => $treinamento['data_realizacao'],
+                    'data_realizacao_fim' => $treinamento['data_realizacao_fim'] ?? null,
+                    'data_emissao'        => $dataEmissao,
+                    'data_validade'       => $dataValidade,
+                    'status'              => $statusCert,
+                    'treinamento_id'      => (int)$id,
+                    'ministrante_id'      => $treinamento['ministrante_id'] ?? null,
+                    'criado_por'          => Session::get('user_id'),
+                ];
+                $certModel->create($certData);
+                $adicionados++;
+            }
+
+            // Update total_participantes
+            $stmt = $db->prepare(
+                "SELECT COUNT(*) FROM certificados WHERE treinamento_id = :tid AND excluido_em IS NULL"
+            );
+            $stmt->execute(['tid' => $id]);
+            $total = (int)$stmt->fetchColumn();
+            $treinModel->update((int)$id, ['total_participantes' => $total]);
+            $treinModel->sincronizarStatus((int)$id);
+
+            $db->commit();
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'adicionados' => $adicionados]);
+        } catch (\Exception $e) {
+            $db->rollBack();
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    public function removerColaborador(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $certId = (int)$this->input('certificado_id');
+        if (!$certId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'certificado_id ausente.']);
+            exit;
+        }
+
+        $certModel = new Certificado();
+        $cert = $certModel->find($certId);
+
+        if (!$cert || (int)$cert['treinamento_id'] !== (int)$id) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Certificado não encontrado neste treinamento.']);
+            exit;
+        }
+
+        $db = Database::getInstance();
+        $db->beginTransaction();
+        try {
+            $now = date('Y-m-d H:i:s');
+            $certModel->update($certId, ['excluido_em' => $now]);
+
+            // Update total_participantes and status
+            $stmt = $db->prepare(
+                "SELECT COUNT(*) FROM certificados WHERE treinamento_id = :tid AND excluido_em IS NULL"
+            );
+            $stmt->execute(['tid' => $id]);
+            $total = (int)$stmt->fetchColumn();
+            $treinModel = new Treinamento();
+            $treinModel->update((int)$id, ['total_participantes' => $total]);
+            $treinModel->sincronizarStatus((int)$id);
+
+            $db->commit();
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true]);
+        } catch (\Exception $e) {
+            $db->rollBack();
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    public function uploadAssinado(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $certId = (int)$this->input('certificado_id');
+        if (!$certId) {
+            $this->flash('error', 'Certificado não informado.');
+            $this->redirect("/treinamentos/{$id}");
+            return;
+        }
+
+        $certModel = new Certificado();
+        $cert = $certModel->find($certId);
+
+        if (!$cert || (int)$cert['treinamento_id'] !== (int)$id) {
+            $this->flash('error', 'Certificado não encontrado neste treinamento.');
+            $this->redirect("/treinamentos/{$id}");
+            return;
+        }
+
+        if (empty($_FILES['arquivo_assinado']) || $_FILES['arquivo_assinado']['error'] !== UPLOAD_ERR_OK) {
+            $this->flash('error', 'Arquivo inválido ou não enviado.');
+            $this->redirect("/treinamentos/{$id}");
+            return;
+        }
+
+        $file = $_FILES['arquivo_assinado'];
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if ($ext !== 'pdf') {
+            $this->flash('error', 'Apenas PDFs são aceitos.');
+            $this->redirect("/treinamentos/{$id}");
+            return;
+        }
+
+        $colabId = $cert['colaborador_id'];
+        $uploadDir = BASE_PATH . "/uploads/colaboradores/{$colabId}/";
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $filename = 'cert_assinado_' . $certId . '_' . time() . '.pdf';
+        $destPath = $uploadDir . $filename;
+
+        if (!move_uploaded_file($file['tmp_name'], $destPath)) {
+            $this->flash('error', 'Falha ao salvar o arquivo.');
+            $this->redirect("/treinamentos/{$id}");
+            return;
+        }
+
+        $relativePath = "uploads/colaboradores/{$colabId}/{$filename}";
+        $certModel->update($certId, [
+            'arquivo_assinado' => $relativePath,
+            'assinado_em'      => date('Y-m-d H:i:s'),
+        ]);
+
+        $treinModel = new Treinamento();
+        $treinModel->sincronizarStatus((int)$id);
+
+        LoggerMiddleware::log('upload', "Cert assinado vinculado: cert_id={$certId}, treinamento={$id}");
+        $this->flash('success', 'Certificado assinado vinculado com sucesso.');
+        $this->redirect("/treinamentos/{$id}");
+    }
 }
