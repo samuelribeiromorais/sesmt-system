@@ -124,6 +124,9 @@ $router->get('/kit-pj/novo', ['KitPjController', 'create'], ['AuthMiddleware']);
 $router->post('/kit-pj/salvar', ['KitPjController', 'store'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->get('/kit-pj/{id}/imprimir', ['KitPjController', 'imprimir'], ['AuthMiddleware']);
 
+// --- Aprovacoes ---
+$router->get('/aprovacoes', ['DocumentoController', 'aprovacoes'], ['AuthMiddleware']);
+
 // --- Documentos ---
 $router->get('/documentos', ['DocumentoController', 'index'], ['AuthMiddleware']);
 $router->get('/documentos/upload/{colaboradorId}', ['DocumentoController', 'uploadForm'], ['AuthMiddleware']);

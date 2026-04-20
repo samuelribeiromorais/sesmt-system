@@ -255,7 +255,9 @@ $jsonVencData = json_encode($vencData);
         <span class="table-title" style="color: var(--c-danger);">
             Colaboradores Ativos Sem Nenhum Documento (<?= count($colab_sem_docs) ?>)
         </span>
+        <button type="button" onclick="toggleWidget('colab-sem-docs-body', this)" class="btn btn-outline btn-sm" title="Minimizar">▲</button>
     </div>
+    <div id="colab-sem-docs-body">
     <table>
         <thead>
             <tr>
@@ -278,6 +280,7 @@ $jsonVencData = json_encode($vencData);
             <?php endforeach; ?>
         </tbody>
     </table>
+    </div><!-- #colab-sem-docs-body -->
 </div>
 <?php endif; ?>
 
@@ -286,7 +289,12 @@ $jsonVencData = json_encode($vencData);
 <div id="aprovacoes-pendentes" class="table-container" style="margin-top:24px; border-left: 4px solid #8b5cf6;">
     <div class="table-header">
         <span class="table-title" style="color:#8b5cf6;">Aprovações Pendentes (<?= number_format($total_aprovacoes_pendentes ?? 0, 0, ',', '.') ?> total - mostrando 20 mais recentes)</span>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <a href="/aprovacoes" class="btn btn-outline btn-sm" title="Ver todas as aprovações">Ver todas</a>
+            <button type="button" onclick="toggleWidget('aprovacoes-pendentes-body', this)" class="btn btn-outline btn-sm" title="Minimizar">▲</button>
+        </div>
     </div>
+    <div id="aprovacoes-pendentes-body">
     <table>
         <thead>
             <tr>
@@ -317,6 +325,7 @@ $jsonVencData = json_encode($vencData);
             <?php endforeach; ?>
         </tbody>
     </table>
+    </div><!-- #aprovacoes-pendentes-body -->
 </div>
 
 <!-- Modal de rejeicao -->
@@ -342,6 +351,27 @@ function rejeitarDoc(docId) {
     form.action = '/documentos/' + docId + '/aprovar';
     modal.style.display = 'flex';
 }
+function toggleWidget(bodyId, btn) {
+    const body = document.getElementById(bodyId);
+    if (!body) return;
+    const collapsed = body.style.display === 'none';
+    body.style.display = collapsed ? '' : 'none';
+    btn.textContent = collapsed ? '▲' : '▼';
+    try { localStorage.setItem('widget_' + bodyId, collapsed ? '1' : '0'); } catch(e) {}
+}
+// Restore collapsed state on load
+document.addEventListener('DOMContentLoaded', function() {
+    ['colab-sem-docs-body', 'aprovacoes-pendentes-body'].forEach(function(id) {
+        try {
+            if (localStorage.getItem('widget_' + id) === '0') {
+                const body = document.getElementById(id);
+                const btn = body && body.closest('.table-container').querySelector('[onclick*="' + id + '"]');
+                if (body) { body.style.display = 'none'; }
+                if (btn) { btn.textContent = '▼'; }
+            }
+        } catch(e) {}
+    });
+});
 </script>
 <?php endif; ?>
 

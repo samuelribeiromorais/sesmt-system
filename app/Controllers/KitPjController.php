@@ -16,18 +16,30 @@ class KitPjController extends Controller
     {
         RoleMiddleware::requireAdminOrSesmt();
 
-        $db = Database::getInstance();
-        $stmt = $db->query(
+        $db     = Database::getInstance();
+        $search = trim($this->input('q', ''));
+        $params = [];
+        $where  = "1=1";
+
+        if ($search !== '') {
+            $where .= " AND c.nome_completo LIKE :q";
+            $params['q'] = "%{$search}%";
+        }
+
+        $stmt = $db->prepare(
             "SELECT k.*, c.nome_completo, c.cargo, c.funcao, c.setor
              FROM kits_pj k
              JOIN colaboradores c ON k.colaborador_id = c.id
+             WHERE {$where}
              ORDER BY k.criado_em DESC
-             LIMIT 50"
+             LIMIT 100"
         );
+        $stmt->execute($params);
         $kits = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         $this->view('kit-pj/index', [
-            'kits' => $kits,
+            'kits'      => $kits,
+            'search'    => $search,
             'pageTitle' => 'Kit PJ',
         ]);
     }

@@ -1,7 +1,15 @@
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-    <h2>Kit PJ - Documentos para Colaboradores PJ</h2>
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+    <h2 style="margin:0;">Kit PJ - Documentos para Colaboradores PJ</h2>
     <a href="/kit-pj/novo" class="btn btn-primary btn-sm">Novo Kit PJ</a>
 </div>
+
+<form method="GET" action="/kit-pj" style="margin-bottom:20px; display:flex; gap:8px; max-width:400px;">
+    <input type="text" name="q" value="<?= htmlspecialchars($search ?? '') ?>" placeholder="Buscar por nome do colaborador..." class="form-control" style="flex:1;">
+    <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+    <?php if (!empty($search)): ?>
+    <a href="/kit-pj" class="btn btn-outline btn-sm">Limpar</a>
+    <?php endif; ?>
+</form>
 
 <div class="table-container">
     <table>

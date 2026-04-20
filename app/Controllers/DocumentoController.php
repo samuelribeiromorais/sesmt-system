@@ -778,4 +778,62 @@ class DocumentoController extends Controller
             $this->json(['error' => 'Erro no OCR: ' . $e->getMessage()]);
         }
     }
+
+    /**
+     * Tela dedicada de aprovações pendentes (todas, com paginação e busca).
+     */
+    public function aprovacoes(): void
+    {
+        \App\Middleware\RoleMiddleware::requireAdminOrSesmt();
+
+        $db     = \App\Core\Database::getInstance();
+        $search = trim($this->input('q', ''));
+        $page   = max(1, (int)$this->input('page', 1));
+        $perPage = 30;
+        $offset  = ($page - 1) * $perPage;
+
+        $where  = "(d.aprovacao_status IS NULL OR d.aprovacao_status = 'pendente')
+                   AND d.status != 'obsoleto' AND d.excluido_em IS NULL
+                   AND c.excluido_em IS NULL AND c.status = 'ativo'";
+        $params = [];
+
+        if ($search !== '') {
+            $where .= " AND (c.nome_completo LIKE :q OR td.nome LIKE :q2)";
+            $params['q']  = "%{$search}%";
+            $params['q2'] = "%{$search}%";
+        }
+
+        $countStmt = $db->prepare(
+            "SELECT COUNT(*) FROM documentos d
+             JOIN colaboradores c ON d.colaborador_id = c.id
+             JOIN tipos_documento td ON d.tipo_documento_id = td.id
+             WHERE {$where}"
+        );
+        $countStmt->execute($params);
+        $total      = (int)$countStmt->fetchColumn();
+        $totalPages = max(1, (int)ceil($total / $perPage));
+
+        $sql = "SELECT d.id, d.arquivo_nome, d.data_emissao, d.criado_em,
+                       c.id as colaborador_id, c.nome_completo,
+                       td.nome as tipo_nome, u.nome as enviado_por_nome
+                FROM documentos d
+                JOIN colaboradores c ON d.colaborador_id = c.id
+                JOIN tipos_documento td ON d.tipo_documento_id = td.id
+                LEFT JOIN usuarios u ON d.enviado_por = u.id
+                WHERE {$where}
+                ORDER BY d.criado_em DESC
+                LIMIT " . (int)$perPage . " OFFSET " . (int)$offset;
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        $aprovacoes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        $this->view('documentos/aprovacoes', [
+            'aprovacoes'  => $aprovacoes,
+            'total'       => $total,
+            'page'        => $page,
+            'totalPages'  => $totalPages,
+            'search'      => $search,
+            'pageTitle'   => 'Aprovações Pendentes',
+        ]);
+    }
 }

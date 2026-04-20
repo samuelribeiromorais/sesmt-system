@@ -357,6 +357,7 @@ document.addEventListener('keydown', function(e) {
 
                     var tr = document.createElement('tr');
                     tr.innerHTML =
+                        '<td><input type="checkbox" class="row-checkbox" value="' + d.id + '"></td>' +
                         '<td><a href="/colaboradores/' + d.colaborador_id + '" style="color:var(--c-primary);font-weight:600;">' + esc(d.nome_completo) + '</a></td>' +
                         '<td style="font-size:13px;">' + esc(d.tipo_nome) + '</td>' +
                         '<td><span class="badge" style="background:' + catColor + ';">' + esc((d.categoria || '').toUpperCase()) + '</span></td>' +

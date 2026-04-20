@@ -20,7 +20,6 @@ class CertificadoController extends Controller
 
         $colabModel = new Colaborador();
         $tipoModel = new TipoCertificado();
-        $certModel = new Certificado();
         $mostrarInativos = (int)$this->input('mostrar_inativos', 0);
         $statusFilter = $this->input('status', '');
         $search = trim($this->input('q', ''));
@@ -30,8 +29,30 @@ class CertificadoController extends Controller
             : $colabModel->all(['status' => 'ativo'], 'nome_completo ASC');
         $tipos = $tipoModel->all(['ativo' => 1], 'codigo ASC');
 
-        // Contadores por status
-        $contadores = $certModel->countByStatus();
+        $db = \App\Core\Database::getInstance();
+
+        // Build base where clause (sem status filter para os contadores)
+        $whereBase = "cert.excluido_em IS NULL AND c.status = 'ativo'";
+        $paramsBase = [];
+        if ($search !== '') {
+            $whereBase .= " AND (c.nome_completo LIKE :search OR tc.codigo LIKE :search2)";
+            $paramsBase['search'] = "%{$search}%";
+            $paramsBase['search2'] = "%{$search}%";
+        }
+
+        // Contadores por status (respeitam a busca atual)
+        $countSql = "SELECT cert.status, COUNT(*) as total
+                     FROM certificados cert
+                     JOIN colaboradores c ON cert.colaborador_id = c.id
+                     JOIN tipos_certificado tc ON cert.tipo_certificado_id = tc.id
+                     WHERE {$whereBase} AND cert.arquivo_assinado IS NOT NULL
+                     GROUP BY cert.status";
+        $cStmt = $db->prepare($countSql);
+        $cStmt->execute($paramsBase);
+        $contadores = [];
+        foreach ($cStmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
+            $contadores[$row['status']] = (int)$row['total'];
+        }
         $contadores['total'] = array_sum($contadores);
 
         // Listagem de certificados emitidos (com filtro)
@@ -39,21 +60,12 @@ class CertificadoController extends Controller
         $perPage = 30;
         $offset = (int)(($page - 1) * $perPage);
 
-        $db = \App\Core\Database::getInstance();
-
         // Build query with optional status filter
-        $where = "cert.excluido_em IS NULL AND c.status = 'ativo'";
-        $params = [];
+        $where = $whereBase;
+        $params = $paramsBase;
         if ($statusFilter && in_array($statusFilter, ['vigente', 'proximo_vencimento', 'vencido'])) {
             $where .= " AND cert.status = :status";
             $params['status'] = $statusFilter;
-        }
-
-        // Search filter
-        if ($search !== '') {
-            $where .= " AND (c.nome_completo LIKE :search OR tc.codigo LIKE :search2)";
-            $params['search'] = "%{$search}%";
-            $params['search2'] = "%{$search}%";
         }
 
         // Count
