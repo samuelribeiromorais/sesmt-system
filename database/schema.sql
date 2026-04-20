@@ -143,6 +143,13 @@ CREATE TABLE IF NOT EXISTS certificados (
     criado_por INT NULL,
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    -- Ministrante específico por emissão (override do tipo)
+    ministrante_id INT NULL,
+    -- Treinamento de origem (quando gerado em lote)
+    treinamento_id INT NULL,
+    -- Arquivo assinado (só contabiliza após upload do PDF assinado)
+    arquivo_assinado VARCHAR(500) NULL,
+    assinado_em DATETIME NULL,
     -- Soft delete / lixeira (feature 16)
     excluido_em DATETIME NULL,
     FOREIGN KEY (colaborador_id) REFERENCES colaboradores(id) ON DELETE CASCADE,

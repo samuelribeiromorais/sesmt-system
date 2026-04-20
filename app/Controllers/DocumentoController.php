@@ -592,6 +592,7 @@ class DocumentoController extends Controller
                 $colabModel = new Colaborador();
                 $colab = $colabModel->find((int)$doc['colaborador_id']);
                 if ($colab && $colab['obra_id']) {
+                    $db = \App\Core\Database::getInstance();
                     $stmtObra = $db->prepare("SELECT epi_validade_meses FROM obras WHERE id = :oid AND epi_validade_meses IS NOT NULL");
                     $stmtObra->execute(['oid' => $colab['obra_id']]);
                     $obraEpi = $stmtObra->fetchColumn();

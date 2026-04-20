@@ -86,6 +86,10 @@ $router->get('/certificados/emitir/{colaboradorId}', ['CertificadoController', '
 $router->post('/certificados/salvar', ['CertificadoController', 'store'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->get('/certificados/preview/{id}', ['CertificadoController', 'preview'], ['AuthMiddleware']);
 $router->get('/certificados/dados/{colaboradorId}', ['CertificadoController', 'dadosJson'], ['AuthMiddleware']);
+$router->get('/certificados/{id}/editar', ['CertificadoController', 'editForm'], ['AuthMiddleware']);
+$router->post('/certificados/{id}/atualizar', ['CertificadoController', 'update'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/certificados/{id}/excluir', ['CertificadoController', 'destroy'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/certificados/{id}/upload-assinado', ['CertificadoController', 'uploadAssinado'], ['AuthMiddleware', 'CsrfMiddleware']);
 
 // --- Treinamentos em Massa ---
 $router->get('/treinamentos', ['TreinamentoController', 'index'], ['AuthMiddleware']);

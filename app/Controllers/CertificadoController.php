@@ -252,4 +252,175 @@ class CertificadoController extends Controller
         $ministrantes = $ministranteModel->all(['ativo' => 1], 'nome ASC');
         $this->json($ministrantes);
     }
+
+    /**
+     * Exibe o formulário de edição de um certificado emitido.
+     */
+    public function editForm(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $certModel = new Certificado();
+        $cert = $certModel->find((int)$id);
+
+        if (!$cert || $cert['excluido_em']) {
+            $this->flash('error', 'Certificado não encontrado.');
+            $this->redirect('/certificados');
+        }
+
+        $ministranteModel = new Ministrante();
+        $ministrantes = $ministranteModel->all(['ativo' => 1], 'nome ASC');
+
+        $this->view('certificados/editar', [
+            'cert'        => $cert,
+            'ministrantes' => $ministrantes,
+            'pageTitle'   => 'Editar Certificado',
+        ]);
+    }
+
+    /**
+     * Salva a edição de um certificado.
+     */
+    public function update(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $certModel = new Certificado();
+        $cert = $certModel->find((int)$id);
+
+        if (!$cert || $cert['excluido_em']) {
+            $this->flash('error', 'Certificado não encontrado.');
+            $this->redirect('/certificados');
+        }
+
+        $dataRealizacao    = $this->input('data_realizacao');
+        $dataRealizacaoFim = $this->input('data_realizacao_fim') ?: null;
+        $dataEmissao       = $this->input('data_emissao');
+        $ministranteId     = (int)$this->input('ministrante_id') ?: null;
+
+        if (!$dataRealizacao || !$dataEmissao) {
+            $this->flash('error', 'Preencha os campos obrigatórios.');
+            $this->redirect("/certificados/{$id}/editar");
+        }
+
+        $tipoModel = new TipoCertificado();
+        $tipo = $tipoModel->find((int)$cert['tipo_certificado_id']);
+        $dataValidade = date('Y-m-d', strtotime("{$dataEmissao} + {$tipo['validade_meses']} months"));
+
+        $daysLeft = (strtotime($dataValidade) - time()) / 86400;
+        $status = 'vigente';
+        if ($daysLeft < 0) $status = 'vencido';
+        elseif ($daysLeft <= 30) $status = 'proximo_vencimento';
+
+        $updateData = [
+            'data_realizacao'     => $dataRealizacao,
+            'data_realizacao_fim' => $dataRealizacaoFim,
+            'data_emissao'        => $dataEmissao,
+            'data_validade'       => $dataValidade,
+            'status'              => $status,
+            'ministrante_id'      => $ministranteId,
+        ];
+
+        $certModel->update((int)$id, $updateData);
+        DashboardController::clearCache();
+        LoggerMiddleware::log('editar', "Certificado editado (ID: {$id})");
+
+        $this->flash('success', 'Certificado atualizado com sucesso.');
+        $this->redirect("/colaboradores/{$cert['colaborador_id']}");
+    }
+
+    /**
+     * Soft-delete de um certificado.
+     */
+    public function destroy(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $certModel = new Certificado();
+        $cert = $certModel->find((int)$id);
+
+        if (!$cert || $cert['excluido_em']) {
+            $this->flash('error', 'Certificado não encontrado.');
+            $this->redirect('/certificados');
+        }
+
+        $certModel->update((int)$id, ['excluido_em' => date('Y-m-d H:i:s')]);
+        DashboardController::clearCache();
+        LoggerMiddleware::log('excluir', "Certificado excluído (ID: {$id})");
+
+        $this->flash('success', 'Certificado movido para a lixeira.');
+        $this->redirect("/colaboradores/{$cert['colaborador_id']}");
+    }
+
+    /**
+     * Upload do PDF assinado de um certificado.
+     * Vincula o arquivo ao certificado e o contabiliza nos totais.
+     */
+    public function uploadAssinado(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $certModel = new Certificado();
+        $cert = $certModel->find((int)$id);
+
+        if (!$cert || $cert['excluido_em']) {
+            $this->flash('error', 'Certificado não encontrado.');
+            $this->redirect('/certificados');
+        }
+
+        if (empty($_FILES['arquivo_assinado']) || $_FILES['arquivo_assinado']['error'] !== UPLOAD_ERR_OK) {
+            $this->flash('error', 'Selecione um arquivo PDF para enviar.');
+            $this->redirect("/colaboradores/{$cert['colaborador_id']}");
+        }
+
+        $file = $_FILES['arquivo_assinado'];
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mime = $finfo->file($file['tmp_name']);
+
+        if ($mime !== 'application/pdf') {
+            $this->flash('error', 'Apenas arquivos PDF são permitidos.');
+            $this->redirect("/colaboradores/{$cert['colaborador_id']}");
+        }
+
+        if ($file['size'] > 10 * 1024 * 1024) {
+            $this->flash('error', 'Arquivo excede o tamanho máximo de 10MB.');
+            $this->redirect("/colaboradores/{$cert['colaborador_id']}");
+        }
+
+        $config = require dirname(__DIR__) . '/config/app.php';
+        $colabModel = new Colaborador();
+        $colab = $colabModel->find((int)$cert['colaborador_id']);
+        $fileService = new \App\Services\FileService();
+        $pastaNome = $fileService->getDiretorioColaborador((int)$cert['colaborador_id'], $colab['nome_completo'] ?? '');
+        $uploadDir = $config['upload']['path'] . '/' . $pastaNome;
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0750, true);
+        }
+
+        $tipoModel = new TipoCertificado();
+        $tipo = $tipoModel->find((int)$cert['tipo_certificado_id']);
+        $safeName = $fileService->gerarNomeArquivo(
+            $colab['nome_completo'] ?? '',
+            ($tipo['codigo'] ?? 'CERT') . ' - Assinado',
+            $cert['data_emissao'],
+            'pdf'
+        );
+
+        if (!move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $safeName)) {
+            $this->flash('error', 'Falha ao salvar o arquivo.');
+            $this->redirect("/colaboradores/{$cert['colaborador_id']}");
+        }
+
+        $certModel->update((int)$id, [
+            'arquivo_assinado' => $pastaNome . '/' . $safeName,
+            'assinado_em'      => date('Y-m-d H:i:s'),
+        ]);
+
+        DashboardController::clearCache();
+        LoggerMiddleware::log('upload', "PDF assinado do certificado ID {$id} enviado por " . (Session::get('user_name') ?? 'sistema'));
+
+        $this->flash('success', 'PDF assinado vinculado ao certificado com sucesso.');
+        $this->redirect("/colaboradores/{$cert['colaborador_id']}");
+    }
 }

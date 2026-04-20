@@ -187,11 +187,15 @@ class AuthController extends Controller
 
     public function logout(): void
     {
-        // Remover sessão ativa do banco
-        $sessaoModel = new SessaoAtiva();
-        $sessaoModel->removerPorSessionId(session_id());
-
-        LoggerMiddleware::log('logout', 'Logout realizado');
+        // Remover sessão ativa do banco (ignora erros de DB para não bloquear o logout)
+        try {
+            $sessaoModel = new SessaoAtiva();
+            $sessaoModel->removerPorSessionId(session_id());
+            LoggerMiddleware::log('logout', 'Logout realizado');
+        } catch (\Throwable $e) {
+            // Garante que o logout ocorra mesmo com falha no banco
+            error_log('Logout DB error: ' . $e->getMessage());
+        }
         Session::destroy();
         $this->redirect('/login');
     }

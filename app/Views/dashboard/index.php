@@ -71,7 +71,8 @@ $categoriaNomes = [
 <div class="cards-row" style="margin-top: 16px;">
     <?php foreach ($categoriaNomes as $key => $label): ?>
     <?php $cat = $categorias[$key] ?? ['vigente' => 0, 'proximo_vencimento' => 0, 'vencido' => 0]; ?>
-    <a href="/documentos?categoria=<?= $key ?>" class="card-stat stat-card-clickable" style="border-left: 4px solid var(--c-primary); background: #fff; text-decoration:none; color:inherit;">
+    <a href="/documentos?categoria=<?= $key ?>" class="card-stat stat-card-clickable" style="border-left: 4px solid var(--c-primary); background: #fff; text-decoration:none; color:inherit;"
+       title="Contagem por tipo de documento. Um colaborador pode ter mais de um tipo de <?= $label ?> vigente simultaneamente.">
         <div class="card-stat-value" style="font-size: 1.1rem; color: var(--c-primary);"><?= $label ?></div>
         <div class="card-stat-label" style="margin-top: 8px;">
             <span class="badge badge-vigente"><?= $cat['vigente'] ?> vigentes</span>

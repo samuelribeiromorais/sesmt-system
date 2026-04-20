@@ -67,19 +67,42 @@ function statusSemaforo($status) {
             <?php endif; ?>
         </div>
         <table>
-            <thead><tr><th>Tipo</th><th>Validade</th><th>Status</th></tr></thead>
+            <thead><tr><th>Tipo</th><th>Validade</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody>
                 <?php if (empty($certificados)): ?>
-                <tr><td colspan="3" style="text-align:center;color:var(--c-gray);">Nenhum certificado</td></tr>
+                <tr><td colspan="4" style="text-align:center;color:var(--c-gray);">Nenhum certificado</td></tr>
                 <?php else: ?>
                 <?php foreach ($certificados as $cert): ?>
                 <tr>
                     <td>
                         <span class="semaforo semaforo-<?= statusSemaforo($cert['status']) ?>"></span>
                         <?= htmlspecialchars($cert['codigo']) ?>
+                        <?php if (empty($cert['arquivo_assinado'])): ?>
+                            <span class="badge" style="background:#f39c12;color:#fff;font-size:10px;margin-left:4px;" title="Aguardando PDF assinado">Pendente</span>
+                        <?php else: ?>
+                            <span class="badge badge-vigente" style="font-size:10px;margin-left:4px;" title="PDF assinado vinculado">Assinado</span>
+                        <?php endif; ?>
                     </td>
                     <td><?= $cert['data_validade'] ? date('d/m/Y', strtotime($cert['data_validade'])) : '-' ?></td>
                     <td><span class="badge badge-<?= $cert['status'] ?>"><?= ucfirst(str_replace('_', ' ', $cert['status'])) ?></span></td>
+                    <?php if (!$isReadOnly): ?>
+                    <td style="white-space:nowrap;">
+                        <a href="/certificados/preview/<?= $cert['id'] ?>" class="btn btn-outline btn-xs" title="Visualizar">PDF</a>
+                        <a href="/certificados/<?= $cert['id'] ?>/editar" class="btn btn-outline btn-xs" title="Editar">Editar</a>
+                        <?php if (empty($cert['arquivo_assinado'])): ?>
+                        <button type="button" class="btn btn-secondary btn-xs"
+                            onclick="abrirUploadAssinado(<?= $cert['id'] ?>)"
+                            title="Vincular PDF assinado">Vincular</button>
+                        <?php endif; ?>
+                        <form method="POST" action="/certificados/<?= $cert['id'] ?>/excluir" style="display:inline;"
+                              onsubmit="return confirm('Excluir este certificado?')">
+                            <?= \App\Core\View::csrfField() ?>
+                            <button type="submit" class="btn btn-danger btn-xs" title="Excluir">Excluir</button>
+                        </form>
+                    </td>
+                    <?php else: ?>
+                    <td></td>
+                    <?php endif; ?>
                 </tr>
                 <?php endforeach; ?>
                 <?php endif; ?>
@@ -341,6 +364,41 @@ document.getElementById('pdf-modal').addEventListener('click', function(e) {
 });
 
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closePdfModal();
+    if (e.key === 'Escape') { closePdfModal(); closeUploadModal(); }
+});
+
+// --- Modal upload PDF assinado ---
+function abrirUploadAssinado(certId) {
+    document.getElementById('upload-cert-id').value = certId;
+    document.getElementById('upload-form').action = '/certificados/' + certId + '/upload-assinado';
+    document.getElementById('upload-assinado-modal').style.display = 'flex';
+}
+function closeUploadModal() {
+    document.getElementById('upload-assinado-modal').style.display = 'none';
+}
+document.getElementById('upload-assinado-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeUploadModal();
 });
 </script>
+
+<!-- Modal Upload PDF Assinado -->
+<div id="upload-assinado-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:var(--c-surface); border-radius:12px; padding:32px; min-width:380px; max-width:500px;">
+        <h3 style="margin:0 0 16px;">Vincular PDF Assinado</h3>
+        <p style="color:var(--c-gray); font-size:14px; margin-bottom:20px;">
+            Envie o certificado assinado em PDF. Após o envio, o certificado passará a ser contabilizado nos totais.
+        </p>
+        <form id="upload-form" method="POST" enctype="multipart/form-data">
+            <?= \App\Core\View::csrfField() ?>
+            <input type="hidden" id="upload-cert-id" name="cert_id" value="">
+            <div class="form-group" style="margin-bottom:20px;">
+                <label>Arquivo PDF Assinado *</label>
+                <input type="file" name="arquivo_assinado" class="form-control" accept=".pdf" required>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button type="submit" class="btn btn-primary">Enviar</button>
+                <button type="button" class="btn btn-outline" onclick="closeUploadModal()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>

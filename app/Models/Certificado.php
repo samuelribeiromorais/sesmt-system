@@ -55,6 +55,23 @@ class Certificado extends Model
         $stmt = $this->db->query(
             "SELECT cert.status, COUNT(*) as total FROM certificados cert
              JOIN colaboradores c ON cert.colaborador_id = c.id
+             WHERE cert.excluido_em IS NULL
+               AND c.status = 'ativo'
+               AND cert.arquivo_assinado IS NOT NULL
+             GROUP BY cert.status"
+        );
+        $result = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $result[$row['status']] = (int) $row['total'];
+        }
+        return $result;
+    }
+
+    public function countAllByStatus(): array
+    {
+        $stmt = $this->db->query(
+            "SELECT cert.status, COUNT(*) as total FROM certificados cert
+             JOIN colaboradores c ON cert.colaborador_id = c.id
              WHERE cert.excluido_em IS NULL AND c.status = 'ativo'
              GROUP BY cert.status"
         );
