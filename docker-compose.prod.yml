@@ -62,16 +62,21 @@ services:
         sleep $$WAIT;
         TIMESTAMP=$$(date +%Y%m%d_%H%M%S);
         echo \"[$$TIMESTAMP] Iniciando backup...\";
+        DB_OK=0; UP_OK=0; DB_SIZE=\"-\"; UP_SIZE=\"-\";
         if mariadb-dump -h db -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE --single-transaction --routines --triggers | gzip > /backups/db_$$TIMESTAMP.sql.gz.tmp; then
           mv /backups/db_$$TIMESTAMP.sql.gz.tmp /backups/db_$$TIMESTAMP.sql.gz;
-          echo \"[$$TIMESTAMP] Backup banco OK ($$(du -h /backups/db_$$TIMESTAMP.sql.gz | cut -f1))\";
+          DB_SIZE=$$(du -h /backups/db_$$TIMESTAMP.sql.gz | cut -f1);
+          DB_OK=1;
+          echo \"[$$TIMESTAMP] Backup banco OK ($$DB_SIZE)\";
         else
           rm -f /backups/db_$$TIMESTAMP.sql.gz.tmp;
           echo \"[$$TIMESTAMP] ERRO no backup do banco\";
         fi;
         if tar czf /backups/storage_$$TIMESTAMP.tar.gz.tmp -C /storage uploads/ 2>/dev/null; then
           mv /backups/storage_$$TIMESTAMP.tar.gz.tmp /backups/storage_$$TIMESTAMP.tar.gz;
-          echo \"[$$TIMESTAMP] Backup uploads OK ($$(du -h /backups/storage_$$TIMESTAMP.tar.gz | cut -f1))\";
+          UP_SIZE=$$(du -h /backups/storage_$$TIMESTAMP.tar.gz | cut -f1);
+          UP_OK=1;
+          echo \"[$$TIMESTAMP] Backup uploads OK ($$UP_SIZE)\";
         else
           rm -f /backups/storage_$$TIMESTAMP.tar.gz.tmp;
           echo \"[$$TIMESTAMP] ERRO no backup de uploads\";
@@ -79,7 +84,17 @@ services:
         find /backups -name 'db_*.sql.gz' -mtime +7 -delete;
         find /backups -name 'storage_*.tar.gz' -mtime +7 -delete;
         find /backups -name '*.tmp' -mtime +1 -delete;
-        echo \"[$$TIMESTAMP] Backup finalizado. Retidos: $$(ls /backups/db_*.sql.gz 2>/dev/null | wc -l) banco, $$(ls /backups/storage_*.tar.gz 2>/dev/null | wc -l) uploads.\";
+        KEEP_DB=$$(ls /backups/db_*.sql.gz 2>/dev/null | wc -l);
+        KEEP_UP=$$(ls /backups/storage_*.tar.gz 2>/dev/null | wc -l);
+        if [ $$DB_OK -eq 1 ] && [ $$UP_OK -eq 1 ]; then
+          STATUS=\"OK\";
+          DESC=\"Backup automatico concluido. Banco: $$DB_SIZE. Uploads: $$UP_SIZE. Retidos: $$KEEP_DB banco, $$KEEP_UP uploads (7 dias).\";
+        else
+          STATUS=\"ERRO\";
+          DESC=\"Backup automatico com falhas. Banco: $$([ $$DB_OK -eq 1 ] && echo OK || echo FALHOU). Uploads: $$([ $$UP_OK -eq 1 ] && echo OK || echo FALHOU).\";
+        fi;
+        mariadb -h db -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE -e \"INSERT INTO logs_acesso (usuario_id, acao, descricao, ip_address, criado_em) VALUES (NULL, 'backup', '$$STATUS - $$DESC', 'container:sesmt-backup', NOW());\" 2>/dev/null || echo \"[$$TIMESTAMP] Falha ao gravar log no banco\";
+        echo \"[$$TIMESTAMP] Backup finalizado. $$DESC\";
         sleep 60;
       done
       "
