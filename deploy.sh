@@ -148,18 +148,26 @@ ENVEOF
 
     # Verificar se tem dados
     COLAB_COUNT=$(docker exec sesmt-db mariadb -u sesmt -p"${DB_PASS}" sesmt_tse -e "SELECT COUNT(*) FROM colaboradores" -N 2>/dev/null || echo "0")
-    if [ "$COLAB_COUNT" -lt 10 ]; then
-        # Tentar importar dump de producao se existir
-        if [ -f "$DEPLOY_DIR/database/dump_producao.sql" ]; then
-            log "Importando dump de producao (${COLAB_COUNT} colaboradores encontrados)..."
+    USU_COUNT=$(docker exec sesmt-db mariadb -u sesmt -p"${DB_PASS}" sesmt_tse -e "SELECT COUNT(*) FROM usuarios" -N 2>/dev/null || echo "0")
+
+    # NUNCA importar dump automaticamente se ja ha usuarios alem dos 3 do seed
+    # (evita reset de senhas ao rodar 'instalar' por engano em producao)
+    if [ "$USU_COUNT" -gt 3 ]; then
+        log "Banco ja em producao (${USU_COUNT} usuarios, ${COLAB_COUNT} colaboradores). NAO importando dump."
+    elif [ "$COLAB_COUNT" -lt 10 ]; then
+        if [ -f "$DEPLOY_DIR/database/dump_producao.sql" ] && [ "${FORCE_IMPORT:-0}" = "1" ]; then
+            log "FORCE_IMPORT=1 — importando dump de producao (${COLAB_COUNT} colaboradores)..."
             docker exec -i sesmt-db mariadb -u sesmt -p"${DB_PASS}" sesmt_tse < "$DEPLOY_DIR/database/dump_producao.sql"
             log "Dump importado."
         else
-            warn "Banco com poucos dados (${COLAB_COUNT} colaboradores)."
-            warn "Use: sudo ./deploy.sh importar dump_sesmt.sql"
+            warn "Banco com poucos dados (${COLAB_COUNT} colaboradores, ${USU_COUNT} usuarios)."
+            warn "Para importar o dump manualmente:"
+            warn "  sudo ./deploy.sh importar database/dump_producao.sql"
+            warn "Ou, para reimportar automaticamente em uma instalacao nova:"
+            warn "  sudo FORCE_IMPORT=1 ./deploy.sh instalar"
         fi
     else
-        log "Banco ja contem ${COLAB_COUNT} colaboradores."
+        log "Banco ja contem ${COLAB_COUNT} colaboradores e ${USU_COUNT} usuarios."
     fi
 
     # 6. Apache
@@ -207,11 +215,24 @@ APACHEEOF
 }
 
 atualizar() {
-    log "Atualizando sistema..."
+    log "Atualizando sistema (NAO mexe no banco de dados)..."
     cd "$DEPLOY_DIR"
     git pull origin master
     docker-compose -f "$COMPOSE_FILE" up -d --build
-    log "Atualizado! Banco NAO foi alterado."
+    log "Atualizado! Banco NAO foi alterado. Senhas e usuarios preservados."
+}
+
+reset_senhas_padrao() {
+    # Utilitario: reseta as senhas dos 3 usuarios do seed para TseAdmin@2026
+    # Use apenas quando alguem esqueceu a senha padrao
+    DB_PASS=$(grep "^DB_PASS=" "$DEPLOY_DIR/.env" | cut -d'=' -f2)
+    HASH='$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'
+    log "Resetando senhas dos 3 usuarios do seed para 'TseAdmin@2026'..."
+    docker exec sesmt-db mariadb -u sesmt -p"${DB_PASS}" sesmt_tse -e "
+      UPDATE usuarios SET senha_hash='${HASH}'
+       WHERE email IN ('mariana.rios@tsea.com.br','samuel.morais@tsea.com.br','allyff.sousa@tsea.com.br');
+    "
+    log "Senhas resetadas."
 }
 
 importar_dump() {
@@ -281,6 +302,9 @@ case "$ACAO" in
         ;;
     status)
         status_sistema
+        ;;
+    reset-senhas)
+        reset_senhas_padrao
         ;;
     *)
         echo ""
