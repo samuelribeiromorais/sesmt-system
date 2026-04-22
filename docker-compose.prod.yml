@@ -62,11 +62,24 @@ services:
         sleep $$WAIT;
         TIMESTAMP=$$(date +%Y%m%d_%H%M%S);
         echo \"[$$TIMESTAMP] Iniciando backup...\";
-        mariadb-dump -h db -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE | gzip > /backups/db_$$TIMESTAMP.sql.gz;
-        tar czf /backups/storage_$$TIMESTAMP.tar.gz -C /storage uploads/ 2>/dev/null || true;
-        find /backups -name 'db_*.sql.gz' -mtime +30 -delete;
-        find /backups -name 'storage_*.tar.gz' -mtime +30 -delete;
-        echo \"[$$TIMESTAMP] Backup concluido.\";
+        if mariadb-dump -h db -u $$MARIADB_USER -p$$MARIADB_PASSWORD $$MARIADB_DATABASE --single-transaction --routines --triggers | gzip > /backups/db_$$TIMESTAMP.sql.gz.tmp; then
+          mv /backups/db_$$TIMESTAMP.sql.gz.tmp /backups/db_$$TIMESTAMP.sql.gz;
+          echo \"[$$TIMESTAMP] Backup banco OK ($$(du -h /backups/db_$$TIMESTAMP.sql.gz | cut -f1))\";
+        else
+          rm -f /backups/db_$$TIMESTAMP.sql.gz.tmp;
+          echo \"[$$TIMESTAMP] ERRO no backup do banco\";
+        fi;
+        if tar czf /backups/storage_$$TIMESTAMP.tar.gz.tmp -C /storage uploads/ 2>/dev/null; then
+          mv /backups/storage_$$TIMESTAMP.tar.gz.tmp /backups/storage_$$TIMESTAMP.tar.gz;
+          echo \"[$$TIMESTAMP] Backup uploads OK ($$(du -h /backups/storage_$$TIMESTAMP.tar.gz | cut -f1))\";
+        else
+          rm -f /backups/storage_$$TIMESTAMP.tar.gz.tmp;
+          echo \"[$$TIMESTAMP] ERRO no backup de uploads\";
+        fi;
+        find /backups -name 'db_*.sql.gz' -mtime +7 -delete;
+        find /backups -name 'storage_*.tar.gz' -mtime +7 -delete;
+        find /backups -name '*.tmp' -mtime +1 -delete;
+        echo \"[$$TIMESTAMP] Backup finalizado. Retidos: $$(ls /backups/db_*.sql.gz 2>/dev/null | wc -l) banco, $$(ls /backups/storage_*.tar.gz 2>/dev/null | wc -l) uploads.\";
         sleep 60;
       done
       "

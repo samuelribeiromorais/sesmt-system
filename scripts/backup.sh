@@ -5,7 +5,7 @@
 
 BACKUP_DIR="/var/www/html/storage/backups"
 DATE=$(date +%Y-%m-%d_%H-%M)
-KEEP_DAYS=30
+KEEP_DAYS=7
 
 mkdir -p "$BACKUP_DIR"
 
