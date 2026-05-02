@@ -9,9 +9,21 @@
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Tipo de Certificado</label>
-                    <input type="text" class="form-control" disabled
-                           value="<?= htmlspecialchars($treinamento['tipo_codigo'] . ' — ' . $treinamento['tipo_titulo']) ?>">
+                    <label>Tipo de Certificado *</label>
+                    <?php if (!empty($podeTrocarTipo)): ?>
+                        <select name="tipo_certificado_id" class="form-control" required>
+                            <?php foreach ($tipos as $t): ?>
+                                <option value="<?= $t['id'] ?>" <?= ((int)$t['id'] === (int)$treinamento['tipo_certificado_id']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($t['codigo'] . ' — ' . $t['titulo']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small style="color:#6b7280;">A NR pode ser trocada porque ainda não há certificados gerados nesta turma.</small>
+                    <?php else: ?>
+                        <input type="text" class="form-control" disabled
+                               value="<?= htmlspecialchars($treinamento['tipo_codigo'] . ' — ' . $treinamento['tipo_titulo']) ?>">
+                        <small style="color:#dc2626;">Não é possível trocar a NR — a turma já tem certificados emitidos. Exclua os certificados antes.</small>
+                    <?php endif; ?>
                 </div>
 
                 <div class="form-group">

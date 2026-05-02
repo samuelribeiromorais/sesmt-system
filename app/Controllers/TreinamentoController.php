@@ -370,11 +370,21 @@ class TreinamentoController extends Controller
         $tipos = $tipoModel->all(['ativo' => 1], 'codigo ASC');
         $ministrantes = $ministranteModel->all(['ativo' => 1], 'nome ASC');
 
+        // Permitir trocar a NR (tipo_certificado) APENAS se nenhum certificado
+        // já foi gerado para esta turma.
+        $db = Database::getInstance();
+        $stmt = $db->prepare(
+            "SELECT COUNT(*) FROM certificados WHERE treinamento_id = :tid AND excluido_em IS NULL"
+        );
+        $stmt->execute(['tid' => (int)$id]);
+        $podeTrocarTipo = ((int)$stmt->fetchColumn()) === 0;
+
         $this->view('treinamentos/editar', [
-            'treinamento' => $treinamento,
-            'tipos'       => $tipos,
-            'ministrantes'=> $ministrantes,
-            'pageTitle'   => 'Treinamentos',
+            'treinamento'    => $treinamento,
+            'tipos'          => $tipos,
+            'ministrantes'   => $ministrantes,
+            'podeTrocarTipo' => $podeTrocarTipo,
+            'pageTitle'      => 'Treinamentos',
         ]);
     }
 
@@ -396,6 +406,7 @@ class TreinamentoController extends Controller
         $dataRealizacaoFim = $this->input('data_realizacao_fim') ?: null;
         $dataEmissao       = $this->input('data_emissao');
         $observacoes       = trim($this->input('observacoes', ''));
+        $novoTipoId        = (int)$this->input('tipo_certificado_id') ?: null;
 
         if (!$dataRealizacao || !$dataEmissao) {
             $this->flash('error', 'Data de realização e emissão são obrigatórias.');
@@ -403,8 +414,26 @@ class TreinamentoController extends Controller
             return;
         }
 
+        $tipoCertId = (int)$treinamento['tipo_certificado_id'];
+
+        // Permitir troca de NR somente se nenhum certificado foi gerado.
+        if ($novoTipoId && $novoTipoId !== $tipoCertId) {
+            $db = Database::getInstance();
+            $chk = $db->prepare(
+                "SELECT COUNT(*) FROM certificados WHERE treinamento_id = :tid AND excluido_em IS NULL"
+            );
+            $chk->execute(['tid' => (int)$id]);
+            if ((int)$chk->fetchColumn() === 0) {
+                $tipoCertId = $novoTipoId;
+            } else {
+                $this->flash('error', 'Não é possível trocar a NR após emitir certificados. Exclua os certificados primeiro.');
+                $this->redirect("/treinamentos/{$id}/editar");
+                return;
+            }
+        }
+
         $tipoModel = new TipoCertificado();
-        $tipo = $tipoModel->find($treinamento['tipo_certificado_id']);
+        $tipo = $tipoModel->find($tipoCertId);
         $dataValidade = date('Y-m-d', strtotime("{$dataEmissao} + {$tipo['validade_meses']} months"));
         $daysLeft = (strtotime($dataValidade) - time()) / 86400;
         $statusCert = 'vigente';
@@ -415,6 +444,7 @@ class TreinamentoController extends Controller
         $db->beginTransaction();
         try {
             $treinModel->update((int)$id, [
+                'tipo_certificado_id' => $tipoCertId,
                 'ministrante_id'      => $ministranteId,
                 'data_realizacao'     => $dataRealizacao,
                 'data_realizacao_fim' => $dataRealizacaoFim,
@@ -613,6 +643,133 @@ class TreinamentoController extends Controller
             http_response_code(500);
             echo json_encode(['error' => $e->getMessage()]);
         }
+        exit;
+    }
+
+    public function marcarPresenca(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $certId   = (int)$this->input('certificado_id');
+        $presente = $this->input('presente'); // '1', '0' ou ''
+        if (!$certId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'certificado_id ausente.']);
+            exit;
+        }
+
+        $certModel = new Certificado();
+        $cert = $certModel->find($certId);
+        if (!$cert || (int)$cert['treinamento_id'] !== (int)$id) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Certificado não encontrado neste treinamento.']);
+            exit;
+        }
+
+        $valor = ($presente === '1') ? 1 : (($presente === '0') ? 0 : null);
+        $certModel->update($certId, ['presente' => $valor]);
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'presente' => $valor]);
+        exit;
+    }
+
+    public function uploadFotoTurma(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $slot = (int)$this->input('slot'); // 1 ou 2
+        if (!in_array($slot, [1, 2], true)) {
+            $this->flash('error', 'Slot inválido.');
+            $this->redirect("/treinamentos/{$id}");
+            return;
+        }
+
+        $treinModel = new Treinamento();
+        $treinamento = $treinModel->find((int)$id);
+        if (!$treinamento || $treinamento['excluido_em']) {
+            $this->flash('error', 'Treinamento não encontrado.');
+            $this->redirect('/treinamentos');
+            return;
+        }
+
+        if (empty($_FILES['foto']) || $_FILES['foto']['error'] !== UPLOAD_ERR_OK) {
+            $this->flash('error', 'Arquivo inválido ou não enviado.');
+            $this->redirect("/treinamentos/{$id}");
+            return;
+        }
+
+        $file = $_FILES['foto'];
+        if ($file['size'] > 5 * 1024 * 1024) {
+            $this->flash('error', 'Foto excede 5 MB.');
+            $this->redirect("/treinamentos/{$id}");
+            return;
+        }
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg', 'jpeg', 'png'], true)) {
+            $this->flash('error', 'Apenas JPG ou PNG.');
+            $this->redirect("/treinamentos/{$id}");
+            return;
+        }
+
+        $config = require dirname(__DIR__) . '/config/app.php';
+        $uploadDir = $config['upload']['path'] . '/treinamentos/' . (int)$id;
+        if (!is_dir($uploadDir)) @mkdir($uploadDir, 0775, true);
+        if (!is_writable($uploadDir)) @chmod($uploadDir, 0775);
+        if (!is_writable($uploadDir)) {
+            $this->flash('error', 'Pasta sem permissão de escrita.');
+            $this->redirect("/treinamentos/{$id}");
+            return;
+        }
+
+        $filename = "foto{$slot}_" . time() . ".{$ext}";
+        if (!@move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $filename)) {
+            $this->flash('error', 'Falha ao salvar a foto.');
+            $this->redirect("/treinamentos/{$id}");
+            return;
+        }
+
+        $relativePath = "treinamentos/{$id}/{$filename}";
+        $treinModel->update((int)$id, ["foto{$slot}_path" => $relativePath]);
+
+        LoggerMiddleware::log('upload', "Foto {$slot} do treinamento {$id} anexada");
+        $this->flash('success', "Foto {$slot} anexada com sucesso.");
+        $this->redirect("/treinamentos/{$id}");
+    }
+
+    public function downloadFotoTurma(string $id, string $slot): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+        $slot = (int)$slot;
+        if (!in_array($slot, [1, 2], true)) {
+            http_response_code(404);
+            exit('Slot inválido.');
+        }
+
+        $treinModel = new Treinamento();
+        $treinamento = $treinModel->find((int)$id);
+        if (!$treinamento) {
+            http_response_code(404);
+            exit('Treinamento não encontrado.');
+        }
+
+        $rel = $treinamento["foto{$slot}_path"] ?? null;
+        if (!$rel) {
+            http_response_code(404);
+            exit('Foto não encontrada.');
+        }
+
+        $config = require dirname(__DIR__) . '/config/app.php';
+        $abs = $config['upload']['path'] . '/' . $rel;
+        if (!file_exists($abs)) {
+            http_response_code(404);
+            exit('Arquivo não encontrado.');
+        }
+
+        $mime = mime_content_type($abs) ?: 'image/jpeg';
+        header("Content-Type: {$mime}");
+        header('Content-Length: ' . filesize($abs));
+        readfile($abs);
         exit;
     }
 

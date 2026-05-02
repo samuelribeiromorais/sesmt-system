@@ -33,7 +33,7 @@ class Treinamento extends Model
     {
         $stmt = $this->db->prepare(
             "SELECT cert.id as certificado_id, cert.status, cert.data_validade,
-                    cert.arquivo_assinado, cert.assinado_em,
+                    cert.arquivo_assinado, cert.assinado_em, cert.presente,
                     c.id as colaborador_id, c.nome_completo, c.cpf_encrypted,
                     c.cargo, c.funcao, c.data_admissao, c.setor
              FROM certificados cert

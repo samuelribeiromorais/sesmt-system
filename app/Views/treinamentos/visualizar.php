@@ -80,6 +80,7 @@
                 <th>Nome</th>
                 <th>Cargo / Função</th>
                 <th>Setor</th>
+                <th style="text-align:center;" title="Marcar presença no dia do treinamento">Presença</th>
                 <th style="text-align:center;">Status</th>
                 <th style="text-align:center;">Validade</th>
                 <th style="text-align:center;">Assinado</th>
@@ -97,6 +98,15 @@
                 </td>
                 <td style="font-size:13px;"><?= htmlspecialchars($p['funcao'] ?? $p['cargo'] ?? '-') ?></td>
                 <td style="font-size:13px;"><?= htmlspecialchars($p['setor'] ?? '-') ?></td>
+                <td style="text-align:center;">
+                    <?php $pres = $p['presente']; $pres = ($pres === null) ? '' : (string)$pres; ?>
+                    <select class="form-control" style="font-size:12px; padding:4px; width:100px;"
+                            onchange="marcarPresenca(<?= $p['certificado_id'] ?>, this.value, this)">
+                        <option value=""  <?= $pres === ''  ? 'selected' : '' ?>>—</option>
+                        <option value="1" <?= $pres === '1' ? 'selected' : '' ?>>Presente</option>
+                        <option value="0" <?= $pres === '0' ? 'selected' : '' ?>>Ausente</option>
+                    </select>
+                </td>
                 <td style="text-align:center;">
                     <span class="badge badge-<?= $p['status'] ?>">
                         <?= $p['status'] === 'vigente' ? 'Vigente' : ($p['status'] === 'proximo_vencimento' ? 'Vencendo' : 'Vencido') ?>
@@ -121,6 +131,39 @@
             <?php endforeach; ?>
         </tbody>
     </table>
+</div>
+
+<!-- Fotos do treinamento -->
+<div class="table-container" style="margin-top:24px;">
+    <div class="table-header">
+        <span class="table-title">Fotos do Treinamento</span>
+    </div>
+    <div style="padding:20px; display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+        <?php foreach ([1, 2] as $slot):
+            $path = $treinamento["foto{$slot}_path"] ?? null;
+            $obrig = $slot === 1 ? '*' : '(opcional)';
+        ?>
+        <div>
+            <label style="font-weight:600; display:block; margin-bottom:8px;">Foto <?= $slot ?> <?= $obrig ?></label>
+            <?php if ($path): ?>
+                <img src="/treinamentos/<?= $treinamento['id'] ?>/foto/<?= $slot ?>"
+                     style="max-width:100%; max-height:240px; border:1px solid #e5e7eb; border-radius:6px;" alt="Foto <?= $slot ?>">
+                <div style="margin-top:8px;">
+                    <a href="/treinamentos/<?= $treinamento['id'] ?>/foto/<?= $slot ?>" target="_blank" class="btn btn-outline btn-sm">Abrir</a>
+                </div>
+            <?php else: ?>
+                <p style="color:#6b7280; font-size:13px; margin-bottom:8px;">Nenhuma foto anexada.</p>
+            <?php endif; ?>
+            <form method="POST" action="/treinamentos/<?= $treinamento['id'] ?>/upload-foto" enctype="multipart/form-data" style="margin-top:8px;">
+                <?= \App\Core\View::csrfField() ?>
+                <input type="hidden" name="slot" value="<?= $slot ?>">
+                <input type="file" name="foto" accept=".jpg,.jpeg,.png" class="form-control" style="margin-bottom:8px;" required>
+                <button type="submit" class="btn btn-primary btn-sm"><?= $path ? 'Substituir' : 'Enviar' ?></button>
+                <small style="color:#6b7280; display:block; margin-top:4px;">JPG ou PNG, máx. 5 MB.</small>
+            </form>
+        </div>
+        <?php endforeach; ?>
+    </div>
 </div>
 
 <!-- Preview area -->
@@ -297,6 +340,24 @@ async function baixarTodosZip() {
     URL.revokeObjectURL(a.href);
 
     overlay.style.display = 'none';
+}
+
+// ---- Marcar presença ----
+async function marcarPresenca(certId, valor, sel) {
+    const fd = new FormData();
+    fd.append('_csrf_token', document.querySelector('[name=_csrf_token]')?.value || '');
+    fd.append('certificado_id', certId);
+    fd.append('presente', valor);
+    sel.disabled = true;
+    try {
+        const res = await fetch('/treinamentos/<?= $treinamento['id'] ?>/marcar-presenca', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!data.success) alert(data.error || 'Falha ao marcar presença.');
+    } catch (e) {
+        alert('Erro de comunicação.');
+    } finally {
+        sel.disabled = false;
+    }
 }
 
 // ---- Remover colaborador ----

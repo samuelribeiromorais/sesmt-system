@@ -106,6 +106,9 @@ $router->post('/treinamentos/{id}/excluir', ['TreinamentoController', 'destroy']
 $router->post('/treinamentos/{id}/adicionar-colaboradores', ['TreinamentoController', 'adicionarColaboradores'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/treinamentos/{id}/remover-colaborador', ['TreinamentoController', 'removerColaborador'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/treinamentos/{id}/upload-assinado', ['TreinamentoController', 'uploadAssinado'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/treinamentos/{id}/marcar-presenca', ['TreinamentoController', 'marcarPresenca'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/treinamentos/{id}/upload-foto', ['TreinamentoController', 'uploadFotoTurma'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->get('/treinamentos/{id}/foto/{slot}', ['TreinamentoController', 'downloadFotoTurma'], ['AuthMiddleware']);
 $router->get('/treinamentos/{id}', ['TreinamentoController', 'show'], ['AuthMiddleware']);
 
 // --- Backup (somente log) ---
