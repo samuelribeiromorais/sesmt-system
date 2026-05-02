@@ -86,7 +86,9 @@
             data-page="<?= $page ?>"
             data-total-pages="<?= $totalPages ?>"
             data-search="<?= htmlspecialchars($search) ?>"
-            data-status="<?= htmlspecialchars($status) ?>">
+            data-status="<?= htmlspecialchars($status) ?>"
+            data-cliente-id="<?= htmlspecialchars($clienteId ?? '') ?>"
+            data-obra-id="<?= htmlspecialchars($obraId ?? '') ?>">
         Carregar mais
     </button>
     <?php endif; ?>
@@ -202,6 +204,8 @@
     const totalPages = parseInt(btn.dataset.totalPages);
     const searchQ = btn.dataset.search;
     const statusFilter = btn.dataset.status;
+    const clienteId = btn.dataset.clienteId || '';
+    const obraId = btn.dataset.obraId || '';
 
     btn.addEventListener('click', function() {
         if (btn.disabled) return;
@@ -212,6 +216,8 @@
         const url = '/colaboradores?page=' + currentPage +
                     '&q=' + encodeURIComponent(searchQ) +
                     '&status=' + encodeURIComponent(statusFilter) +
+                    (clienteId ? '&cliente_id=' + encodeURIComponent(clienteId) : '') +
+                    (obraId ? '&obra_id=' + encodeURIComponent(obraId) : '') +
                     '&format=json';
 
         fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })

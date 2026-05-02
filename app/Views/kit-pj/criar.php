@@ -77,7 +77,7 @@
         ],
         'riscos_acidentes' => [
             'label' => 'Acidentes',
-            'opções' => ['Queda de mesmo nivel e/ou escada de acesso', 'Queda de altura', 'Eletricidade', 'Maquinas sem protecao', 'Ferramentas inadequadas', 'Espaco confinado', 'Ausencia Risco Acidente'],
+            'opções' => ['Queda de mesmo nivel e/ou escada de acesso', 'Queda de altura', 'Eletricidade', 'Condições ou procedimentos que possam provocar contato com eletricidade', 'Maquinas sem protecao', 'Ferramentas inadequadas', 'Espaco confinado', 'Ausencia Risco Acidente'],
             'default' => ['Queda de mesmo nivel e/ou escada de acesso'],
         ],
     ];
