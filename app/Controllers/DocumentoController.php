@@ -852,4 +852,162 @@ class DocumentoController extends Controller
             'pageTitle'   => 'Aprovações Pendentes',
         ]);
     }
+
+    /**
+     * Marca/desmarca documento como "Enviado ao cliente" (perfil RH/admin).
+     * Não impacta indicadores do SESMT.
+     */
+    public function marcarEnviadoCliente(string $id): void
+    {
+        $perfil = Session::get('user_perfil');
+        if (!in_array($perfil, ['admin', 'rh'], true)) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Sem permissão.']);
+            exit;
+        }
+
+        $marcar = $this->input('marcar') === '1';
+
+        $model = new Documento();
+        $doc = $model->find((int)$id);
+        if (!$doc) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Documento não encontrado.']);
+            exit;
+        }
+
+        $update = [
+            'enviado_cliente'    => $marcar ? 1 : 0,
+            'enviado_cliente_em' => $marcar ? date('Y-m-d H:i:s') : null,
+            'enviado_cliente_por'=> $marcar ? (int)Session::get('user_id') : null,
+        ];
+        $model->update((int)$id, $update);
+
+        LoggerMiddleware::log('rh', ($marcar ? 'Marcado' : 'Desmarcado') . " 'enviado ao cliente' doc ID {$id}");
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'enviado_cliente' => $marcar ? 1 : 0]);
+        exit;
+    }
+
+    /**
+     * Substituir documento: cria novo registro como nova versão e marca o
+     * antigo como soft-deleted apontando para o novo via substituido_por.
+     * O novo documento inicia com enviado_cliente=0 (RH precisa reenviar).
+     */
+    public function substituir(string $id): void
+    {
+        RoleMiddleware::requireAdminOrSesmt();
+
+        $oldModel = new Documento();
+        $oldDoc = $oldModel->find((int)$id);
+        if (!$oldDoc) {
+            $this->flash('error', 'Documento original não encontrado.');
+            $this->redirect('/documentos');
+            return;
+        }
+
+        $colaboradorId = (int)$oldDoc['colaborador_id'];
+        $tipoDocumentoId = (int)$oldDoc['tipo_documento_id'];
+
+        $dataEmissao  = $this->input('data_emissao');
+        $dataValidade = $this->input('data_validade') ?: null;
+
+        if (!$dataEmissao) {
+            $this->flash('error', 'Data de emissão obrigatória.');
+            $this->redirect("/colaboradores/{$colaboradorId}");
+            return;
+        }
+
+        if (empty($_FILES['arquivo']) || $_FILES['arquivo']['error'] !== UPLOAD_ERR_OK) {
+            $this->flash('error', 'Arquivo inválido.');
+            $this->redirect("/colaboradores/{$colaboradorId}");
+            return;
+        }
+
+        $file = $_FILES['arquivo'];
+        $config = require dirname(__DIR__) . '/config/app.php';
+        if ($file['size'] > ($config['upload']['max_size'] ?? 10485760)) {
+            $this->flash('error', 'Arquivo excede o tamanho máximo.');
+            $this->redirect("/colaboradores/{$colaboradorId}");
+            return;
+        }
+
+        $colabModel = new Colaborador();
+        $colab = $colabModel->find($colaboradorId);
+        $tipoModel = new TipoDocumento();
+        $tipo = $tipoModel->find($tipoDocumentoId);
+
+        $fileService = new FileService();
+        $pastaNome = $fileService->getDiretorioColaborador($colaboradorId, $colab['nome_completo'] ?? '');
+        $uploadDir = $config['upload']['path'] . '/' . $pastaNome;
+        if (!is_dir($uploadDir)) @mkdir($uploadDir, 0775, true);
+        if (!is_writable($uploadDir)) @chmod($uploadDir, 0775);
+        if (!is_writable($uploadDir)) {
+            $this->flash('error', 'Pasta sem permissão de escrita.');
+            $this->redirect("/colaboradores/{$colaboradorId}");
+            return;
+        }
+
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $safeName = $fileService->gerarNomeArquivo(
+            $colab['nome_completo'] ?? '',
+            ($tipo['nome'] ?? 'Documento') . ' - v' . (int)((($oldDoc['versao'] ?? 1)) + 1),
+            $dataEmissao,
+            $ext
+        );
+
+        if (!@move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $safeName)) {
+            $this->flash('error', 'Falha ao salvar o arquivo.');
+            $this->redirect("/colaboradores/{$colaboradorId}");
+            return;
+        }
+
+        $status = 'vigente';
+        if ($dataValidade) {
+            $daysLeft = (strtotime($dataValidade) - time()) / 86400;
+            if ($daysLeft < 0) $status = 'vencido';
+            elseif ($daysLeft <= 30) $status = 'proximo_vencimento';
+        }
+
+        $db = Database::getInstance();
+        $db->beginTransaction();
+        try {
+            $newId = $oldModel->create([
+                'colaborador_id'    => $colaboradorId,
+                'tipo_documento_id' => $tipoDocumentoId,
+                'arquivo_nome'      => $file['name'],
+                'arquivo_path'      => $pastaNome . '/' . $safeName,
+                'arquivo_hash'      => hash_file('sha256', $uploadDir . '/' . $safeName),
+                'arquivo_tamanho'   => $file['size'],
+                'data_emissao'      => $dataEmissao,
+                'data_validade'     => $dataValidade,
+                'status'            => $status,
+                'enviado_por'       => Session::get('user_id'),
+                'aprovacao_status'  => 'aprovado',
+                'aprovado_por'      => Session::get('user_id'),
+                'aprovado_em'       => date('Y-m-d H:i:s'),
+                'documento_pai_id'  => $oldDoc['documento_pai_id'] ?: (int)$id,
+                'versao'            => (int)($oldDoc['versao'] ?? 1) + 1,
+                'enviado_cliente'   => 0,
+            ]);
+
+            // Soft-delete o antigo + aponta substituido_por
+            $oldModel->update((int)$id, [
+                'excluido_em'      => date('Y-m-d H:i:s'),
+                'substituido_por'  => (int)$newId,
+                'status'           => 'obsoleto',
+            ]);
+
+            $db->commit();
+            LoggerMiddleware::log('substituir', "Documento ID {$id} substituído pelo {$newId}");
+            $this->flash('success', 'Documento substituído. Nova versão precisa ser enviada ao cliente.');
+        } catch (\Exception $e) {
+            $db->rollBack();
+            @unlink($uploadDir . '/' . $safeName);
+            $this->flash('error', 'Erro: ' . $e->getMessage());
+        }
+
+        $this->redirect("/colaboradores/{$colaboradorId}");
+    }
 }

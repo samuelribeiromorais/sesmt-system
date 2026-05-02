@@ -13,56 +13,74 @@ class RhController extends Controller
     {
         RoleMiddleware::requireRhOrSesmt();
 
-        $userId = (int)Session::get('user_id');
         $db     = Database::getInstance();
+        $search = trim($this->input('q', ''));
+        $somentePendentes = $this->input('filtro', 'pendentes') === 'pendentes';
 
-        // Documentos enviados pelo usuário RH logado (com status de aprovação)
-        $meusEnvios = $db->prepare(
-            "SELECT d.id, d.arquivo_nome, d.data_emissao, d.criado_em,
-                    d.aprovacao_status, d.aprovacao_obs,
-                    c.id as colaborador_id, c.nome_completo,
-                    td.nome as tipo_nome,
-                    ua.nome as aprovado_por_nome
+        // Filtro: documentos vigentes (não obsoletos, não excluídos),
+        // pendentes de envio ao cliente OU já enviados (toggle).
+        $where = "d.excluido_em IS NULL
+                  AND d.status != 'obsoleto'
+                  AND d.aprovacao_status = 'aprovado'
+                  AND td.ativo = 1";
+        $params = [];
+        if ($somentePendentes) {
+            $where .= " AND d.enviado_cliente = 0";
+        }
+        if ($search !== '') {
+            $where .= " AND c.nome_completo LIKE :q";
+            $params['q'] = "%{$search}%";
+        }
+
+        $stmt = $db->prepare(
+            "SELECT d.id, d.arquivo_nome, d.data_emissao, d.data_validade,
+                    d.criado_em, d.enviado_cliente, d.enviado_cliente_em,
+                    c.id as colaborador_id, c.nome_completo, c.matricula,
+                    td.nome as tipo_nome, td.categoria,
+                    ue.nome as enviado_por_nome,
+                    uec.nome as enviado_cliente_por_nome,
+                    cl.nome_fantasia as cliente_nome
              FROM documentos d
              JOIN colaboradores c ON d.colaborador_id = c.id
              JOIN tipos_documento td ON d.tipo_documento_id = td.id
-             LEFT JOIN usuarios ua ON d.aprovado_por = ua.id
-             WHERE d.enviado_por = :uid
-               AND d.excluido_em IS NULL
+             LEFT JOIN usuarios ue ON d.enviado_por = ue.id
+             LEFT JOIN usuarios uec ON d.enviado_cliente_por = uec.id
+             LEFT JOIN clientes cl ON c.cliente_id = cl.id
+             WHERE {$where}
              ORDER BY d.criado_em DESC
-             LIMIT 60"
+             LIMIT 200"
         );
-        $meusEnvios->execute(['uid' => $userId]);
-        $meusEnvios = $meusEnvios->fetchAll(\PDO::FETCH_ASSOC);
+        $stmt->execute($params);
+        $documentos = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         // Contadores
-        $pendentes = 0; $aprovados = 0; $rejeitados = 0;
-        foreach ($meusEnvios as $e) {
-            if ($e['aprovacao_status'] === 'pendente' || $e['aprovacao_status'] === null) $pendentes++;
-            elseif ($e['aprovacao_status'] === 'aprovado') $aprovados++;
-            elseif ($e['aprovacao_status'] === 'rejeitado') $rejeitados++;
-        }
+        $totalPendentes = (int)$db->query(
+            "SELECT COUNT(*) FROM documentos d
+             JOIN tipos_documento td ON d.tipo_documento_id = td.id
+             WHERE d.excluido_em IS NULL
+               AND d.status != 'obsoleto'
+               AND d.aprovacao_status = 'aprovado'
+               AND td.ativo = 1
+               AND d.enviado_cliente = 0"
+        )->fetchColumn();
 
-        // Colaboradores sem nenhum documento (para sugerir uploads)
-        $semDocs = $db->query(
-            "SELECT c.id, c.nome_completo, c.funcao, c.cargo
-             FROM colaboradores c
-             WHERE c.status = 'ativo' AND c.excluido_em IS NULL
-               AND NOT EXISTS (
-                   SELECT 1 FROM documentos d
-                   WHERE d.colaborador_id = c.id AND d.excluido_em IS NULL
-               )
-             ORDER BY c.nome_completo
-             LIMIT 30"
-        )->fetchAll(\PDO::FETCH_ASSOC);
+        $totalEnviados = (int)$db->query(
+            "SELECT COUNT(*) FROM documentos d
+             JOIN tipos_documento td ON d.tipo_documento_id = td.id
+             WHERE d.excluido_em IS NULL
+               AND d.status != 'obsoleto'
+               AND d.aprovacao_status = 'aprovado'
+               AND td.ativo = 1
+               AND d.enviado_cliente = 1"
+        )->fetchColumn();
 
         $this->view('rh/index', [
-            'meusEnvios'  => $meusEnvios,
-            'pendentes'   => $pendentes,
-            'aprovados'   => $aprovados,
-            'rejeitados'  => $rejeitados,
-            'semDocs'     => $semDocs,
-            'pageTitle'   => 'Painel RH',
+            'documentos'        => $documentos,
+            'totalPendentes'    => $totalPendentes,
+            'totalEnviados'     => $totalEnviados,
+            'search'            => $search,
+            'somentePendentes'  => $somentePendentes,
+            'pageTitle'         => 'Painel RH — Envio ao Cliente',
         ]);
     }
 }

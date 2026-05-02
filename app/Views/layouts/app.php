@@ -20,7 +20,7 @@
 
         <nav class="sidebar-nav">
             <?php if ($user['perfil'] === 'rh'): ?>
-            <a href="/rh" class="nav-item <?= ($pageTitle ?? '') === 'Painel RH' ? 'active' : '' ?>">
+            <a href="/rh" class="nav-item <?= str_starts_with($pageTitle ?? '', 'Painel RH') ? 'active' : '' ?>">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
                 <span>Painel RH</span>
             </a>
@@ -105,6 +105,11 @@
             <a href="/lixeira" class="nav-item <?= ($pageTitle ?? '') === 'Lixeira' ? 'active' : '' ?>">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                 <span>Lixeira</span>
+            </a>
+
+            <a href="/rh" class="nav-item <?= str_starts_with($pageTitle ?? '', 'Painel RH') ? 'active' : '' ?>">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+                <span>Painel RH</span>
             </a>
 
             <a href="/backup" class="nav-item <?= ($pageTitle ?? '') === 'Backup' ? 'active' : '' ?>">

@@ -238,6 +238,8 @@ function statusSemaforo($status) {
                         <button type="button" class="btn btn-outline btn-sm" onclick="viewPdf(<?= $doc['id'] ?>, '<?= htmlspecialchars($doc['arquivo_nome'], ENT_QUOTES) ?>')" title="Visualizar">Ver</button>
                         <a href="/documentos/download/<?= $doc['id'] ?>" class="btn btn-outline btn-sm" title="Baixar">PDF</a>
                         <?php if (!$isReadOnly): ?>
+                        <button type="button" class="btn btn-secondary btn-sm" title="Substituir por nova versão"
+                                onclick="abrirSubstituir(<?= $doc['id'] ?>, '<?= htmlspecialchars($doc['tipo_nome'] ?? '', ENT_QUOTES) ?>', <?= !empty($doc['data_validade']) ? '1' : '0' ?>)">Substituir</button>
                         <form method="POST" action="/documentos/<?= $doc['id'] ?>/excluir" style="display:inline;">
                             <?= \App\Core\View::csrfField() ?>
                             <button type="submit" class="btn btn-danger btn-sm" data-confirm="Excluir este documento?">X</button>
@@ -442,3 +444,44 @@ document.getElementById('upload-assinado-modal').addEventListener('click', funct
         </form>
     </div>
 </div>
+
+<!-- Modal: Substituir Documento -->
+<div id="substituir-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:12px; padding:32px; min-width:400px; max-width:520px;">
+        <h3 style="margin:0 0 8px;">Substituir Documento</h3>
+        <p style="color:#6b7280; font-size:13px; margin-bottom:16px;">
+            Substituindo: <strong id="substituir-tipo">—</strong>.
+            A versão antiga vai para o histórico, e o status "Enviado ao cliente" volta a ser pendente.
+        </p>
+        <form id="substituir-form" method="POST" enctype="multipart/form-data">
+            <?= \App\Core\View::csrfField() ?>
+            <div class="form-group">
+                <label>Novo arquivo PDF *</label>
+                <input type="file" name="arquivo" accept=".pdf" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Data de emissão *</label>
+                <input type="date" name="data_emissao" class="form-control" required>
+            </div>
+            <div class="form-group" id="substituir-validade-grp">
+                <label>Data de validade</label>
+                <input type="date" name="data_validade" class="form-control">
+            </div>
+            <div style="display:flex; gap:8px; margin-top:16px;">
+                <button type="submit" class="btn btn-primary">Substituir</button>
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('substituir-modal').style.display='none'">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function abrirSubstituir(docId, tipoNome, temValidade) {
+    const modal = document.getElementById('substituir-modal');
+    const form  = document.getElementById('substituir-form');
+    document.getElementById('substituir-tipo').textContent = tipoNome || '—';
+    form.action = '/documentos/' + docId + '/substituir';
+    document.getElementById('substituir-validade-grp').style.display = temValidade ? 'block' : 'none';
+    modal.style.display = 'flex';
+}
+</script>

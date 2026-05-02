@@ -69,6 +69,8 @@ $router->post('/login/2fa', ['AuthController', 'twoFactorVerify']);
 $router->get('/', ['DashboardController', 'index'], ['AuthMiddleware']);
 $router->get('/dashboard', ['DashboardController', 'index'], ['AuthMiddleware']);
 $router->get('/rh', ['RhController', 'index'], ['AuthMiddleware']);
+$router->post('/documentos/{id}/enviado-cliente', ['DocumentoController', 'marcarEnviadoCliente'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/documentos/{id}/substituir', ['DocumentoController', 'substituir'], ['AuthMiddleware', 'CsrfMiddleware']);
 
 // --- Colaboradores ---
 $router->get('/colaboradores', ['ColaboradorController', 'index'], ['AuthMiddleware']);
