@@ -155,7 +155,9 @@ class Treinamento extends Model
             "SELECT COUNT(*) as total_treinamentos,
                     COALESCE(SUM(total_participantes), 0) as total_participantes
              FROM treinamentos
-             WHERE MONTH(criado_em) = MONTH(CURDATE()) AND YEAR(criado_em) = YEAR(CURDATE())"
+             WHERE excluido_em IS NULL
+               AND MONTH(criado_em) = MONTH(CURDATE())
+               AND YEAR(criado_em) = YEAR(CURDATE())"
         );
         return $stmt->fetch() ?: ['total_treinamentos' => 0, 'total_participantes' => 0];
     }

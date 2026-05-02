@@ -300,17 +300,22 @@ async function baixarTodosZip() {
 }
 
 // ---- Remover colaborador ----
-function removerColaborador(certId, nome) {
+async function removerColaborador(certId, nome) {
     if (!confirm(`Remover ${nome} desta turma?`)) return;
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/treinamentos/<?= $treinamento['id'] ?>/remover-colaborador';
-    form.innerHTML = `
-        <input type="hidden" name="_csrf_token" value="${document.querySelector('[name=_csrf_token]')?.value || ''}">
-        <input type="hidden" name="certificado_id" value="${certId}">
-    `;
-    document.body.appendChild(form);
-    form.submit();
+    const fd = new FormData();
+    fd.append('_csrf_token', document.querySelector('[name=_csrf_token]')?.value || '');
+    fd.append('certificado_id', certId);
+    try {
+        const res = await fetch('/treinamentos/<?= $treinamento['id'] ?>/remover-colaborador', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Falha ao remover colaborador.');
+        }
+    } catch (e) {
+        alert('Erro de comunicação. Tente novamente.');
+    }
 }
 
 // ---- Upload certificado assinado ----
@@ -346,7 +351,7 @@ function fecharUploadModal() {
 <div id="modal-add-colab" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
     <div style="background:white; padding:32px; border-radius:12px; min-width:400px; max-width:600px; width:90%; max-height:80vh; display:flex; flex-direction:column;">
         <h3 style="margin:0 0 16px;">Adicionar Colaboradores</h3>
-        <form method="POST" action="/treinamentos/<?= $treinamento['id'] ?>/adicionar-colaboradores" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+        <form id="form-add-colab" method="POST" action="/treinamentos/<?= $treinamento['id'] ?>/adicionar-colaboradores" onsubmit="enviarAddColab(event)" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
             <?= \App\Core\View::csrfField() ?>
             <div class="form-group">
                 <label>Buscar colaborador</label>
@@ -370,6 +375,25 @@ function abrirModalAddColab() {
 }
 function fecharModalAddColab() {
     document.getElementById('modal-add-colab').style.display = 'none';
+}
+
+async function enviarAddColab(ev) {
+    ev.preventDefault();
+    const form = ev.target;
+    const fd = new FormData(form);
+    const checks = form.querySelectorAll('input[name="colaborador_ids[]"]:checked');
+    if (!checks.length) { alert('Selecione ao menos um colaborador.'); return; }
+    try {
+        const res = await fetch(form.action, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Falha ao adicionar colaboradores.');
+        }
+    } catch (e) {
+        alert('Erro de comunicação. Tente novamente.');
+    }
 }
 
 let searchTimer;

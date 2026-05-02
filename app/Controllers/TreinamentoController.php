@@ -40,7 +40,7 @@ class TreinamentoController extends Controller
         $treinamentos = $treinModel->allWithDetails($perPage, $offset, $filters);
 
         $contadoresMes = $treinModel->getContadoresMes();
-        $totalGeral = $treinModel->count();
+        $totalGeral = $treinModel->countFiltered([]);
         $tipos = $tipoModel->all(['ativo' => 1], 'codigo ASC');
 
         $this->view('treinamentos/index', [
@@ -650,24 +650,49 @@ class TreinamentoController extends Controller
             return;
         }
 
-        $colabId = $cert['colaborador_id'];
-        $uploadDir = BASE_PATH . "/uploads/colaboradores/{$colabId}/";
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
-        }
-
-        $filename = 'cert_assinado_' . $certId . '_' . time() . '.pdf';
-        $destPath = $uploadDir . $filename;
-
-        if (!move_uploaded_file($file['tmp_name'], $destPath)) {
-            $this->flash('error', 'Falha ao salvar o arquivo.');
+        $colabId = (int)$cert['colaborador_id'];
+        $colabModel = new Colaborador();
+        $colab = $colabModel->find($colabId);
+        if (!$colab) {
+            $this->flash('error', 'Colaborador do certificado não encontrado.');
             $this->redirect("/treinamentos/{$id}");
             return;
         }
 
-        $relativePath = "uploads/colaboradores/{$colabId}/{$filename}";
+        $config = require dirname(__DIR__) . '/config/app.php';
+        $fileService = new \App\Services\FileService();
+        $pastaNome = $fileService->getDiretorioColaborador($colabId, $colab['nome_completo'] ?? '');
+        $uploadDir = $config['upload']['path'] . '/' . $pastaNome;
+
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0775, true);
+        }
+        if (!is_writable($uploadDir)) {
+            @chmod($uploadDir, 0775);
+            if (!is_writable($uploadDir)) {
+                $this->flash('error', 'Pasta do colaborador sem permissão de escrita.');
+                $this->redirect("/treinamentos/{$id}");
+                return;
+            }
+        }
+
+        $tipoModel = new TipoCertificado();
+        $tipo = $tipoModel->find((int)$cert['tipo_certificado_id']);
+        $safeName = $fileService->gerarNomeArquivo(
+            $colab['nome_completo'] ?? '',
+            ($tipo['codigo'] ?? 'CERT') . ' - Assinado',
+            $cert['data_emissao'],
+            'pdf'
+        );
+
+        if (!@move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $safeName)) {
+            $this->flash('error', 'Falha ao salvar o arquivo. Verifique permissões da pasta.');
+            $this->redirect("/treinamentos/{$id}");
+            return;
+        }
+
         $certModel->update($certId, [
-            'arquivo_assinado' => $relativePath,
+            'arquivo_assinado' => $pastaNome . '/' . $safeName,
             'assinado_em'      => date('Y-m-d H:i:s'),
         ]);
 

@@ -54,10 +54,10 @@ class BackupDockerTest extends TestCase
             'Nao deve existir volume nomeado sesmt-backups (deve usar storage local).');
     }
 
-    public function testBackupRetencao30Dias(): void
+    public function testBackupRetencao7Dias(): void
     {
-        $this->assertStringContainsString('-mtime +30', $this->prodCompose,
-            'Backup deve reter arquivos por 30 dias.');
+        $this->assertStringContainsString('-mtime +7', $this->prodCompose,
+            'Backup deve reter arquivos por 7 dias.');
     }
 
     public function testBackupIncluiDumpBanco(): void
@@ -110,8 +110,8 @@ class BackupDockerTest extends TestCase
 
     public function testCronPhpLimpaBackupsAntigos(): void
     {
-        $this->assertStringContainsString('-30 days', $this->cronBackupPhp,
-            'Cron backup.php deve limpar backups com mais de 30 dias.');
+        $this->assertStringContainsString('-7 days', $this->cronBackupPhp,
+            'Cron backup.php deve limpar backups com mais de 7 dias.');
     }
 
     public function testCronPhpUsaMysqldump(): void
