@@ -37,16 +37,35 @@ class ObraController extends Controller
 
         // For each collaborator, get doc/cert status summary
         foreach ($colaboradores as &$colab) {
-            // Count docs by status — incluir 'vencido' para conformidade correta
+            // Count docs by status — somente o documento mais recente de cada
+            // tipo (versões antigas/obsoletas não contam como vencidas).
             $dStmt = $db->prepare(
                 "SELECT d.status, COUNT(*) as total
-                 FROM documentos d
-                 WHERE d.colaborador_id = :cid
+                 FROM (
+                     SELECT d2.* FROM documentos d2
+                     INNER JOIN (
+                         SELECT MIN(id) as min_id
+                         FROM (
+                             SELECT id, colaborador_id, tipo_documento_id,
+                                    ROW_NUMBER() OVER (
+                                        PARTITION BY colaborador_id, tipo_documento_id
+                                        ORDER BY data_emissao DESC, id ASC
+                                    ) as rn
+                             FROM documentos
+                             WHERE colaborador_id = :cid1
+                               AND status != 'obsoleto'
+                               AND excluido_em IS NULL
+                         ) ranked WHERE rn = 1
+                         GROUP BY colaborador_id, tipo_documento_id
+                     ) latest ON d2.id = latest.min_id
+                 ) d
+                 WHERE d.colaborador_id = :cid2
                    AND d.status IN ('vigente', 'proximo_vencimento', 'vencido')
-                   AND d.excluido_em IS NULL
                  GROUP BY d.status"
             );
-            $dStmt->execute(['cid' => $colab['id']]);
+            $dStmt->bindValue('cid1', $colab['id'], \PDO::PARAM_INT);
+            $dStmt->bindValue('cid2', $colab['id'], \PDO::PARAM_INT);
+            $dStmt->execute();
             $colab['docs'] = ['vigente' => 0, 'proximo_vencimento' => 0, 'vencido' => 0];
             foreach ($dStmt->fetchAll(\PDO::FETCH_ASSOC) as $r) {
                 $colab['docs'][$r['status']] = (int)$r['total'];

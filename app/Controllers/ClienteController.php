@@ -142,14 +142,74 @@ class ClienteController extends Controller
         $colabStmt->execute(['cid' => (int)$id]);
         $totalColabs = (int)$colabStmt->fetchColumn();
 
+        // Resumo por obra: total colaboradores, regulares, irregulares e
+        // próximos a vencer (apenas docs/certs do mais recente de cada tipo).
+        $obras = $obraModel->all(['cliente_id' => (int)$id], 'nome ASC');
+        $resumoStmt = $db->prepare(
+            "SELECT
+                c.obra_id,
+                COUNT(DISTINCT c.id) AS total,
+                COUNT(DISTINCT CASE WHEN venc.qtd > 0 THEN c.id END) AS irregulares,
+                COUNT(DISTINCT CASE WHEN venc.qtd = 0 AND prox.qtd > 0 THEN c.id END) AS prox_vencimento
+             FROM colaboradores c
+             LEFT JOIN (
+                SELECT d2.colaborador_id, COUNT(*) AS qtd
+                FROM documentos d2
+                INNER JOIN (
+                    SELECT MIN(id) AS min_id FROM (
+                        SELECT id, colaborador_id, tipo_documento_id,
+                               ROW_NUMBER() OVER (PARTITION BY colaborador_id, tipo_documento_id
+                                                  ORDER BY data_emissao DESC, id ASC) rn
+                        FROM documentos
+                        WHERE status != 'obsoleto' AND excluido_em IS NULL
+                    ) r WHERE rn = 1
+                    GROUP BY colaborador_id, tipo_documento_id
+                ) latest ON d2.id = latest.min_id
+                WHERE d2.status = 'vencido'
+                GROUP BY d2.colaborador_id
+             ) venc ON venc.colaborador_id = c.id
+             LEFT JOIN (
+                SELECT d2.colaborador_id, COUNT(*) AS qtd
+                FROM documentos d2
+                INNER JOIN (
+                    SELECT MIN(id) AS min_id FROM (
+                        SELECT id, colaborador_id, tipo_documento_id,
+                               ROW_NUMBER() OVER (PARTITION BY colaborador_id, tipo_documento_id
+                                                  ORDER BY data_emissao DESC, id ASC) rn
+                        FROM documentos
+                        WHERE status != 'obsoleto' AND excluido_em IS NULL
+                    ) r WHERE rn = 1
+                    GROUP BY colaborador_id, tipo_documento_id
+                ) latest ON d2.id = latest.min_id
+                WHERE d2.status = 'proximo_vencimento'
+                GROUP BY d2.colaborador_id
+             ) prox ON prox.colaborador_id = c.id
+             WHERE c.cliente_id = :cid
+               AND c.status = 'ativo'
+               AND c.isento = 0
+               AND c.excluido_em IS NULL
+             GROUP BY c.obra_id"
+        );
+        $resumoStmt->execute(['cid' => (int)$id]);
+        $resumoPorObra = [];
+        foreach ($resumoStmt->fetchAll(\PDO::FETCH_ASSOC) as $r) {
+            $resumoPorObra[(int)$r['obra_id']] = [
+                'total'           => (int)$r['total'],
+                'irregulares'     => (int)$r['irregulares'],
+                'prox_vencimento' => (int)$r['prox_vencimento'],
+                'regulares'       => (int)$r['total'] - (int)$r['irregulares'],
+            ];
+        }
+
         $this->view('clientes/show', [
-            'cliente'    => $cliente,
-            'obras'      => $obraModel->all(['cliente_id' => (int)$id], 'nome ASC'),
-            'requisitos' => $requisitos,
-            'tiposDocs'  => $tiposDocs,
-            'tiposCerts' => $tiposCerts,
-            'totalColabs' => $totalColabs,
-            'pageTitle'  => 'Clientes',
+            'cliente'        => $cliente,
+            'obras'          => $obras,
+            'requisitos'     => $requisitos,
+            'tiposDocs'      => $tiposDocs,
+            'tiposCerts'     => $tiposCerts,
+            'totalColabs'    => $totalColabs,
+            'resumoPorObra'  => $resumoPorObra,
+            'pageTitle'      => 'Clientes',
         ]);
     }
 

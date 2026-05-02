@@ -16,17 +16,42 @@
     <div class="table-container">
         <div class="table-header"><span class="table-title">Obras</span></div>
         <table>
-            <thead><tr><th>Nome</th><th>Local</th><th>Inicio</th><th>Status</th><th>Acoes</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Local</th>
+                    <th>Inicio</th>
+                    <th>Status</th>
+                    <th style="text-align:center;" title="Total / Regular / Irregular">Conformidade</th>
+                    <th>Acoes</th>
+                </tr>
+            </thead>
             <tbody>
             <?php if (empty($obras)): ?>
-            <tr><td colspan="5" style="text-align:center;color:var(--c-gray);">Nenhuma obra cadastrada.</td></tr>
+            <tr><td colspan="6" style="text-align:center;color:var(--c-gray);">Nenhuma obra cadastrada.</td></tr>
             <?php else: ?>
-            <?php foreach ($obras as $o): ?>
+            <?php foreach ($obras as $o):
+                $r = $resumoPorObra[(int)$o['id']] ?? ['total'=>0,'regulares'=>0,'irregulares'=>0,'prox_vencimento'=>0];
+            ?>
             <tr>
                 <td><a href="/obras/<?= $o['id'] ?>" style="color:var(--c-accent); font-weight:500;"><?= htmlspecialchars($o['nome']) ?></a></td>
                 <td><?= htmlspecialchars($o['local_obra'] ?? '-') ?></td>
                 <td><?= $o['data_inicio'] ? date('d/m/Y', strtotime($o['data_inicio'])) : '-' ?></td>
                 <td><span class="badge badge-<?= $o['status'] === 'ativa' ? 'ativo' : ($o['status'] === 'suspensa' ? 'afastado' : 'inativo') ?>"><?= ucfirst($o['status']) ?></span></td>
+                <td style="text-align:center; font-size:12px; white-space:nowrap;">
+                    <?php if ($r['total'] === 0): ?>
+                        <span style="color:#9ca3af;">sem colaboradores</span>
+                    <?php else: ?>
+                        <span title="Total de colaboradores ativos"><?= $r['total'] ?></span>
+                        <span style="color:#00b279; margin-left:6px;" title="Regulares">✓ <?= $r['regulares'] ?></span>
+                        <?php if ($r['irregulares'] > 0): ?>
+                            <span style="color:#dc2626; margin-left:6px;" title="Com algum documento vencido">⚠ <?= $r['irregulares'] ?></span>
+                        <?php endif; ?>
+                        <?php if ($r['prox_vencimento'] > 0): ?>
+                            <span style="color:#f39c12; margin-left:6px;" title="Próximo do vencimento">⏰ <?= $r['prox_vencimento'] ?></span>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </td>
                 <td>
                     <div style="display:flex;gap:4px;">
                         <a href="/obras/<?= $o['id'] ?>" class="btn btn-outline btn-sm">Ver</a>
