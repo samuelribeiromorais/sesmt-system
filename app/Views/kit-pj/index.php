@@ -32,8 +32,13 @@
                 <td style="font-size:13px;"><?= htmlspecialchars($k['razao_social']) ?><br><span style="color:#999;"><?= htmlspecialchars($k['cnpj']) ?></span></td>
                 <td><span class="badge badge-vigente"><?= ucfirst($k['tipo_aso']) ?></span></td>
                 <td style="font-size:13px;"><?= date('d/m/Y H:i', strtotime($k['criado_em'])) ?></td>
-                <td>
+                <td style="white-space:nowrap;">
                     <a href="/kit-pj/<?= $k['id'] ?>/imprimir" class="btn btn-outline btn-sm" target="_blank">Imprimir</a>
+                    <form method="POST" action="/kit-pj/<?= $k['id'] ?>/excluir" style="display:inline;"
+                          onsubmit="return confirm('Excluir este Kit PJ de <?= htmlspecialchars($k['nome_completo'], ENT_QUOTES) ?>? Esta ação não pode ser desfeita.')">
+                        <?= \App\Core\View::csrfField() ?>
+                        <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
+                    </form>
                 </td>
             </tr>
             <?php endforeach; ?>

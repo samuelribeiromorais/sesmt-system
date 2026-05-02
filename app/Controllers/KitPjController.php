@@ -177,4 +177,33 @@ class KitPjController extends Controller
 
         $this->view('kit-pj/imprimir', ['kit' => $kit], '');
     }
+
+    public function destroy(string $id): void
+    {
+        // Apenas SESMT/Admin/RH podem excluir Kit PJ
+        $perfil = Session::get('user_perfil');
+        if (!in_array($perfil, ['admin', 'sesmt', 'rh'])) {
+            http_response_code(403);
+            exit('Sem permissão.');
+        }
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT id, colaborador_id, razao_social FROM kits_pj WHERE id = :id");
+        $stmt->execute(['id' => (int)$id]);
+        $kit = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$kit) {
+            $this->flash('error', 'Kit PJ não encontrado.');
+            $this->redirect('/kit-pj');
+            return;
+        }
+
+        // Hard delete conforme acordado (não recuperável)
+        $del = $db->prepare("DELETE FROM kits_pj WHERE id = :id");
+        $del->execute(['id' => (int)$id]);
+
+        LoggerMiddleware::log('kit-pj', "Kit PJ ID {$id} ({$kit['razao_social']}) excluído");
+        $this->flash('success', 'Kit PJ excluído.');
+        $this->redirect('/kit-pj');
+    }
 }
