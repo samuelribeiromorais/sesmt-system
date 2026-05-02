@@ -123,7 +123,12 @@ class ColaboradorController extends Controller
         $certificados = $certModel->getLatestByColaborador((int)$id);
         $documentos   = $docModel->findByColaborador((int)$id);
 
-        // NRs obrigatórias pela função do colaborador que ainda não possui (vigente/próx. venc.)
+        // NRs obrigatórias pela função — colaborador é considerado coberto se tem:
+        //   (a) certificado vigente/próx. venc. do tipo correspondente, OU
+        //   (b) documento (PDF assinado) cujo tipo_documento.nome casa com o
+        //       código do tipo_certificado (ex: "Certificado NR-10 Básico" cobre
+        //       a NR de código "NR 10 BÁSICO"). Comparação normaliza espaços
+        //       e hifens para tolerar variação de nomenclatura.
         $nrsFaltantes = [];
         if (!empty($colab['funcao'])) {
             $db = \App\Core\Database::getInstance();
@@ -134,13 +139,26 @@ class ColaboradorController extends Controller
                  WHERE cfc.funcao = :funcao
                    AND tc.id NOT IN (
                        SELECT tipo_certificado_id FROM certificados
-                       WHERE colaborador_id = :cid
+                       WHERE colaborador_id = :cid1
                          AND status IN ('vigente','proximo_vencimento')
                          AND excluido_em IS NULL
                    )
+                   AND NOT EXISTS (
+                       SELECT 1 FROM documentos d
+                       JOIN tipos_documento td ON d.tipo_documento_id = td.id
+                       WHERE d.colaborador_id = :cid2
+                         AND d.status IN ('vigente','proximo_vencimento')
+                         AND d.excluido_em IS NULL
+                         AND UPPER(REPLACE(REPLACE(td.nome, '-', ''), ' ', ''))
+                             LIKE CONCAT('%', UPPER(REPLACE(tc.codigo, ' ', '')), '%')
+                   )
                  ORDER BY tc.codigo ASC"
             );
-            $stmt->execute(['funcao' => $colab['funcao'], 'cid' => (int)$id]);
+            $stmt->execute([
+                'funcao' => $colab['funcao'],
+                'cid1'   => (int)$id,
+                'cid2'   => (int)$id,
+            ]);
             $nrsFaltantes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
         }
 
