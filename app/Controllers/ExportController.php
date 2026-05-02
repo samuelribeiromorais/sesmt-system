@@ -45,33 +45,35 @@ class ExportController extends Controller
 
         // Title
         $sheet->setCellValue('A1', 'COLABORADORES - TSE ENGENHARIA');
-        $sheet->mergeCells('A1:H1');
+        $sheet->mergeCells('A1:J1');
         $sheet->getStyle('A1')->applyFromArray(['font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => '005E4E']]]);
         $sheet->setCellValue('A2', 'Gerado em: ' . date('d/m/Y H:i'));
 
-        // Headers
-        $headers = ['Nome', 'Matricula', 'Cargo', 'Função', 'Setor', 'Cliente', 'Obra', 'Status'];
+        // Headers — colunas adicionadas: Código GCO e Data de Admissão
+        $headers = ['Nome', 'Matricula', 'Codigo GCO', 'Cargo', 'Função', 'Setor', 'Cliente', 'Obra', 'Admissão', 'Status'];
         $row = 4;
         foreach ($headers as $i => $h) {
             $col = chr(65 + $i);
             $sheet->setCellValue("{$col}{$row}", $h);
         }
-        $sheet->getStyle("A{$row}:H{$row}")->applyFromArray($headerStyle);
+        $sheet->getStyle("A{$row}:J{$row}")->applyFromArray($headerStyle);
         $row++;
 
         foreach ($rows as $r) {
             $sheet->setCellValue("A{$row}", $r['nome_completo']);
-            $sheet->setCellValue("B{$row}", $r['matricula'] ?? '-');
-            $sheet->setCellValue("C{$row}", $r['cargo'] ?? '-');
-            $sheet->setCellValue("D{$row}", $r['funcao'] ?? '-');
-            $sheet->setCellValue("E{$row}", $r['setor'] ?? '-');
-            $sheet->setCellValue("F{$row}", $r['cliente_nome'] ?? '-');
-            $sheet->setCellValue("G{$row}", $r['obra_nome'] ?? '-');
-            $sheet->setCellValue("H{$row}", ucfirst($r['status']));
+            $sheet->setCellValue("B{$row}", $r['matricula'] ?: '-');
+            $sheet->setCellValue("C{$row}", $r['codigo_gco'] ?: '-');
+            $sheet->setCellValue("D{$row}", $r['cargo'] ?: '-');
+            $sheet->setCellValue("E{$row}", $r['funcao'] ?: '-');
+            $sheet->setCellValue("F{$row}", $r['setor'] ?: '-');
+            $sheet->setCellValue("G{$row}", $r['cliente_nome'] ?: '-');
+            $sheet->setCellValue("H{$row}", $r['obra_nome'] ?: '-');
+            $sheet->setCellValue("I{$row}", !empty($r['data_admissao']) ? date('d/m/Y', strtotime($r['data_admissao'])) : '-');
+            $sheet->setCellValue("J{$row}", ucfirst($r['status']));
             $row++;
         }
 
-        foreach (range('A', 'H') as $col) $sheet->getColumnDimension($col)->setAutoSize(true);
+        foreach (range('A', 'J') as $col) $sheet->getColumnDimension($col)->setAutoSize(true);
 
         $this->downloadExcel($spreadsheet, 'Colaboradores_' . date('Y-m-d'));
     }
@@ -86,6 +88,9 @@ class ExportController extends Controller
                 JOIN colaboradores c ON d.colaborador_id = c.id
                 JOIN tipos_documento td ON d.tipo_documento_id = td.id
                 WHERE d.status != 'obsoleto'
+                  AND d.excluido_em IS NULL
+                  AND c.excluido_em IS NULL
+                  AND td.ativo = 1
                 ORDER BY c.nome_completo, td.categoria";
         $stmt = $db->query($sql);
         $rows = $stmt->fetchAll();
