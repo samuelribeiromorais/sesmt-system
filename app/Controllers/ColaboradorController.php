@@ -144,20 +144,22 @@ class ColaboradorController extends Controller
             $nrsFaltantes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
         }
 
-        // Count documents by status
-        // Docs sem data_validade (ex: OS) são sempre conformes — nunca penalizam
-        $docsVigentes = count(array_filter($documentos, fn($d) => empty($d['data_validade']) || ($d['status'] ?? '') === 'vigente'));
-        $docsVencendo = count(array_filter($documentos, fn($d) => !empty($d['data_validade']) && ($d['status'] ?? '') === 'proximo_vencimento'));
-        $docsVencidos = count(array_filter($documentos, fn($d) => !empty($d['data_validade']) && ($d['status'] ?? '') === 'vencido'));
+        // Conformidade — regras (rodada 3):
+        //   1. Documentos sem data_validade (ex: Ordem de Serviço) NÃO entram no cálculo
+        //   2. Status proximo_vencimento conta como CONFORME (próximo a vencer ainda é vigente)
+        //   3. Apenas status vencido conta como NÃO-CONFORME
+        //   4. Certificados só entram com PDF assinado vinculado
+        $docsComValidade = array_filter($documentos, fn($d) => !empty($d['data_validade']));
+        $docsVigentes  = count(array_filter($docsComValidade, fn($d) => in_array($d['status'] ?? '', ['vigente', 'proximo_vencimento'])));
+        $docsVencendo  = count(array_filter($docsComValidade, fn($d) => ($d['status'] ?? '') === 'proximo_vencimento'));
+        $docsVencidos  = count(array_filter($docsComValidade, fn($d) => ($d['status'] ?? '') === 'vencido'));
 
-        // Certificados: só conta os que têm PDF assinado vinculado
         $certsComArquivo = array_filter($certificados, fn($c) => !empty($c['arquivo_assinado']));
-        $certsVigentes = count(array_filter($certsComArquivo, fn($c) => ($c['status'] ?? '') === 'vigente'));
+        $certsVigentes = count(array_filter($certsComArquivo, fn($c) => in_array($c['status'] ?? '', ['vigente', 'proximo_vencimento'])));
         $certsVencendo = count(array_filter($certsComArquivo, fn($c) => ($c['status'] ?? '') === 'proximo_vencimento'));
         $certsVencidos = count(array_filter($certsComArquivo, fn($c) => ($c['status'] ?? '') === 'vencido'));
 
-        // Conformidade rate (denominador só conta certs com PDF assinado)
-        $totalItens = count($documentos) + count($certsComArquivo);
+        $totalItens = count($docsComValidade) + count($certsComArquivo);
         $taxaConformidade = $totalItens > 0
             ? (($docsVigentes + $certsVigentes) / $totalItens) * 100
             : 100;

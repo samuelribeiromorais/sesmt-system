@@ -115,7 +115,7 @@ class DashboardService
              FROM colaboradores c
              JOIN {$this->latestDocsSubquery} d ON d.colaborador_id = c.id
              WHERE c.status = 'ativo' AND c.isento = 0 AND c.excluido_em IS NULL
-               AND d.status IN ('vencido', 'proximo_vencimento')"
+               AND d.status = 'vencido'"
         )->fetchColumn();
 
         return [

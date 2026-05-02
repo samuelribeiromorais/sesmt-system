@@ -22,6 +22,7 @@ class Certificado extends Model
              LEFT JOIN ministrantes m ON cert.ministrante_id = m.id
              LEFT JOIN ministrantes mt ON tc.ministrante_id = mt.id
              WHERE cert.colaborador_id = :cid
+               AND cert.excluido_em IS NULL
              ORDER BY tc.codigo, cert.data_emissao DESC"
         );
         $stmt->execute(['cid' => $colaboradorId]);

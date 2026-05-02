@@ -37,11 +37,13 @@ class ObraController extends Controller
 
         // For each collaborator, get doc/cert status summary
         foreach ($colaboradores as &$colab) {
-            // Count docs by status (only vigente and proximo_vencimento)
+            // Count docs by status — incluir 'vencido' para conformidade correta
             $dStmt = $db->prepare(
                 "SELECT d.status, COUNT(*) as total
                  FROM documentos d
-                 WHERE d.colaborador_id = :cid AND d.status IN ('vigente', 'proximo_vencimento') AND d.excluido_em IS NULL
+                 WHERE d.colaborador_id = :cid
+                   AND d.status IN ('vigente', 'proximo_vencimento', 'vencido')
+                   AND d.excluido_em IS NULL
                  GROUP BY d.status"
             );
             $dStmt->execute(['cid' => $colab['id']]);
@@ -50,11 +52,13 @@ class ObraController extends Controller
                 $colab['docs'][$r['status']] = (int)$r['total'];
             }
 
-            // Count certs by status
+            // Count certs by status — só considera certs com PDF assinado vinculado
             $cStmt = $db->prepare(
                 "SELECT status, COUNT(*) as total
                  FROM certificados
-                 WHERE colaborador_id = :cid AND excluido_em IS NULL
+                 WHERE colaborador_id = :cid
+                   AND arquivo_assinado IS NOT NULL
+                   AND excluido_em IS NULL
                  GROUP BY status"
             );
             $cStmt->execute(['cid' => $colab['id']]);
@@ -64,10 +68,10 @@ class ObraController extends Controller
             }
 
             // Overall status
+            // Regra rodada 3: apenas vencido reduz conformidade.
+            // Próximo a vencimento ainda é considerado vigente/regular.
             if ($colab['docs']['vencido'] > 0 || $colab['certs']['vencido'] > 0) {
                 $colab['conformidade'] = 'irregular';
-            } elseif ($colab['docs']['proximo_vencimento'] > 0 || $colab['certs']['proximo_vencimento'] > 0) {
-                $colab['conformidade'] = 'atenção';
             } else {
                 $colab['conformidade'] = 'regular';
             }
