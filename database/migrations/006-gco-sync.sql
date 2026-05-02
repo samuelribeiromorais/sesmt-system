@@ -2,8 +2,7 @@
 ALTER TABLE colaboradores
     ADD COLUMN IF NOT EXISTS codigo_gco VARCHAR(20) NULL AFTER id,
     ADD COLUMN IF NOT EXISTS celular VARCHAR(20) NULL AFTER telefone,
-    ADD COLUMN IF NOT EXISTS celular_manual VARCHAR(20) NULL AFTER celular
-    COMMENT 'Celular inserido manualmente pelo SESMT quando o GCO não fornece';
+    ADD COLUMN IF NOT EXISTS celular_manual VARCHAR(20) NULL COMMENT 'Celular inserido manualmente pelo SESMT quando o GCO nao fornece' AFTER celular;
 
 ALTER TABLE colaboradores
     ADD INDEX IF NOT EXISTS idx_codigo_gco (codigo_gco);

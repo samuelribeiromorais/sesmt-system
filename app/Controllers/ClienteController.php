@@ -143,8 +143,10 @@ class ClienteController extends Controller
         $totalColabs = (int)$colabStmt->fetchColumn();
 
         // Resumo por obra: total colaboradores, regulares, irregulares e
-        // próximos a vencer (apenas docs/certs do mais recente de cada tipo).
+        // próximos a vencer. Usa Documento::latestSubquery() para garantir
+        // que apenas a versão mais recente de cada tipo é considerada.
         $obras = $obraModel->all(['cliente_id' => (int)$id], 'nome ASC');
+        $sub = \App\Models\Documento::latestSubquery();
         $resumoStmt = $db->prepare(
             "SELECT
                 c.obra_id,
@@ -153,36 +155,14 @@ class ClienteController extends Controller
                 COUNT(DISTINCT CASE WHEN venc.qtd = 0 AND prox.qtd > 0 THEN c.id END) AS prox_vencimento
              FROM colaboradores c
              LEFT JOIN (
-                SELECT d2.colaborador_id, COUNT(*) AS qtd
-                FROM documentos d2
-                INNER JOIN (
-                    SELECT MIN(id) AS min_id FROM (
-                        SELECT id, colaborador_id, tipo_documento_id,
-                               ROW_NUMBER() OVER (PARTITION BY colaborador_id, tipo_documento_id
-                                                  ORDER BY data_emissao DESC, id ASC) rn
-                        FROM documentos
-                        WHERE status != 'obsoleto' AND excluido_em IS NULL
-                    ) r WHERE rn = 1
-                    GROUP BY colaborador_id, tipo_documento_id
-                ) latest ON d2.id = latest.min_id
-                WHERE d2.status = 'vencido'
-                GROUP BY d2.colaborador_id
+                SELECT colaborador_id, COUNT(*) AS qtd FROM {$sub} d
+                WHERE d.status = 'vencido'
+                GROUP BY colaborador_id
              ) venc ON venc.colaborador_id = c.id
              LEFT JOIN (
-                SELECT d2.colaborador_id, COUNT(*) AS qtd
-                FROM documentos d2
-                INNER JOIN (
-                    SELECT MIN(id) AS min_id FROM (
-                        SELECT id, colaborador_id, tipo_documento_id,
-                               ROW_NUMBER() OVER (PARTITION BY colaborador_id, tipo_documento_id
-                                                  ORDER BY data_emissao DESC, id ASC) rn
-                        FROM documentos
-                        WHERE status != 'obsoleto' AND excluido_em IS NULL
-                    ) r WHERE rn = 1
-                    GROUP BY colaborador_id, tipo_documento_id
-                ) latest ON d2.id = latest.min_id
-                WHERE d2.status = 'proximo_vencimento'
-                GROUP BY d2.colaborador_id
+                SELECT colaborador_id, COUNT(*) AS qtd FROM {$sub} d
+                WHERE d.status = 'proximo_vencimento'
+                GROUP BY colaborador_id
              ) prox ON prox.colaborador_id = c.id
              WHERE c.cliente_id = :cid
                AND c.status = 'ativo'

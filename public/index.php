@@ -68,6 +68,7 @@ $router->post('/login/2fa', ['AuthController', 'twoFactorVerify']);
 // --- Dashboard ---
 $router->get('/', ['DashboardController', 'index'], ['AuthMiddleware']);
 $router->get('/dashboard', ['DashboardController', 'index'], ['AuthMiddleware']);
+$router->get('/health', ['HealthController', 'check']); // público para monitoring
 $router->get('/rh', ['RhController', 'index'], ['AuthMiddleware']);
 $router->post('/documentos/{id}/enviado-cliente', ['DocumentoController', 'marcarEnviadoCliente'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/documentos/{id}/substituir', ['DocumentoController', 'substituir'], ['AuthMiddleware', 'CsrfMiddleware']);

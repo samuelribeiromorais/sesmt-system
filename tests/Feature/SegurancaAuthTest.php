@@ -37,21 +37,20 @@ class SegurancaAuthTest extends TestCase
     public function test2faObrigatorioParaSesmt(): void
     {
         $this->assertStringContainsString("'sesmt'", $this->authController);
-        // Verifica que admin e sesmt estao na mesma condicao
         $this->assertMatchesRegularExpression(
-            "/in_array.*perfil.*admin.*sesmt.*totp_ativo/s",
+            "/in_array.*perfil.*admin.*sesmt.*rh.*totp_ativo/s",
             $this->authController,
-            '2FA deve ser obrigatorio para admin e sesmt.'
+            '2FA deve ser obrigatorio para admin, sesmt e rh.'
         );
     }
 
-    public function test2faNaoObrigatorioParaRh(): void
+    public function test2faObrigatorioParaRh(): void
     {
-        // A condicao so deve incluir admin e sesmt, nao rh
+        // RH agora tem acesso ao painel "Enviado ao cliente" — exigir 2FA.
         preg_match("/in_array\(\\\$user\['perfil'\],\s*\[([^\]]+)\]\)\s*&&\s*empty\(\\\$user\['totp_ativo'\]\)/", $this->authController, $matches);
         $this->assertNotEmpty($matches, 'Condicao de 2FA obrigatorio nao encontrada.');
-        $this->assertStringNotContainsString("'rh'", $matches[1],
-            '2FA nao deve ser obrigatorio para perfil RH.');
+        $this->assertStringContainsString("'rh'", $matches[1],
+            '2FA deve ser obrigatorio para perfil RH (acesso ao envio ao cliente).');
     }
 
     // ── View 2FA ────────────────────────────────────────────────────────────

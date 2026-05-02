@@ -39,6 +39,37 @@ class Documento extends Model
      * Subquery que retorna apenas o documento mais recente de cada tipo por colaborador.
      * Usado como base em todas as consultas para evitar duplicatas.
      */
+    /**
+     * Subquery SQL que retorna apenas a versão mais recente de cada
+     * (colaborador_id, tipo_documento_id) — ignorando obsoletos e
+     * soft-deletados. Use sempre via Documento::latestSubquery() para
+     * manter a regra consistente em todas as telas/relatórios.
+     *
+     * Pode receber filtro WHERE adicional opcional (ex: "colaborador_id = :cid").
+     */
+    public static function latestSubquery(string $extraWhere = ''): string
+    {
+        $where = "status != 'obsoleto' AND excluido_em IS NULL";
+        if ($extraWhere !== '') {
+            $where .= " AND ({$extraWhere})";
+        }
+        return "(
+            SELECT d2.* FROM documentos d2
+            INNER JOIN (
+                SELECT MIN(id) AS min_id FROM (
+                    SELECT id, colaborador_id, tipo_documento_id,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY colaborador_id, tipo_documento_id
+                               ORDER BY data_emissao DESC, id ASC
+                           ) AS rn
+                    FROM documentos
+                    WHERE {$where}
+                ) ranked WHERE rn = 1
+                GROUP BY colaborador_id, tipo_documento_id
+            ) latest ON d2.id = latest.min_id
+        )";
+    }
+
     private function latestDocsSubquery(): string
     {
         // Desempate por id ASC: quando duas datas de emissão são iguais,

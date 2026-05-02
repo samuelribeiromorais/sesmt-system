@@ -38,27 +38,12 @@ class ObraController extends Controller
         // For each collaborator, get doc/cert status summary
         foreach ($colaboradores as &$colab) {
             // Count docs by status — somente o documento mais recente de cada
-            // tipo (versões antigas/obsoletas não contam como vencidas).
+            // tipo. Usa Documento::latestSubquery() para manter a regra
+            // consistente entre todas as telas (obra, cliente, ficha, KPI).
+            $sub = \App\Models\Documento::latestSubquery('colaborador_id = :cid1');
             $dStmt = $db->prepare(
                 "SELECT d.status, COUNT(*) as total
-                 FROM (
-                     SELECT d2.* FROM documentos d2
-                     INNER JOIN (
-                         SELECT MIN(id) as min_id
-                         FROM (
-                             SELECT id, colaborador_id, tipo_documento_id,
-                                    ROW_NUMBER() OVER (
-                                        PARTITION BY colaborador_id, tipo_documento_id
-                                        ORDER BY data_emissao DESC, id ASC
-                                    ) as rn
-                             FROM documentos
-                             WHERE colaborador_id = :cid1
-                               AND status != 'obsoleto'
-                               AND excluido_em IS NULL
-                         ) ranked WHERE rn = 1
-                         GROUP BY colaborador_id, tipo_documento_id
-                     ) latest ON d2.id = latest.min_id
-                 ) d
+                 FROM {$sub} d
                  WHERE d.colaborador_id = :cid2
                    AND d.status IN ('vigente', 'proximo_vencimento', 'vencido')
                  GROUP BY d.status"
