@@ -9,12 +9,11 @@ $statusLabel = [
     'confirmado'     => ['label' => 'Confirmado',  'color' => '#00b279', 'bg' => '#e6f9f3'],
     'rejeitado'      => ['label' => 'Rejeitado',   'color' => '#e74c3c', 'bg' => '#fdf0ef'],
 ];
-function statusBadge(string $s): string {
-    global $statusLabel;
+$statusBadge = function (string $s) use ($statusLabel): string {
     $info = $statusLabel[$s] ?? ['label' => $s, 'color' => '#6b7280', 'bg' => '#f3f4f6'];
     return "<span style=\"display:inline-block; padding:2px 10px; border-radius:12px; font-size:11px; font-weight:600;
                            background:{$info['bg']}; color:{$info['color']}; border:1px solid {$info['color']}40;\">{$info['label']}</span>";
-}
+};
 ?>
 
 <!-- KPI Cards -->
@@ -145,7 +144,7 @@ function statusBadge(string $s): string {
                     <td style="font-size:13px; <?= $valStyle ?>">
                         <?= $l['data_validade'] ? date('d/m/Y', strtotime($l['data_validade'])) : 'N/A' ?>
                     </td>
-                    <td><?= statusBadge($isNovo ? 'pendente_envio' : $pStatus) ?></td>
+                    <td><?= $statusBadge($isNovo ? 'pendente_envio' : $pStatus) ?></td>
                     <td style="font-size:12px; color:#6b7280;">
                         <?php if ($l['numero_protocolo']): ?>
                         <strong style="color:var(--c-text);">#<?= htmlspecialchars($l['numero_protocolo']) ?></strong><br>

@@ -131,7 +131,7 @@ class RhController extends Controller
         $userId = (int)Session::get('user_id');
         $ok     = RhProtocolo::confirmar($id, $userId);
 
-        if (request_is_json()) {
+        if (self::requestIsJson()) {
             $this->json(['success' => $ok]);
         } else {
             $this->flash($ok ? 'success' : 'error', $ok ? 'Protocolo confirmado.' : 'Não foi possível confirmar (status inválido).');
@@ -167,10 +167,7 @@ class RhController extends Controller
     {
         RoleMiddleware::requireRhOrSesmt();
 
-        $db  = Database::getInstance();
-        $row = $db->prepare("SELECT * FROM rh_protocolo_comprovantes WHERE id = :id")
-                  ->execute(['id' => $comprovanteId]) ? null : null;
-
+        $db   = Database::getInstance();
         $stmt = $db->prepare("SELECT * FROM rh_protocolo_comprovantes WHERE id = :id");
         $stmt->execute(['id' => $comprovanteId]);
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -236,11 +233,10 @@ class RhController extends Controller
             userId:      $userId
         );
     }
-}
 
-// Utilitário inline
-function request_is_json(): bool
-{
-    return str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json')
-        || str_contains($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '', 'XMLHttpRequest');
+    private static function requestIsJson(): bool
+    {
+        return str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json')
+            || str_contains($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '', 'XMLHttpRequest');
+    }
 }

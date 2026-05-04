@@ -177,9 +177,9 @@ def run():
     else:
         fail("GET /exportar/documentos", f"HTTP {r.status_code} ct={r.headers.get('Content-Type','')}")
 
-    section("Conteúdo específico — Painel RH (Grupo 8)")
+    section("Conteúdo específico — Painel RH (Fase 1 — Reprotocolo)")
     r = s.get(f"{BASE}/rh")
-    for keyword in ["Pendentes de envio ao cliente", "Já enviados ao cliente", "Enviado ao cliente"]:
+    for keyword in ["Pendentes de envio", "Aguardando confirmação", "Confirmados", "Total geral"]:
         if keyword in r.text:
             ok(f"/rh contém '{keyword}'")
         else:

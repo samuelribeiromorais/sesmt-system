@@ -276,12 +276,42 @@ def run():
     else:
         fail(f"HTTP {r.status_code}")
 
-    # Após marcar: deve sair de 'pendentes'
-    r = s.get(f"{BASE}/rh?filtro=pendentes")
+    # ── 5b. Registrar protocolo no cliente (Fase 1 — Reprotocolo) ──────
+    step("Registrar protocolo no cliente (Fase 1)")
+    csrf = fresh_csrf(s)
+    r = s.post(f"{BASE}/rh/{doc_id}/marcar-enviado", data={
+        "_csrf_token":      csrf,
+        "numero_protocolo": "TEST-001",
+        "data_protocolo":   "2026-05-02",
+        "observacoes":      "Teste de integração",
+    })
+    if r.status_code == 200:
+        try:
+            data = r.json()
+            if data.get("success"):
+                rp_status = db_query(f"SELECT status FROM rh_protocolos WHERE documento_id={doc_id} LIMIT 1;")
+                if rp_status == "enviado":
+                    ok("POST /rh/{id}/marcar-enviado: rh_protocolos.status='enviado'")
+                else:
+                    fail(f"rh_protocolos.status inesperado (={rp_status})")
+            else:
+                fail(f"JSON sem success=true: {data}")
+        except Exception:
+            fail("Resposta não é JSON")
+    else:
+        fail(f"HTTP {r.status_code}")
+
+    # Após registrar: deve sair de 'pendente' e aparecer em 'enviado'
+    r = s.get(f"{BASE}/rh?status=pendente")
     if "JOAO INTEGRACAO TESTE" not in r.text:
-        ok("Após marcar, doc some de /rh?filtro=pendentes")
+        ok("Após registrar, doc some de /rh?status=pendente")
     else:
         fail("Doc continua aparecendo como pendente")
+    r = s.get(f"{BASE}/rh?status=enviado")
+    if "JOAO INTEGRACAO TESTE" in r.text:
+        ok("Doc aparece em /rh?status=enviado")
+    else:
+        fail("Doc não aparece em /rh?status=enviado")
 
     # ── 6. Substituir documento (Grupo 8) ──────────────────────────────
     step("Substituir documento")

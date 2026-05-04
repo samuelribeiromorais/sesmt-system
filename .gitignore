@@ -1,12 +1,16 @@
 .env
 vendor/
 storage/uploads/
+storage/uploads.zip
 storage/reports/
 storage/cache/
 storage/logs/
 storage/relatorios/
 storage/backups/
 .claude/
+.git.backup-pre-filter/
 *.log
+*.zip
+*.new
 .DS_Store
 Thumbs.db

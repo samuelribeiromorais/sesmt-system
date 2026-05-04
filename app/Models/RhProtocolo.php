@@ -123,7 +123,7 @@ class RhProtocolo
         $db = Database::getInstance();
 
         $base = "
-            SELECT d2.id, d2.colaborador_id, d2.tipo_documento_id
+            SELECT d2.*
             FROM documentos d2
             INNER JOIN (
                 SELECT colaborador_id, tipo_documento_id, MAX(id) AS max_id
@@ -309,10 +309,12 @@ class RhProtocolo
     // ------------------------------------------------------------------
     public static function comprovantes(int $protocoloId): array
     {
-        $db = Database::getInstance();
-        return $db->prepare(
+        $db   = Database::getInstance();
+        $stmt = $db->prepare(
             "SELECT * FROM rh_protocolo_comprovantes WHERE protocolo_id = :pid ORDER BY criado_em"
-        )->execute(['pid' => $protocoloId]) ?: [];
+        );
+        $stmt->execute(['pid' => $protocoloId]);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     // ------------------------------------------------------------------
