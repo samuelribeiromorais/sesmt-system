@@ -14,55 +14,34 @@ class RhProtocolo
     {
         $db = Database::getInstance();
 
-        // Sub-select: último documento por (colaborador, tipo) — não obsoleto
-        $latestSub = "
-            SELECT d2.*
-            FROM documentos d2
-            INNER JOIN (
-                SELECT colaborador_id, tipo_documento_id, MAX(id) AS max_id
-                FROM (
-                    SELECT id, colaborador_id, tipo_documento_id,
-                           ROW_NUMBER() OVER (
-                               PARTITION BY colaborador_id, tipo_documento_id
-                               ORDER BY data_emissao DESC, id DESC
-                           ) AS rn
-                    FROM documentos
-                    WHERE status != 'obsoleto' AND excluido_em IS NULL
-                ) ranked
-                WHERE rn = 1
-                GROUP BY colaborador_id, tipo_documento_id
-            ) best ON d2.id = best.max_id
-        ";
-
-        $where  = ["c.excluido_em IS NULL", "td.ativo = 1",
-                   "d.aprovacao_status = 'aprovado'", "c.obra_id IS NOT NULL"];
+        // Após a Fase 2, o motor de pendências cria rh_protocolos para CADA
+        // cliente onde o colaborador tem vínculo ativo (incluindo N:N de
+        // rh_vinculos_obra). Por isso a query parte de rh_protocolos.
+        $where  = ["c.excluido_em IS NULL"];
         $params = [];
 
-        // Filtro por status do protocolo
+        $statusMap = [
+            'pendente'   => 'pendente_envio',
+            'enviado'    => 'enviado',
+            'confirmado' => 'confirmado',
+            'rejeitado'  => 'rejeitado',
+        ];
         $statusFiltro = $filtros['status'] ?? 'pendente';
-        if ($statusFiltro === 'pendente') {
-            $where[] = "(rp.id IS NULL OR rp.status = 'pendente_envio')";
-        } elseif ($statusFiltro === 'enviado') {
-            $where[] = "rp.status = 'enviado'";
-        } elseif ($statusFiltro === 'confirmado') {
-            $where[] = "rp.status = 'confirmado'";
-        } elseif ($statusFiltro === 'rejeitado') {
-            $where[] = "rp.status = 'rejeitado'";
+        if (isset($statusMap[$statusFiltro])) {
+            $where[]            = "rp.status = :status";
+            $params['status']   = $statusMap[$statusFiltro];
         }
-        // 'todos' → sem filtro de status
 
         if (!empty($filtros['cliente_id'])) {
-            $where[]              = "cl.id = :cliente_id";
+            $where[]              = "rp.cliente_id = :cliente_id";
             $params['cliente_id'] = (int)$filtros['cliente_id'];
         }
-
         if (!empty($filtros['tipo_id'])) {
-            $where[]           = "td.id = :tipo_id";
+            $where[]           = "rp.tipo_documento_id = :tipo_id";
             $params['tipo_id'] = (int)$filtros['tipo_id'];
         }
-
         if (!empty($filtros['q'])) {
-            $where[]    = "c.nome_completo LIKE :q";
+            $where[]     = "c.nome_completo LIKE :q";
             $params['q'] = '%' . $filtros['q'] . '%';
         }
 
@@ -82,9 +61,9 @@ class RhProtocolo
                 td.id                  AS tipo_id,
                 td.nome                AS tipo_nome,
                 td.categoria,
-                o.id                   AS obra_id,
-                o.nome                 AS obra_nome,
-                cl.id                  AS cliente_id,
+                rp.obra_id             AS obra_id,
+                obra_p.nome            AS obra_nome,
+                rp.cliente_id          AS cliente_id,
                 cl.nome_fantasia       AS cliente_nome,
                 rp.id                  AS protocolo_id,
                 rp.status              AS protocolo_status,
@@ -97,14 +76,13 @@ class RhProtocolo
                 rp.motivo_rejeicao,
                 u.nome                 AS enviado_por_nome,
                 (SELECT COUNT(*) FROM rh_protocolo_comprovantes rc WHERE rc.protocolo_id = rp.id) AS n_comprovantes
-            FROM ({$latestSub}) d
-            JOIN colaboradores   c  ON d.colaborador_id    = c.id
-            JOIN tipos_documento td ON d.tipo_documento_id = td.id
-            JOIN obras           o  ON c.obra_id           = o.id
-            JOIN clientes        cl ON o.cliente_id        = cl.id
-            LEFT JOIN rh_protocolos rp
-                   ON rp.documento_id = d.id AND rp.cliente_id = cl.id
-            LEFT JOIN usuarios u ON rp.enviado_por = u.id
+            FROM rh_protocolos rp
+            JOIN colaboradores   c  ON rp.colaborador_id    = c.id
+            JOIN tipos_documento td ON rp.tipo_documento_id = td.id
+            JOIN clientes        cl ON rp.cliente_id        = cl.id
+            JOIN documentos      d  ON rp.documento_id      = d.id
+            LEFT JOIN obras      obra_p ON rp.obra_id       = obra_p.id
+            LEFT JOIN usuarios   u  ON rp.enviado_por       = u.id
             WHERE {$whereStr}
             ORDER BY cl.nome_fantasia, c.nome_completo, td.nome
             LIMIT 500
@@ -122,50 +100,24 @@ class RhProtocolo
     {
         $db = Database::getInstance();
 
-        $base = "
-            SELECT d2.*
-            FROM documentos d2
-            INNER JOIN (
-                SELECT colaborador_id, tipo_documento_id, MAX(id) AS max_id
-                FROM (
-                    SELECT id, colaborador_id, tipo_documento_id,
-                           ROW_NUMBER() OVER (
-                               PARTITION BY colaborador_id, tipo_documento_id
-                               ORDER BY data_emissao DESC, id DESC
-                           ) AS rn
-                    FROM documentos
-                    WHERE status != 'obsoleto' AND excluido_em IS NULL
-                ) ranked
-                WHERE rn = 1
-                GROUP BY colaborador_id, tipo_documento_id
-            ) best ON d2.id = best.max_id
-        ";
+        // Pós-Fase 2: pendências são pré-criadas em rh_protocolos pelo motor.
+        $row = $db->query(
+            "SELECT
+                SUM(rp.status='pendente_envio') AS pendentes,
+                SUM(rp.status='enviado')        AS enviados,
+                SUM(rp.status='confirmado')     AS confirmados,
+                SUM(rp.status='rejeitado')      AS rejeitados
+             FROM rh_protocolos rp
+             JOIN colaboradores c ON rp.colaborador_id = c.id
+             WHERE c.excluido_em IS NULL"
+        )->fetch(\PDO::FETCH_ASSOC) ?: [];
 
-        $filter = "
-            JOIN colaboradores c2   ON d_all.colaborador_id = c2.id
-            JOIN tipos_documento td2 ON d_all.tipo_documento_id = td2.id
-            JOIN obras o2            ON c2.obra_id = o2.id
-            WHERE c2.excluido_em IS NULL
-              AND td2.ativo = 1
-              AND d_all.aprovacao_status = 'aprovado'
-              AND c2.obra_id IS NOT NULL
-        ";
-
-        $pendentes  = (int)$db->query(
-            "SELECT COUNT(*) FROM ({$base}) d_all
-             LEFT JOIN rh_protocolos rp2 ON rp2.documento_id = d_all.id
-                AND rp2.cliente_id = (SELECT o3.cliente_id FROM colaboradores c3
-                                      JOIN obras o3 ON c3.obra_id = o3.id
-                                      WHERE c3.id = d_all.colaborador_id LIMIT 1)
-             {$filter}
-             AND (rp2.id IS NULL OR rp2.status = 'pendente_envio')"
-        )->fetchColumn();
-
-        $enviados   = (int)$db->query("SELECT COUNT(*) FROM rh_protocolos WHERE status = 'enviado'")->fetchColumn();
-        $confirmados = (int)$db->query("SELECT COUNT(*) FROM rh_protocolos WHERE status = 'confirmado'")->fetchColumn();
-        $rejeitados  = (int)$db->query("SELECT COUNT(*) FROM rh_protocolos WHERE status = 'rejeitado'")->fetchColumn();
-
-        return compact('pendentes', 'enviados', 'confirmados', 'rejeitados');
+        return [
+            'pendentes'   => (int)($row['pendentes']   ?? 0),
+            'enviados'    => (int)($row['enviados']    ?? 0),
+            'confirmados' => (int)($row['confirmados'] ?? 0),
+            'rejeitados'  => (int)($row['rejeitados']  ?? 0),
+        ];
     }
 
     // ------------------------------------------------------------------

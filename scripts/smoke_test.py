@@ -177,13 +177,42 @@ def run():
     else:
         fail("GET /exportar/documentos", f"HTTP {r.status_code} ct={r.headers.get('Content-Type','')}")
 
-    section("Conteúdo específico — Painel RH (Fase 1 — Reprotocolo)")
+    section("Conteúdo específico — Painel RH (Fase 1 + 2 + 3)")
     r = s.get(f"{BASE}/rh")
-    for keyword in ["Pendentes de envio", "Aguardando confirmação", "Confirmados", "Total geral"]:
+    for keyword in ["Pendentes de envio", "Aguardando confirmação", "Confirmados", "Total geral",
+                    "Dashboard gerencial", "Recalcular pendências", "Relatórios", "Configurações"]:
         if keyword in r.text:
             ok(f"/rh contém '{keyword}'")
         else:
             fail(f"/rh contém '{keyword}'")
+
+    # Fase 3: Dashboard
+    r = s.get(f"{BASE}/rh/dashboard")
+    if r.status_code == 200 and "Conformidade global" in r.text and "Mapa de calor" in r.text:
+        ok("/rh/dashboard renderiza com KPIs e mapa de calor")
+    else:
+        fail(f"/rh/dashboard HTTP={r.status_code}")
+
+    # Fase 3: Relatórios
+    r = s.get(f"{BASE}/rh/relatorios")
+    if r.status_code == 200 and "Pendências em aberto por cliente" in r.text:
+        ok("/rh/relatorios renderiza")
+    else:
+        fail(f"/rh/relatorios HTTP={r.status_code}")
+
+    # Fase 3: Configurações
+    r = s.get(f"{BASE}/rh/configuracoes")
+    if r.status_code == 200 and "Janelas de alerta" in r.text and "SLA de reprotocolo" in r.text:
+        ok("/rh/configuracoes renderiza")
+    else:
+        fail(f"/rh/configuracoes HTTP={r.status_code}")
+
+    # Fase 3: Excel export
+    r = s.get(f"{BASE}/rh/relatorios/conformidade-obra.xlsx")
+    if r.status_code == 200 and "spreadsheet" in r.headers.get("Content-Type",""):
+        ok("/rh/relatorios/conformidade-obra.xlsx retorna XLSX")
+    else:
+        fail(f"/rh/relatorios/conformidade-obra.xlsx HTTP={r.status_code} ct={r.headers.get('Content-Type','')}")
 
     section("Conteúdo específico — Treinamentos (Grupo 7)")
     r = s.get(f"{BASE}/treinamentos")

@@ -137,6 +137,39 @@ class EmailService
         return $this->enviar($assunto, $corpo);
     }
 
+    /**
+     * Envia e-mail HTML para uma lista específica de destinatários.
+     * Usado pelo digest RH (Fase 3 do módulo).
+     */
+    public function enviarPara(array $destinatarios, string $assunto, string $corpo): bool
+    {
+        if (empty($destinatarios)) return false;
+        try {
+            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host       = $this->config['host'];
+            $mail->SMTPAuth   = true;
+            $mail->Username   = $this->config['username'];
+            $mail->Password   = $this->config['password'];
+            $mail->SMTPSecure = $this->config['encryption'] === 'tls' ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+            $mail->Port       = $this->config['port'];
+            $mail->CharSet    = 'UTF-8';
+            $mail->setFrom($this->config['from_email'], $this->config['from_name']);
+            foreach ($destinatarios as $to) {
+                $mail->addAddress($to);
+            }
+            $mail->isHTML(true);
+            $mail->Subject = $assunto;
+            $mail->Body    = $corpo;
+            $mail->AltBody = strip_tags(str_replace(['<br>', '</p>'], ["\n", "\n\n"], $corpo));
+            $mail->send();
+            return true;
+        } catch (\Throwable $e) {
+            error_log("[EmailService::enviarPara] " . $e->getMessage());
+            return false;
+        }
+    }
+
     private function gerarHtmlAlerta(string $urgencia, string $cor, string $colaborador, string $tipo, string $status, string $validade): string
     {
         return "

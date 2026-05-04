@@ -362,6 +362,14 @@ class DocumentoController extends Controller
             }
 
             $db->commit();
+
+            // Fase 2: dispara recálculo de pendências do RH para esse colaborador
+            // (cria pendências em cada cliente onde o doc deve ser protocolado)
+            try {
+                \App\Services\RhPendenciaService::recalcularColaborador((int)$colaboradorId);
+            } catch (\Throwable $e) {
+                error_log("[RH] Falha ao recalcular pendências (upload colab {$colaboradorId}): " . $e->getMessage());
+            }
         } catch (\Exception $e) {
             $db->rollBack();
             // Clean up any files that were moved
@@ -1001,7 +1009,17 @@ class DocumentoController extends Controller
 
             $db->commit();
             LoggerMiddleware::log('substituir', "Documento ID {$id} substituído pelo {$newId}");
-            $this->flash('success', 'Documento substituído. Nova versão precisa ser enviada ao cliente.');
+
+            // Fase 2: dispara recálculo de pendências para esse colaborador
+            // (cria pendências em cada cliente onde a nova versão precisa ser reprotocolada)
+            try {
+                \App\Services\RhPendenciaService::recalcularColaborador($colaboradorId);
+            } catch (\Throwable $e) {
+                // Não bloqueia a substituição se o motor falhar
+                error_log("[RH] Falha ao recalcular pendências do colab {$colaboradorId}: " . $e->getMessage());
+            }
+
+            $this->flash('success', 'Documento substituído. Pendências de reprotocolo nos clientes foram atualizadas automaticamente.');
         } catch (\Exception $e) {
             $db->rollBack();
             @unlink($uploadDir . '/' . $safeName);

@@ -74,6 +74,21 @@ $router->post('/rh/{id}/marcar-enviado', ['RhController', 'marcarEnviado'], ['Au
 $router->post('/rh/protocolo/{id}/confirmar', ['RhController', 'confirmar'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/rh/protocolo/{id}/rejeitar', ['RhController', 'rejeitar'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->get('/rh/comprovante/{id}', ['RhController', 'downloadComprovante'], ['AuthMiddleware']);
+// Vínculos N:N (Fase 2)
+$router->get('/colaboradores/{id}/vinculos',  ['RhVinculoController', 'listar'],   ['AuthMiddleware']);
+$router->post('/colaboradores/{id}/vinculos', ['RhVinculoController', 'criar'],    ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/vinculos/{id}/encerrar',      ['RhVinculoController', 'encerrar'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/vinculos/{id}/excluir',       ['RhVinculoController', 'excluir'],  ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/rh/recalcular',               ['RhVinculoController', 'recalcularTudo'], ['AuthMiddleware', 'CsrfMiddleware']);
+// Dashboard e configurações (Fase 3)
+$router->get('/rh/dashboard',          ['RhDashboardController',     'index'],  ['AuthMiddleware']);
+$router->get('/rh/configuracoes',      ['RhConfiguracaoController',  'index'],  ['AuthMiddleware']);
+$router->post('/rh/configuracoes/salvar', ['RhConfiguracaoController', 'salvar'], ['AuthMiddleware', 'CsrfMiddleware']);
+// Relatórios (Fase 3)
+$router->get('/rh/relatorios',                      ['RhRelatorioController', 'index'],               ['AuthMiddleware']);
+$router->get('/rh/relatorios/pendencias-cliente.xlsx', ['RhRelatorioController', 'pendenciasPorCliente'], ['AuthMiddleware']);
+$router->get('/rh/relatorios/historico-colab.xlsx',    ['RhRelatorioController', 'historicoPorColaborador'], ['AuthMiddleware']);
+$router->get('/rh/relatorios/conformidade-obra.xlsx',  ['RhRelatorioController', 'conformidadePorObra'], ['AuthMiddleware']);
 // Mantém endpoint legado para compatibilidade com dados anteriores
 $router->post('/documentos/{id}/enviado-cliente', ['DocumentoController', 'marcarEnviadoCliente'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/documentos/{id}/substituir', ['DocumentoController', 'substituir'], ['AuthMiddleware', 'CsrfMiddleware']);

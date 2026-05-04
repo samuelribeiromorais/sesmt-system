@@ -75,6 +75,8 @@ def teardown():
         db_exec(f"DELETE FROM certificados WHERE treinamento_id={created_ids['treinamento_id']};")
         db_exec(f"DELETE FROM treinamentos WHERE id={created_ids['treinamento_id']};")
     if "colab_id" in created_ids:
+        db_exec(f"DELETE FROM rh_protocolo_comprovantes WHERE protocolo_id IN (SELECT id FROM rh_protocolos WHERE colaborador_id={created_ids['colab_id']});")
+        db_exec(f"DELETE FROM rh_protocolos WHERE colaborador_id={created_ids['colab_id']};")
         db_exec(f"DELETE FROM documentos WHERE colaborador_id={created_ids['colab_id']};")
         db_exec(f"DELETE FROM certificados WHERE colaborador_id={created_ids['colab_id']};")
         db_exec(f"DELETE FROM colaboradores WHERE id={created_ids['colab_id']};")

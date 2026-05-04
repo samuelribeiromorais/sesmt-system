@@ -16,6 +16,30 @@ $statusBadge = function (string $s) use ($statusLabel): string {
 };
 ?>
 
+<!-- Botão Recalcular agora (Fase 2) -->
+<div style="display:flex; justify-content:flex-end; margin-bottom:12px; gap:8px;">
+    <a href="/rh/dashboard" class="btn btn-secondary btn-sm">📊 Dashboard gerencial</a>
+    <a href="/rh/relatorios" class="btn btn-secondary btn-sm">📁 Relatórios</a>
+    <a href="/rh/configuracoes" class="btn btn-secondary btn-sm">⚙️ Configurações</a>
+    <button type="button" id="btnRecalcular" class="btn btn-primary btn-sm" onclick="recalcularPendencias()">
+        🔄 Recalcular pendências
+    </button>
+</div>
+<script>
+async function recalcularPendencias() {
+    const btn = document.getElementById('btnRecalcular');
+    btn.disabled = true; btn.textContent = '⏳ Recalculando...';
+    const fd = new FormData(); fd.append('_csrf_token', '<?= htmlspecialchars(\App\Core\Session::get('csrf_token','')) ?>');
+    try {
+        const r  = await fetch('/rh/recalcular', {method:'POST', body: fd});
+        const js = await r.json();
+        if (js.success) { alert(js.msg); location.reload(); }
+        else { alert('Erro: ' + (js.error || 'Falha ao recalcular.')); }
+    } catch (e) { alert('Erro: ' + e.message); }
+    finally { btn.disabled = false; btn.textContent = '🔄 Recalcular pendências'; }
+}
+</script>
+
 <!-- KPI Cards -->
 <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px;">
     <a href="/rh?status=pendente" style="text-decoration:none;">

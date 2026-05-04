@@ -55,6 +55,21 @@ function statusSemaforo($status) {
     </div>
     <div style="display:flex; gap:8px; align-items:center;">
         <span class="badge badge-<?= $colab['status'] ?>"><?= ucfirst($colab['status']) ?></span>
+        <?php
+        // Contagem de vínculos extras (Fase 2 do RH)
+        $stmtVinc = \App\Core\Database::getInstance()->prepare(
+            "SELECT COUNT(*) FROM rh_vinculos_obra WHERE colaborador_id = :id AND ate_quando IS NULL AND excluido_em IS NULL"
+        );
+        $stmtVinc->execute(['id' => (int)$colab['id']]);
+        $totalVincExtras = (int)$stmtVinc->fetchColumn();
+        ?>
+        <button type="button" class="btn btn-outline btn-sm" id="btnVinculos"
+                title="<?= 1 + $totalVincExtras ?> vínculo(s) com obras/clientes">
+            🔗 Vínculos
+            <?php if ($totalVincExtras > 0): ?>
+            <span style="background:#10b981; color:#fff; border-radius:10px; padding:1px 7px; font-size:10px; margin-left:4px;">+<?= $totalVincExtras ?></span>
+            <?php endif; ?>
+        </button>
         <?php if (!empty($documentos)): ?>
         <a href="/colaboradores/<?= $colab['id'] ?>/download-zip" class="btn btn-outline btn-sm" title="Baixar todos os documentos em ZIP">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -484,4 +499,134 @@ function abrirSubstituir(docId, tipoNome, temValidade) {
     document.getElementById('substituir-validade-grp').style.display = temValidade ? 'block' : 'none';
     modal.style.display = 'flex';
 }
+</script>
+
+<!-- ============================================================ -->
+<!-- Modal de Vínculos com obras (Fase 2 — Módulo RH)             -->
+<!-- ============================================================ -->
+<div id="vincModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:var(--c-bg); padding:24px; border-radius:8px; max-width:760px; width:92%; max-height:90vh; overflow-y:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="margin:0;">Vínculos com obras / clientes</h3>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('vincModal').style.display='none'">×</button>
+        </div>
+        <p style="color:var(--c-gray); font-size:13px; margin-top:0;">
+            Vínculo primário vem do GCO. Vínculos adicionais (manuais) geram pendências de protocolo nos clientes correspondentes.
+        </p>
+
+        <table style="width:100%; font-size:13px; margin-bottom:16px;">
+            <thead><tr>
+                <th>Origem</th><th>Cliente / Obra</th><th>Função</th>
+                <th>Desde</th><th>Até</th><th style="text-align:center;">Ações</th>
+            </tr></thead>
+            <tbody id="vincBody">
+                <tr><td colspan="6" style="text-align:center;color:var(--c-gray);padding:20px;">Carregando...</td></tr>
+            </tbody>
+        </table>
+
+        <details style="margin-top:8px;">
+            <summary style="cursor:pointer; color:var(--c-primary); font-weight:600;">+ Adicionar vínculo manual</summary>
+            <form id="vincForm" onsubmit="return vincSalvar(event)" style="margin-top:12px; padding:16px; background:rgba(0,0,0,0.03); border-radius:6px;">
+                <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars(\App\Core\Session::get('csrf_token','')) ?>">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div style="grid-column:1/-1;">
+                        <label class="form-label">Obra</label>
+                        <select name="obra_id" class="form-control" required>
+                            <option value="">Selecione...</option>
+                            <?php
+                            $obrasAll = \App\Core\Database::getInstance()->query(
+                                "SELECT o.id, o.nome, cl.nome_fantasia AS cli FROM obras o JOIN clientes cl ON o.cliente_id=cl.id WHERE o.status='ativa' AND cl.ativo=1 ORDER BY cl.nome_fantasia, o.nome"
+                            )->fetchAll(\PDO::FETCH_ASSOC);
+                            foreach ($obrasAll as $o):
+                            ?>
+                            <option value="<?= $o['id'] ?>"><?= htmlspecialchars($o['cli']) ?> — <?= htmlspecialchars($o['nome']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Desde</label>
+                        <input type="date" name="desde" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Até (opcional)</label>
+                        <input type="date" name="ate_quando" class="form-control">
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label class="form-label">Função no site (opcional)</label>
+                        <input type="text" name="funcao_no_site" class="form-control" placeholder="Ex: Eletricista volante">
+                    </div>
+                </div>
+                <div style="text-align:right; margin-top:12px;">
+                    <button type="submit" class="btn btn-primary btn-sm">Salvar vínculo</button>
+                </div>
+            </form>
+        </details>
+    </div>
+</div>
+
+<script>
+(function() {
+    const colabId = <?= (int)$colab['id'] ?>;
+    const csrf    = '<?= htmlspecialchars(\App\Core\Session::get('csrf_token',''), ENT_QUOTES) ?>';
+    const modal   = document.getElementById('vincModal');
+    const body    = document.getElementById('vincBody');
+
+    document.getElementById('btnVinculos').addEventListener('click', () => {
+        modal.style.display = 'flex';
+        carregar();
+    });
+
+    async function carregar() {
+        body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--c-gray);padding:20px;">Carregando...</td></tr>';
+        try {
+            const r  = await fetch('/colaboradores/' + colabId + '/vinculos');
+            const js = await r.json();
+            body.innerHTML = '';
+            (js.vinculos || []).forEach(v => {
+                const tag = v.origem === 'gco'
+                    ? '<span style="background:#0ea5e9;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;">GCO</span>'
+                    : '<span style="background:#10b981;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;">Manual</span>';
+                const acoes = v.origem === 'gco'
+                    ? '<span style="color:var(--c-gray);font-size:11px;">—</span>'
+                    : '<button class="btn btn-sm btn-secondary" onclick="vincEncerrar(' + v.vinculo_id + ')">Encerrar</button> '
+                    + '<button class="btn btn-sm" style="background:#e74c3c;color:#fff;border:none;" onclick="vincExcluir(' + v.vinculo_id + ')">×</button>';
+                const cliObra = (v.cliente_nome || '') + ' — ' + (v.obra_nome || '');
+                body.insertAdjacentHTML('beforeend',
+                    '<tr><td>' + tag + '</td><td>' + cliObra + '</td><td>' + (v.funcao_no_site || '') + '</td>'
+                    + '<td>' + (v.desde || '') + '</td><td>' + (v.ate_quando || '<em style="color:var(--c-gray);">aberto</em>') + '</td>'
+                    + '<td style="text-align:center;">' + acoes + '</td></tr>');
+            });
+            if (!js.vinculos || !js.vinculos.length) {
+                body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--c-gray);padding:20px;">Nenhum vínculo.</td></tr>';
+            }
+        } catch (e) {
+            body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#e74c3c;padding:20px;">Erro: ' + e.message + '</td></tr>';
+        }
+    }
+
+    window.vincSalvar = async (e) => {
+        e.preventDefault();
+        const fd = new FormData(document.getElementById('vincForm'));
+        const r  = await fetch('/colaboradores/' + colabId + '/vinculos', {method:'POST', body: fd});
+        const js = await r.json();
+        if (js.success) { alert(js.msg || 'Vínculo criado.'); document.getElementById('vincForm').reset(); carregar(); }
+        else { alert('Erro: ' + (js.error || 'Falha.')); }
+        return false;
+    };
+
+    window.vincEncerrar = async (vid) => {
+        const ate = prompt('Data de encerramento (YYYY-MM-DD):', new Date().toISOString().slice(0,10));
+        if (!ate) return;
+        const fd = new FormData(); fd.append('_csrf_token', csrf); fd.append('ate_quando', ate);
+        const r = await fetch('/vinculos/' + vid + '/encerrar', {method:'POST', body: fd});
+        if ((await r.json()).success) carregar(); else alert('Erro.');
+    };
+
+    window.vincExcluir = async (vid) => {
+        if (!confirm('Excluir este vínculo?')) return;
+        const fd = new FormData(); fd.append('_csrf_token', csrf);
+        const r = await fetch('/vinculos/' + vid + '/excluir', {method:'POST', body: fd});
+        if ((await r.json()).success) carregar(); else alert('Erro.');
+    };
+})();
 </script>
