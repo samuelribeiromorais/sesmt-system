@@ -70,6 +70,11 @@ $router->get('/', ['DashboardController', 'index'], ['AuthMiddleware']);
 $router->get('/dashboard', ['DashboardController', 'index'], ['AuthMiddleware']);
 $router->get('/health', ['HealthController', 'check']); // público para monitoring
 $router->get('/rh', ['RhController', 'index'], ['AuthMiddleware']);
+$router->post('/rh/{id}/marcar-enviado', ['RhController', 'marcarEnviado'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/rh/protocolo/{id}/confirmar', ['RhController', 'confirmar'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->post('/rh/protocolo/{id}/rejeitar', ['RhController', 'rejeitar'], ['AuthMiddleware', 'CsrfMiddleware']);
+$router->get('/rh/comprovante/{id}', ['RhController', 'downloadComprovante'], ['AuthMiddleware']);
+// Mantém endpoint legado para compatibilidade com dados anteriores
 $router->post('/documentos/{id}/enviado-cliente', ['DocumentoController', 'marcarEnviadoCliente'], ['AuthMiddleware', 'CsrfMiddleware']);
 $router->post('/documentos/{id}/substituir', ['DocumentoController', 'substituir'], ['AuthMiddleware', 'CsrfMiddleware']);
 
